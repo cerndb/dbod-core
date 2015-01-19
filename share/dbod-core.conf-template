@@ -1,0 +1,106 @@
+logdir  
+project
+upgrade_folder
+sql_folder
+template_folder
+init_folder
+syscontrol_path
+dsmc_exe
+
+<mysql>
+extra_backup
+mysql_user_dba
+archive_class
+backup_exe
+extra_backup
+mysql_pingdb
+mysql_status
+helper_locateactualbinary = $project/bin/actual_binarylog.sql
+helper_presnap = $project/bin/presnap.sql
+helper_postsnap= $project/bin/postsnap.sql
+helper_ping = $project/bin/mysql_pingtest.sql
+
+vetoed_parameters = port 
+vetoed_parameters = max_connections 
+vetoed_parameters = default-storage-engine 
+vetoed_parameters = innodb_read_io_threads 
+vetoed_parameters = innodb_write_io_threads 
+vetoed_parameters = innodb_io_capacity 
+vetoed_parameters = innodb_log_file_size 
+vetoed_parameters = innodb_flush_method 
+vetoed_parameters = innodb_open_files 
+vetoed_parameters = query_cache_size 
+vetoed_parameters = tmp_table_size 
+vetoed_parameters = max_heap_table_size 
+vetoed_parameters = thread_cache_size 
+vetoed_parameters = table_definition_cache 
+vetoed_parameters = table_open_cache 
+vetoed_parameters = expire_log_days 
+vetoed_parameters = binlog_format 
+vetoed_parameters = max_binlog_size 
+vetoed_parameters = innodb_buffer_pool_size 
+vetoed_parameters = datadir 
+vetoed_parameters = log-bin 
+vetoed_parameters = slow_query_log_file 
+vetoed_parameters = socket
+</mysql>
+
+<postgresql>
+helper_ping
+helper_pghbalocal
+vetoed_parameters =  listen_addresses 
+vetoed_parameters = port 
+vetoed_parameters = max_connections 
+vetoed_parameters = unix_socket_directory 
+vetoed_parameters = ssl 
+vetoed_parameters = shared_buffers 
+vetoed_parameters = wal_level 
+vetoed_parameters = archive_mode 
+vetoed_parameters = log_line_prefix
+</postgresql>
+
+<oracle>
+oracle_base
+helper_startupdb = $oracle_base/bin/oracle_startupdb.sh;
+helper_isopen = $oracle_base/bin/oracle_ismountoropen.sh;
+helper_setdown = $oracle_base/bin/oracle_shutdowndb.sh;
+helper_isbackupmode = $oracle_base/bin/oracle_isbackupmode.sh;
+helper_beginbackup = $oracle_base/bin/oracle_beginbackup.sh;
+helper_endbackup = "$oracle_base/bin/oracle_endbackup.sh;
+helper_currentlogsequence = $oracle_base/bin/oracle_currentlogsequence.sh;
+helper_listincarnation = $oracle_base/bin/oracle_listincarnation.sh;
+</oracle>
+
+<appdynamics>
+host
+port
+user
+password
+aeskey
+appagent
+</appdynamics>
+
+<database>
+db_prod
+db_test
+tns_prod
+tns_test
+</database>
+
+<filers>
+rac51_policy
+rac50_policy
+<aggregates>
+    <rac50>
+        data = [ aggr1_rac5051 ]
+        binlogs = aggr1_rac5011
+        binlogs = aggr1_rac5012
+        binlogs = aggr1_rac5021
+    </rac50>
+    <rac51>
+        data = [ aggr1_rac5111 ]
+        binlogs = aggr1_rac5141
+        binlogs = aggr1_rac5142
+    </rac51>
+</aggregates>
+</filers>
