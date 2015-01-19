@@ -4,7 +4,8 @@ use Moose;
 with 'MooseX::Log::Log4perl';
 with 'MooseX::Getopt';
 
-# Check https://metacpan.org/pod/MooseX::Getopt
+use Data::Dumper;
+use DBOD::Config qw( $config );
 
 # Input
 has 'entity' => ( is => 'ro', isa => 'Str', required => 1);
@@ -13,12 +14,13 @@ has 'entity' => ( is => 'ro', isa => 'Str', required => 1);
 has '_output' => ( is => 'rw', isa => 'Str', );
 has '_result' => ( is => 'rw', isa => 'Num', );
 
-
 sub run {
     my $self = shift;
-    $self->output("ran with (" . $self->entity() . ") as parameters");
+    $self->_output("ran with (" . $self->entity() . ") as parameters");
     $self->log->debug( "ran with (" . $self->entity() . ") as parameters");
-    $self->result(0);
+    $self->log->debug( "ran with config:\n" . Dumper $config  );
+    $self->log->debug( "Parameter access: " . Dumper $config->{'parameter'}  );
+    $self->_result(0);
 }
 
 
