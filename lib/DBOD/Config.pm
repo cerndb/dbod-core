@@ -18,7 +18,8 @@ $VERSION     = 0.1;
 my $share_dir = File::ShareDir::dist_dir('DBOD');
 my $filename = LoadFile( "$share_dir/configpath.conf" );
 
-my $config_file = Config::General->new( $filename->{'PATH'} );
+my $config_file = Config::General->new( -ConfigFile => $filename->{'PATH'}, 
+                                        -ForceArray => 1); # Allows 1 element ARR
 %cfg = $config_file->getall();
 $config = \%cfg;
 
