@@ -1,12 +1,13 @@
 use warnings;
 use strict;
 use inc::Module::Install;
+use File::ShareDir;
 
 author  'Ignacio Coterillo <ignacio.coterillo@cern.ch>';
 version '0.1';
 license 'GPLv3';
 
-name    'DBOD-core';
+name    'DBOD';
 
 requires    'Log::Log4perl' => 0;
 requires    'YAML::Syck' => 0;
@@ -15,5 +16,7 @@ requires    'Moose' => 0;
 requires    'MooseX::Log::Log4perl' => 0;
 requires    'MooseX::Getopt' => 0;
 test_requires 'Test::More' => 0;
+
+install_share;
 
 WriteAll;
