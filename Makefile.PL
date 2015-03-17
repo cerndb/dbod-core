@@ -15,6 +15,7 @@ requires    'File::ShareDir' => 0;
 requires    'Moose' => 0;
 requires    'MooseX::Log::Log4perl' => 0;
 requires    'MooseX::Getopt' => 0;
+requires    'Config::General' => 0;
 test_requires 'Test::More' => 0;
 
 install_share;
