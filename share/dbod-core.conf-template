@@ -1,3 +1,4 @@
+<general>
 logdir  
 project
 upgrade_folder
@@ -6,6 +7,7 @@ template_folder
 init_folder
 syscontrol_path
 dsmc_exe
+</general>
 
 <mysql>
 extra_backup
@@ -15,10 +17,10 @@ backup_exe
 extra_backup
 mysql_pingdb
 mysql_status
-helper_locateactualbinary = $project/bin/actual_binarylog.sql
-helper_presnap = $project/bin/presnap.sql
-helper_postsnap= $project/bin/postsnap.sql
-helper_ping = $project/bin/mysql_pingtest.sql
+helper_locateactualbinary = actual_binarylog.sql
+helper_presnap = presnap.sql
+helper_postsnap= postsnap.sql
+helper_ping = mysql_pingtest.sql
 
 vetoed_parameters = port 
 vetoed_parameters = max_connections 
@@ -48,7 +50,7 @@ vetoed_parameters = socket
 <postgresql>
 helper_ping
 helper_pghbalocal
-vetoed_parameters =  listen_addresses 
+vetoed_parameters = listen_addresses 
 vetoed_parameters = port 
 vetoed_parameters = max_connections 
 vetoed_parameters = unix_socket_directory 
@@ -61,14 +63,14 @@ vetoed_parameters = log_line_prefix
 
 <oracle>
 oracle_base
-helper_startupdb = $oracle_base/bin/oracle_startupdb.sh;
-helper_isopen = $oracle_base/bin/oracle_ismountoropen.sh;
-helper_setdown = $oracle_base/bin/oracle_shutdowndb.sh;
-helper_isbackupmode = $oracle_base/bin/oracle_isbackupmode.sh;
-helper_beginbackup = $oracle_base/bin/oracle_beginbackup.sh;
-helper_endbackup = "$oracle_base/bin/oracle_endbackup.sh;
-helper_currentlogsequence = $oracle_base/bin/oracle_currentlogsequence.sh;
-helper_listincarnation = $oracle_base/bin/oracle_listincarnation.sh;
+helper_startupdb = oracle_startupdb.sh
+helper_isopen = oracle_ismountoropen.sh
+helper_setdown = oracle_shutdowndb.sh
+helper_isbackupmode = oracle_isbackupmode.sh
+helper_beginbackup = oracle_beginbackup.sh
+helper_endbackup = oracle_endbackup.sh
+helper_currentlogsequence = oracle_currentlogsequence.sh
+helper_listincarnation = oracle_listincarnation.sh
 </oracle>
 
 <appdynamics>
