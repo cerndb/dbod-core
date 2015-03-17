@@ -14,5 +14,7 @@ BEGIN { Log::Log4perl->easy_init() };
 
 my $job = DBOD::Job->new_with_options( entity => 'test' );
 $job->log->info("preparing to run job");
-$job->run();
 
+ok($job->run() == 0, "Simple Job execution");
+
+done_testing(1);
