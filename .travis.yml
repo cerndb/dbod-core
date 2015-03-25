@@ -5,5 +5,8 @@ perl:
 
 before_script:
     - cpanm Config::General
+    - cpanm -n Devel::Cover::Report::Coveralls
 
+after_script:
+    - cover -test -report coveralls
 
