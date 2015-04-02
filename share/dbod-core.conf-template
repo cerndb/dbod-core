@@ -8,6 +8,9 @@ init_folder
 syscontrol_path
 dsmc_exe
 </general>
+<api>
+cachefile = /etc/dbod/cache/entities.json
+</api>
 
 <mysql>
 extra_backup
