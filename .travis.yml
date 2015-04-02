@@ -1,11 +1,14 @@
 language: perl
 perl:
-    - "5.10"
     - "5.16"
+    - "5.10"
 
 before_script:
     - cpanm Config::General
     - cpanm -n Devel::Cover::Report::Coveralls
+    - cpanm -n JSON
+    - cpanm -n REST::Client
+    - cpanm -n MIME::Base64
 
 after_script:
     - cover -test -report coveralls
