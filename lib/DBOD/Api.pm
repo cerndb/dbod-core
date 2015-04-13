@@ -11,16 +11,31 @@ use REST::Client;
 use MIME::Base64;
 use JSON;
 
-use DBOD::Config qw($config $metadata);
-
 our ($VERSION, @ISA, @EXPORT_OK);
 
 $VERSION     = 0.1;
 @ISA         = qw(Exporter);
-@EXPORT_OK   = qw( get_entity_metadata );
+@EXPORT_OK   = qw( load_cache get_entity_metadata );
+
+# Loads entity/host entities metadata from cache file
+sub load_cache {
+    my $config = shift;
+    my $filename = $config->{'api'}->{'cachefile'};
+    my $json_text = do { 
+        local $/ = undef;
+        open(my $json_fh, "<:encoding(UTF-8)", $filename)
+            or return ();
+        <$json_fh>
+    };
+    my $nested_array = decode_json $json_text;
+    my @flat_array = map{@$_} @$nested_array;
+
+    return @flat_array;
+}
+
 
 sub _api_client {
-    my $auth = shift;
+    my ($config, $auth) = @_;
     my $client = REST::Client->new(
         host => $config->{'api'}->{'host'},
         timeout => $config->{'api'}->{'timeout'},
@@ -39,8 +54,8 @@ sub _api_client {
 }
 
 sub _api_get_entity_metadata {
-    my $entity = shift;
-    my $client = _api_client();
+    my ($entity, $config) = @_;
+    my $client = _api_client($config);
     $client->GET(join '/', 
         $config->{'api'}->{'entity_metadata_endpoint'}, $entity);
     my %result;
@@ -54,12 +69,12 @@ sub _api_get_entity_metadata {
 }
 
 sub get_entity_metadata {
-    my $entity = shift;
-    my $result = _api_get_entity_metadata($entity);
+    my ($entity, $cache, $config) = @_;
+    my $result = _api_get_entity_metadata($entity, $config);
     if ($result->{'code'} eq '200') {
         return $result->{'response'};
     } elsif ($result->{'code'} eq '500') {
-        return $metadata->{$entity} // {};
+        return $cache->{$entity} // {};
     } else {
         return {};
     }
