@@ -4,8 +4,6 @@ use strict;
 use warnings;
 use Test::More;
 
-use Log::Log4perl qw(:easy);
-
 use_ok('DBOD::Job');
 
 use DBOD::Job;
@@ -17,6 +15,10 @@ BEGIN { Log::Log4perl->easy_init() };
 my $job = DBOD::Job->new_with_options( entity => 'test' );
 $job->log->info("preparing to run job");
 
-ok($job->run() == 0, "Simple Job execution");
+sub body {
+    $job->_result(0);
+}
+
+ok($job->run(\&body) == 0, "Simple Job execution");
 
 done_testing(2);
