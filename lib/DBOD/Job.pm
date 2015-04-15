@@ -47,14 +47,14 @@ sub BUILD {
     switch($db_type) {
         case 'mysql' {
             $dsn = "DBI:mysql:host=" . $self->metadata->{'hosts'}[0] .
-             ",port=" . $self->metadata->{'port'};
+             ";port=" . $self->metadata->{'port'};
             $db_attrs = {
                 AutoCommit => 1, 
                 };
         }
         case 'pgsql' {
             $dsn = "DBI:pg:host=" . $self->metadata->{'hosts'}[0] .
-             ",port=" . $self->metadata->{'port'};
+             ";port=" . $self->metadata->{'port'};
             $db_attrs = {
                 AutoCommit => 1, 
                 };
