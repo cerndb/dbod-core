@@ -19,7 +19,7 @@ with 'MooseX::Role::DBIx::Connector' => {
 
 use Try::Tiny;
 
-sub run_sql_file {
+sub execute_sql_file {
     my ($self, $filename) = @_;
     try{
         open my $fh, '<', $filename or do {
@@ -42,11 +42,26 @@ sub run_sql_file {
     }
 }
 
-sub db_run {
-    my ($self, $statement, $bind_values);
-    $self->db_conn->prepare($statement);
-    $self->db_conn->execute(@{$bind_values});
-    return $self->db_conn->fetchall_arrayref();
+sub select {
+    my ($self, $statement, $bind_values) = @_;
+    $self->log->debug("Running SQL statement: " . $statement);
+    if (defined $bind_values) {
+        return $self->db_conn->dbh->selectall_arrayref($statement, @{$bind_values});
+        }
+    else {
+        return $self->db_conn->dbh->selectall_arrayref($statement);
+    }
+}
+
+sub do {
+    my ($self, $statement, $bind_values) = @_;
+    $self->log->debug("Running SQL statement: " . $statement);
+    if (defined $bind_values) {
+        return $self->db_conn->dbh->do($statement, @{$bind_values});
+        }
+    else {
+        return $self->db_conn->dbh->do($statement,);
+    }
 }
 
 1;
