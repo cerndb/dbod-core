@@ -13,7 +13,14 @@ use warnings;
 
 use Moose::Role;
 with 'MooseX::Log::Log4perl';
-with 'MooseX::Role::DBIx::Connector' => {connection_name => 'db'};
+with 'MooseX::Role::DBIx::Connector' => {
+    connection_name => 'db',
+    accessor_options => {
+        db_dsn => [ default => undef],
+        db_user => [ default => undef],
+        db_password => [ default => undef],
+    }
+};
 
 use Try::Tiny;
 
