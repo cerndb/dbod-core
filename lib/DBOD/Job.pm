@@ -53,7 +53,7 @@ sub BUILD {
                 };
         }
         case 'pgsql' {
-            $dsn = "DBI:pg:host=" . $self->metadata->{'hosts'}[0] .
+            $dsn = "DBI:Pg:host=" . $self->metadata->{'hosts'}[0] .
              ";port=" . $self->metadata->{'port'};
             $db_attrs = {
                 AutoCommit => 1, 
