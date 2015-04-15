@@ -13,7 +13,7 @@ BEGIN {
 my $job = DBOD::Job->new_with_options();
 
 sub body {
-    my ($self, $entity, $params) = @_;
+    my $params = shift;
     $job->log->debug("Entity: " . $job->entity);
     $job->log->debug("General configuration ");
     $job->log->debug(Dumper $job->config);

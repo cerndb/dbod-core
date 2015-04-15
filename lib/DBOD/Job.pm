@@ -20,19 +20,21 @@ has 'metadata' => (is => 'rw', isa => 'HashRef');
 has '_output' => ( is => 'rw', isa => 'Str', );
 has '_result' => ( is => 'rw', isa => 'Num', );
 
-after 'new_with_options' => sub {
+sub BUILD {
     my $self = shift;
+    # Load General Configuration from file
+    $self->config(DBOD::Config::load());
+    # Load cache file
+    my %cache = load_cache($self->config);
+    $self->md_cache(\%cache);
+    # Load entity metadata
+    $self->metadata(
+        get_entity_metadata($self->entity, $self->md_cache, $self->config));
 };
 
 sub run {
     my ($self, $body, $params) = @_;
-    $self->config(DBOD::Config::load());
-    my %cache = load_cache($self->config);
-    $self->md_cache(\%cache);
-    $self->metadata(
-        get_entity_metadata($self->entity, $self->md_cache, $self->config));
-    $self->log->debug(Dumper $self->metadata);
-    my $result = $body->($self->entity, $params);
+    my $result = $body->($params);
     $self->_result($result);
 }
 
