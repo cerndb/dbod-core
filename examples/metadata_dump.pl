@@ -14,11 +14,7 @@ my $job = DBOD::Job->new_with_options();
 
 sub body {
     my $params = shift;
-    $job->log->debug("Entity: " . $job->entity);
-    $job->log->debug("General configuration ");
-    $job->log->debug(Dumper $job->config);
-    $job->log->debug("Entity metadata ");
-    $job->log->debug(Dumper $job->metadata);
+    print Dumper $job;
     return 0;
 }
 
