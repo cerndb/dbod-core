@@ -17,6 +17,7 @@ with 'MooseX::Role::DBIx::Connector' => {
     connection_name => 'db',
 };
 
+use Data::Dumper;
 use Try::Tiny;
 
 sub execute_sql_file {
@@ -26,14 +27,20 @@ sub execute_sql_file {
             $self->log->error("Can't open SQL File for reading: $!");
             return;
             };
-        local $/;
-        my $sql =  <$fh>;
         try {
-            $self->db_conn->do($sql);
-            return;
+            # local $/=';';
+            my @statements = <$fh>;
+            foreach my $statement (@statements) {
+                $self->log->debug("Executing: ${statement}");
+                $self->db_conn->dbh->do($statement);
+            }
+            return 0;
         } catch {
-            $self->log->error("An error ocurred executing SQL file: $!");
-            return;
+            $self->log->error(
+                sprintf("An error ocurred executing SQL file:\n%s:%s", 
+                    $self->db_conn->dbh->err,
+                    $self->db_conn->dbh->errstr));
+            return $self->db_conn->dbh->err;
         };
     }
     catch {
@@ -45,23 +52,39 @@ sub execute_sql_file {
 sub select {
     my ($self, $statement, $bind_values) = @_;
     $self->log->debug("Running SQL statement: " . $statement);
-    if (defined $bind_values) {
-        return $self->db_conn->dbh->selectall_arrayref($statement, @{$bind_values});
+    try {
+        if (defined $bind_values) {
+            return $self->db_conn->dbh->selectall_arrayref($statement, @{$bind_values});
+            }
+        else {
+            return $self->db_conn->dbh->selectall_arrayref($statement);
         }
-    else {
-        return $self->db_conn->dbh->selectall_arrayref($statement);
-    }
+    } catch {
+        $self->log->error(
+            sprintf("An error ocurred executing SQL statement:\n%s:%s", 
+                $self->db_conn->dbh->err,
+                $self->db_conn->dbh->errstr));
+        return $self->db_conn->dbh->err;
+    };
 }
 
 sub do {
     my ($self, $statement, $bind_values) = @_;
     $self->log->debug("Running SQL statement: " . $statement);
-    if (defined $bind_values) {
-        return $self->db_conn->dbh->do($statement, @{$bind_values});
+    try {
+        if (defined $bind_values) {
+            return $self->db_conn->dbh->do($statement, @{$bind_values});
+            }
+        else {
+            return $self->db_conn->dbh->do($statement,);
         }
-    else {
-        return $self->db_conn->dbh->do($statement,);
-    }
+    } catch {
+        $self->log->error(
+            sprintf("An error ocurred executing SQL sttatement:\n%s:%s", 
+                $self->db_conn->dbh->err,
+                $self->db_conn->dbh->errstr));
+        return $self->db_conn->dbh->err;
+    };
 }
 
 1;
