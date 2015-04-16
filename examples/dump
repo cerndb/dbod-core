@@ -6,7 +6,6 @@
 # granted to it by virtue of its status as Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-use strict;
 use warnings;
 
 use DBOD::Job;
@@ -20,9 +19,8 @@ my $job = DBOD::Job->new_with_options();
 
 sub body {
     my $params = shift;
-    my $type = lc $job->metadata->{'subcategory'};
-    $job->db->execute_sql_file($job->config->{$type}->{'helper_ping'});
-    $job->_output(0);
+    print Dumper $job;
+    return 0;
 }
 
 $job->run(\&body);
