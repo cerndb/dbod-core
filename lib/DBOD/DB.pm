@@ -73,7 +73,7 @@ sub do {
     $self->log->debug("Running SQL statement: " . $statement);
     try {
         if (defined $bind_values) {
-            return $self->db_conn->dbh->do($statement, @{$bind_values});
+            return $self->db_conn->dbh->do($statement, undef, @{$bind_values});
             }
         else {
             return $self->db_conn->dbh->do($statement,);
