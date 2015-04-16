@@ -1,4 +1,4 @@
-package DBOD;
+#!/usr/bin/env perl
 
 use strict;
 use warnings;
@@ -16,9 +16,15 @@ my $job = DBOD::Job->new_with_options();
 
 sub body {
     my $params = shift;
-    my @time = $job->db->select('select now()',);
-    $job->db->do('select pg_sleep(10)');
-    @time = $job->db->select('select now()');
+    my @time = $job->db->select('select now()');
+    print Dumper @time;
+    $job->db->do('use test',);
+    $job->db->do('create table a (a int, b varchar(32))',);
+    my @values =  (1, 'test', 2, 'test2');
+    $job->db->do('insert into a values (?, ?)', \@values);
+    my @result = $job->db->select('select * from a');
+    print Dumper @result;
+    $job->db->do('drop table a');
     return 0;
 }
 
