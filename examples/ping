@@ -1,0 +1,26 @@
+#!/usr/bin/env perl
+package DBOD;
+
+use strict;
+use warnings;
+
+use Carp;
+
+use DBOD::Job;
+use Data::Dumper;
+
+# Initiates logger
+BEGIN { 
+    Log::Log4perl->easy_init() ;
+}
+my $job = DBOD::Job->new_with_options();
+
+sub body {
+    my $params = shift;
+    my $type = lc $job->metadata->{'subcategory'};
+    $job->db->execute_sql_file($job->config->{$type}->{'helper_ping'});
+    $job->_output(0);
+}
+
+$job->run(\&body);
+
