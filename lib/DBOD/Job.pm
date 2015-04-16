@@ -91,5 +91,10 @@ sub run {
     $self->_result($result);
 }
 
+after 'run' => sub {
+    my $self = shift;
+    $self->log->info('[' . $self->_result()  . ']');
+};
+
 
 1;
