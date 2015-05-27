@@ -10,77 +10,86 @@ package DBOD::Runtime;
 use strict;
 use warnings;
 
+use Moose;
+with 'MooseX::Log::Log4perl';
+
 use Try::Tiny;
 use IPC::Run qw(run timeout);
 use Net::OpenSSH;
 
 sub run_cmd {
-    my ($cmd_str, $timeout) = @_;
+    my ($self, $cmd_str, $timeout) = @_;
     my @cmd = split ' ', $cmd_str ;
     try {
         my ($out, $err);
         if (defined $timeout) {
+            $self->log->debug("Executing ${cmd_str} with timeout: ${timeout}");
             run \@cmd, ,'>', \$out, '2>', \$err, (my $t = timeout $timeout);
         }
         else {
+            $self->log->debug("Executing ${cmd_str}");
             run \@cmd, ,'>', \$out, '2>', \$err;
         }
         # If the command executed succesfully we return its exit code
-        return $?;
+        $self->log->debug("${cmd_str} return code: " . $?);
+        return scalar $?;
     } 
     catch {
         if ($_ =~ /^IPC::Run: .*timeout/) {
             # Timeout exception
-            print "Timeout exception: " . $_;
-            return 0;
+            $self->log->error("Timeout exception: " . $_);
+            return;
         }
         else {
             # Other type of exception ocurred
-            return 0;
+            $self->log->error("Exception found: " . $_);
+            return;
         }
     }
 }
 
 sub ssh {
-    my($cmd, $user, $password, $host, $str) = @_;
+    my($self, $cmd, $user, $password, $host, $str) = @_;
     my $ssh;
-    eval {  
-        $ssh = Net::OpenSSH->new("$user\@$host",
-            password => $password,
-            master_stdout_discard => 0,
-            master_stderr_discard => 1) or die $ssh->error;
-    };
+    $self->log->debug("Opening SSH connection ${user}\@${host}");
+    $ssh = Net::OpenSSH->new("$user\@$host",
+        password => $password,
+        master_stdout_discard => 0,
+        master_stderr_discard => 1);
     if ($ssh->error) {
-        return 0; #error
-    } elsif ($@) {
-        return 0; #error
-    }
-    my($output, $errput) = $ssh->capture2({timeout => 60 }, "$cmd"); 
+        $self->log->error("SSH connection error: " . $ssh->error);
+        return;
+    }    
+    $self->log->debug("Executing SSH ${cmd} at ${host}");
+    my($stdout, $stderr) = $ssh->capture2({timeout => 60 }, $cmd); 
     if ($ssh->error) {
-        return 0; #error
+        $self->log->error("SSH Error: " . $ssh->error);
+        $self->log->error("SSH Stdout: " . $stdout);
+        $self->log->error("SSH Stderr: " . $stderr);
+        return;
     }
-    if (defined $output && length($output) > 0) {
-        push @$str, $output;
-    }
-    return 1; #ok
+    return scalar $stdout;
 }
 
 sub scp_get {
-    my ($user, $password, $host, $path_from, $path_to) = @_;
+    my ($self, $user, $password, $host, $path_from, $path_to) = @_;
     my $ssh;
+    $self->log->debug("Opening SSH connection ${user}\@${host}");
     $ssh = Net::OpenSSH->new("$user\@$host", password => $password,
                 master_stdout_discard => 0,
                 master_stderr_discard => 1,
                 master_opts => [-o => "StrictHostKeyChecking=no",
                                 -o => "UserKnownHostsFile=/dev/null"]);
-    if ($ssh->error){
-        return 0;#error
+    if ($ssh->error) {
+        $self->log->error("SSH connection error: " . $ssh->error);
+        return;
     }
+    $self->log->debug("Executing scp_get ${path_from}, ${path_to}");
     $ssh->scp_get({recursive => 1}, $path_from, $path_to);
-    if ($ssh->error){
-        return 0;#error
+    if ($ssh->error) {
+        $self->log->error("SSH Error: " . $ssh->error);
+        return; 
     }
-    else{
-        return 1;# Succeded
-    }
+    
+    return scalar 1;
 }
