@@ -49,11 +49,15 @@ sub run_cmd {
 }
 
 sub ssh {
-    my($self, $cmd, $user, $password, $host, $str) = @_;
+    my ($self, $arg_ref) = @_; 
+    # Using named parameters, but unpacking for clarity and usability
+    my $user = $arg_ref->{user};
+    my $host = $arg_ref->{host};
+    my $cmd = $arg_ref->{cmd};
     my $ssh;
     $self->log->debug("Opening SSH connection ${user}\@${host}");
     $ssh = Net::OpenSSH->new("$user\@$host",
-        password => $password,
+        password => $arg_ref->{password},
         master_stdout_discard => 0,
         master_stderr_discard => 1);
     if ($ssh->error) {
@@ -72,14 +76,20 @@ sub ssh {
 }
 
 sub scp_get {
-    my ($self, $user, $password, $host, $path_from, $path_to) = @_;
+    my ($self, $arg_ref) = @_; 
+    # Using named parameters, but unpacking for clarity and usability
+    my $user = $arg_ref->{user};
+    my $host = $arg_ref->{host};
+    my $path_from = $arg_ref->{path_from};
+    my $path_to = $arg_ref->{path_to};
     my $ssh;
     $self->log->debug("Opening SSH connection ${user}\@${host}");
-    $ssh = Net::OpenSSH->new("$user\@$host", password => $password,
-                master_stdout_discard => 0,
-                master_stderr_discard => 1,
-                master_opts => [-o => "StrictHostKeyChecking=no",
-                                -o => "UserKnownHostsFile=/dev/null"]);
+    $ssh = Net::OpenSSH->new("$user\@$host",
+        password => $arg_ref->{password},
+        master_stdout_discard => 0,
+        master_stderr_discard => 1,
+        master_opts => [-o => "StrictHostKeyChecking=no",
+                        -o => "UserKnownHostsFile=/dev/null"]);
     if ($ssh->error) {
         $self->log->error("SSH connection error: " . $ssh->error);
         return;
@@ -90,6 +100,5 @@ sub scp_get {
         $self->log->error("SSH Error: " . $ssh->error);
         return; 
     }
-    
     return scalar 1;
 }
