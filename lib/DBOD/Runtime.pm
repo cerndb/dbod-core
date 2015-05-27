@@ -25,16 +25,62 @@ sub run_cmd {
         else {
             run \@cmd, ,'>', \$out, '2>', \$err;
         }
+        # If the command executed succesfully we return its exit code
+        return $?;
     } 
     catch {
         if ($_ =~ /^IPC::Run: .*timeout/) {
             # Timeout exception
             print "Timeout exception: " . $_;
+            return 0;
         }
         else {
             # Other type of exception ocurred
+            return 0;
         }
     }
 }
 
+sub ssh {
+    my($cmd, $user, $password, $host, $str) = @_;
+    my $ssh;
+    eval {  
+        $ssh = Net::OpenSSH->new("$user\@$host",
+            password => $password,
+            master_stdout_discard => 0,
+            master_stderr_discard => 1) or die $ssh->error;
+    };
+    if ($ssh->error) {
+        return 0; #error
+    } elsif ($@) {
+        return 0; #error
+    }
+    my($output, $errput) = $ssh->capture2({timeout => 60 }, "$cmd"); 
+    if ($ssh->error) {
+        return 0; #error
+    }
+    if (defined $output && length($output) > 0) {
+        push @$str, $output;
+    }
+    return 1; #ok
+}
 
+sub scp_get {
+    my ($user, $password, $host, $path_from, $path_to) = @_;
+    my $ssh;
+    $ssh = Net::OpenSSH->new("$user\@$host", password => $password,
+                master_stdout_discard => 0,
+                master_stderr_discard => 1,
+                master_opts => [-o => "StrictHostKeyChecking=no",
+                                -o => "UserKnownHostsFile=/dev/null"]);
+    if ($ssh->error){
+        return 0;#error
+    }
+    $ssh->scp_get({recursive => 1}, $path_from, $path_to);
+    if ($ssh->error){
+        return 0;#error
+    }
+    else{
+        return 1;# Succeded
+    }
+}
