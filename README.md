@@ -21,11 +21,22 @@ also trying set a base which eases the implementation of future extensions.
 
 ## Components
 
-* **DBOD::Api**: Internal class which fetches instance metadata from the [DB On Demand API](https://github.com/cerndb/dbod-api) server
-* **DBOD::Config** : Internal class to interact with the configuration file
-* **DBOD::DB**: Internal class which interacts with the instance RDBMS
-* **DBOD::Job**: External class. The base of any command
-* **DBOD::Runtime**: A set of methods helping perform system tasks (run external commands, perform operations over SSH, etc.)
+* [DBOD::Api](https://github.com/cerndb/DBOD-core/blob/master/lib/DBOD/Api.pm): Internal class which fetches instance metadata from the [DB On Demand API](https://github.com/cerndb/dbod-api) server
+    * **_api_client($config, $auth)**: Returns an authenticated client for the REST API
+    * **_api_get_entity_metadata($entity, $config)**: Returns entity metadata from the API
+    * **get_entity_metadata($entity)**: Fetches entity metadata either from the API server or from the cache
+    * **load_cache($config)**: Loads cached metadata
+* [DBOD::Config](https://github.com/cerndb/DBOD-core/blob/master/lib/DBOD/Config.pm) : Internal class to interact with the configuration file
+    * **load** : Reads and parses configuration file, returning contents as a hash reference
+* [DBOD::DB](https://github.com/cerndb/DBOD-core/blob/master/lib/DBOD/DB.pm): Internal class which interacts with the instance RDBMS
+    * **do($statement, $bind_values)**: Executes an statement. Doesn't return anything 
+    * **execute_sql_file($filename)**: Loads a file with SQL statements and executes them
+    * **select($statement, $bind_values)**: Executes an statement and returns an array reference with the results.
+* [DBOD::Job](https://github.com/cerndb/DBOD-core/blob/master/lib/DBOD/Job.pm): External class. Base class for commands
+* [DBOD::Runtime](https://github.com/cerndb/DBOD-core/blob/master/lib/DBOD/Runtime.pm): A set of helper methods for different system related tasks
+    * **run_cmd($cmd_str, $timeout)**: Executes an external command raising a timeout alarm after ```$timeout``` seconds, if this parameter is defined
+    * **ssh** ($arg_ref): Executes commands over ssh
+    * **scp_get**: Copy files/folders from a remote host  
 
 ## How to use?
 
