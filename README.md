@@ -46,7 +46,6 @@ use strict;
 use warnings;
 
 use DBOD::Job;
-use Data::Dumper;
 
 # Initiates logger
 BEGIN { 
@@ -63,12 +62,17 @@ sub body {
 
 $job->run(\&body);
 ```
+* The ping command creates an instance of the DBOD::Job class, which requires a mandatory paramter **entity**. In case this parameter is not supplied an error will be raised.
+* The configuration file is processed internally and exposed in the ```$job->config``` hash reference
+* Instance metadata is fetched from the API and exposed in the ```$job->metadata``` hash reference
+* The DBOD::Job instance internal DB connector is initialized with the entity metadata
+* The following sentence: ```$job->db->execute_sql_file($job->config->{$type}->{'helper_ping'});``` loads a SQL file defined in the configuration for each database *$type* and executes its contents
 
 ## Requirements and assumptions
 
 * Perl library requirements can be seen in [Makefile.PL](https://github.com/cerndb/DBOD-core/blob/master/Makefile.PL).
-* A configuration file is required. A valid template is [available]()
-  * 
+* A configuration file is required. A valid template is [available](https://github.com/cerndb/DBOD-core/blob/master/share/dbod-core.conf-template)
+    * In the CERN environment the configuration file is populated and managed using Puppet.
 
 
 
