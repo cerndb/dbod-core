@@ -19,15 +19,56 @@ shared functionality between the different types of instances supported in the s
 This module consolidates functionality currently found in six different libraries while 
 also trying set a base which eases the implementation of future extensions.
 
+## Components
+
+* **DBOD::Api**: Internal class which fetches instance metadata from the [DB On Demand API](https://github.com/cerndb/dbod-api) server
+* **DBOD::Config** : Internal class to interact with the configuration file
+* **DBOD::DB**: Internal class which interacts with the instance RDBMS
+* **DBOD::Job**: External class. The base of any command
+* **DBOD::Runtime**: A set of methods helping perform system tasks (run external commands, perform operations over SSH, etc.)
+
+## How to use?
+
+Look at the following example implementing a ping command that connects to the 
+instance RDBMS and performs a transaction as a way of checking the status of 
+the database:
+
+```perl
+#!/usr/bin/env perl
+# Copyright (C) 2015, CERN
+# This software is distributed under the terms of the GNU General Public
+# Licence version 3 (GPL Version 3), copied verbatim in the file "LICENSE".
+# In applying this license, CERN does not waive the privileges and immunities
+# granted to it by virtue of its status as Intergovernmental Organization
+# or submit itself to any jurisdiction.
+
+use strict;
+use warnings;
+
+use DBOD::Job;
+use Data::Dumper;
+
+# Initiates logger
+BEGIN { 
+    Log::Log4perl->easy_init() ;
+}
+my $job = DBOD::Job->new_with_options();
+
+sub body {
+    my $params = shift;
+    my $type = lc $job->metadata->{'subcategory'};
+    $job->db->execute_sql_file($job->config->{$type}->{'helper_ping'});
+    $job->_output(0);
+}
+
+$job->run(\&body);
+```
+
 ## Requirements and assumptions
 
-
-
-## Structure
-
-## Configuration
-
-## Examples
+* Perl library requirements can be seen in [Makefile.PL](https://github.com/cerndb/DBOD-core/blob/master/Makefile.PL).
+* A configuration file is required. A valid template is [available]()
+  * 
 
 
 
