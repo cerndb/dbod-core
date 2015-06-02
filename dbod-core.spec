@@ -64,6 +64,8 @@ exit 0
 /usr/local/share/perl5/DBOD/Job.pm
 /usr/local/share/perl5/DBOD/Runtime.pm
 %attr (-, dbod, dbod) /var/log/dbod
+/usr/local/lib64/perl5/auto/DBOD/.packlist
+/usr/local/lib64/perl5/perllocal.pod
 
 %changelog
 * Tue Jun 2 2015 Ignacio Coterillo <icoteril@cern.ch> 0.5.1
