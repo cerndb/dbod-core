@@ -8,7 +8,7 @@
 %define __arch_install_post %{nil} # /usr/lib/rpm/check-buildroot
 %define debug_package %{nil} # Disables building debug RPM
 
-Summary: DB On Demand Job Dispatching Daemon 
+Summary: DB On Demand Core library
 Name: cerndb-sw-dbod-core
 Version: %{version}
 Release: 1 
