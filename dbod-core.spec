@@ -23,6 +23,7 @@ Packager: Ignacio Coterillo Coz <icoteril@cern.ch>
 
 # Build requirements
 BuildRequires: perl-Module-Install
+BuildRequires: perl-File-ShareDir
 
 # Requirements
 Requires: perl-File-ShareDir
