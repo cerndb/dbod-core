@@ -4,7 +4,7 @@ use inc::Module::Install;
 use File::ShareDir;
 
 author  'Ignacio Coterillo <ignacio.coterillo@cern.ch>';
-version '0.1';
+version '0.5';
 license 'GPLv3';
 
 name    'DBOD';
