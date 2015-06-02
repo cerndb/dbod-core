@@ -55,7 +55,6 @@ rm -rf $RPM_BUILD_ROOT
 exit 0
 
 %files
-/usr/local/share/perl5/DBOD.pm
 %config /usr/local/share/perl5/auto/share/dist/DBOD/configpath.conf
 /usr/local/share/perl5/auto/share/dist/DBOD/dbod-core.conf-template
 /usr/local/share/perl5/DBOD/Api.pm
