@@ -1,0 +1,40 @@
+#!/usr/bin/env perl
+# Copyright (C) 2015, CERN
+# This software is distributed under the terms of the GNU General Public
+# Licence version 3 (GPL Version 3), copied verbatim in the file "LICENSE".
+# In applying this license, CERN does not waive the privileges and immunities
+# granted to it by virtue of its status as Intergovernmental Organization
+# or submit itself to any jurisdiction.
+
+
+# Extension of the base DBOD::Job class to add extra required parameters
+package DBOD::MySQL::recovery;
+use Moose;
+
+extends 'DBOD::Job';
+
+has 'snapshot' => (is => 'ro', isa => 'Str', required => 1);
+
+
+# Main 
+package main;
+
+use strict;
+use warnings;
+
+use Log::Log4perl;
+
+# Initiates logger
+INIT { 
+    Log::Log4perl->easy_init() ;
+}
+
+my $job = DBOD::MySQL::recovery->new_with_options();
+
+sub body {
+    $job->log->debug('Executing recovery on '. $job->entity . ' to snapshot : '
+        . $job->snapshot);
+    $job->_output(0);
+}
+
+$job->run(\&body);
