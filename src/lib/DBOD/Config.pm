@@ -27,7 +27,7 @@ sub load {
     my $filename = LoadFile( "$share_dir/configpath.conf" );
 
     my $config_file = Config::General->new( 
-        -ConfigFile => "${share_dir}/dbod-core.conf-template", 
+        -ConfigFile => $filename->{'PATH'}, 
         -ForceArray => 1); # Allows 1 element ARR
 
     my %cfg = $config_file->getall();
