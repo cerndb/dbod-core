@@ -18,6 +18,9 @@ requires    'MooseX::Getopt' => 0;
 requires    'MooseX::Role::DBIx::Connector' => 0;
 requires    'Config::General' => 0;
 requires    'DBD::Oracle' => 0;
+requires    'DBD::mysql' => 0;
+requires    'DBD::Pg' => 0;
+requires    'DBI' => 0;
 requires    'Switch' => 0;
 requires    'REST::Client' => 0;
 
