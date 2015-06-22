@@ -1,0 +1,355 @@
+#!/usr/bin/env perl
+# Copyright (C) 2015, CERN
+# This software is distributed under the terms of the GNU General Public
+# Licence version 3 (GPL Version 3), copied verbatim in the file "LICENSE".
+# In applying this license, CERN does not waive the privileges and immunities
+# granted to it by virtue of its status as Intergovernmental Organization
+# or submit itself to any jurisdiction.
+
+
+# Extension of the base DBOD::Job class to add extra required parameters
+package DBOD::MySQL::restore;
+use Moose;
+
+extends 'DBOD::Job';
+
+has 'snapshot' => (is => 'ro', isa => 'Str', required => 1);
+has 'pitr' => (is => 'ro', isa => 'Str');
+
+# Main 
+package main;
+
+use strict;
+use warnings;
+
+use Log::Log4perl;
+use DBOD::Runtime;
+use DBOD::Runtime_Zapi;
+use Data::Dumper;
+use Try::Tiny;
+use Time::Local;
+use Time::localtime;
+
+# Initiates logger
+BEGIN { 
+    Log::Log4perl->easy_init() ;
+}
+
+
+my $job = DBOD::MySQL::restore->new_with_options();
+my $runtime_zapi  = DBOD::Runtime_Zapi->new;
+my $runtime = DBOD::Runtime->new;
+my $mysql = DBOD::MySQL->new;
+my $version_mysql_snap;
+
+sub CheckTimes {
+	# Check times provided.
+	my($numsecs_restore);	
+	if ($job->snapshot =~ /snapscript_(\d\d)(\d\d)(\d\d\d\d)_(\d\d)(\d\d)(\d\d)_(\d+)_(\d+)/ || $job->snapshot =~ /snapscript_(\d\d)(\d\d)(\d\d\d\d)_(\d\d)(\d\d)(\d\d)_cold/ || $job->snapshot =~ /snapscript_(\d\d)(\d\d)(\d\d\d\d)_(\d\d)(\d\d)(\d\d)/) {
+		my($year_snap,$month_snap,$day_snap,$hour_snap,$min_snap,$sec_snap);
+			$year_snap=$3;
+			$month_snap=$2;
+			$day_snap=$1;
+			$hour_snap=$4;
+			$min_snap=$5;
+			$sec_snap=$6;
+			$version_mysql_snap=$8;
+			if (defined $version_mysql_snap) {
+				$job->log->debug("snap restore: year: <$year_snap> month: <$month_snap> day: <$day_snap> hour: <$hour_snap> min: <$min_snap> sec: <$sec_snap> version_mysql: <$version_mysql_snap>");
+			} else {
+				$job->log->debug("snap restore: year: <$year_snap> month: <$month_snap> day: <$day_snap> hour: <$hour_snap> min: <$min_snap> sec: <$sec_snap> version_mysql: <not available>");
+			}
+			try {
+				$numsecs_restore=timelocal($sec_snap,$min_snap,$hour_snap,$day_snap,($month_snap -1),$year_snap);
+
+			} catch {
+				$job->log->error("Problem with timelocal <$!>  numsecs: <$numsecs_restore>");	
+				if (defined $_[0]) {
+					$job->log->error("Cought error: $_[0]");	
+				}
+				$job->_output(1);
+				return 1;
+			};
+	} else {
+			$job->log->error("problem parsing <" . $job->snapshot . ">");	
+			$job->_output(1);
+			return 1;
+	}
+	
+ 	my($numsecs_pitr);
+	if (defined $job->pitr) {
+			if ($job->pitr =~ /(\d\d\d\d)-(\d\d)-(\d\d)_(\d+):(\d+):(\d+)/) {
+			my($year_pitr,$month_pitr,$day_pitr,$hour_pitr,$min_pitr,$sec_pitr);
+			$year_pitr=$1;
+			$month_pitr=$2;
+			$day_pitr=$3;
+			$hour_pitr=$4;
+			$min_pitr=$5;
+			$sec_pitr=$6;
+			
+			$job->log->debug("year: <$year_pitr> month: <$month_pitr> day: <$day_pitr> hour: <$hour_pitr> min: <$min_pitr> sec: <$sec_pitr>");
+			if ($month_pitr > 12 ) {
+				$job->log->error("PITR: not right time format <" . $job->pitr . ">");
+				$job->pitr(undef);
+			}
+			try {
+				$numsecs_pitr=timelocal($sec_pitr,$min_pitr,$hour_pitr,$day_pitr,($month_pitr -1),$year_pitr);
+
+			} catch {
+				$job->log->error("Problem with timelocal <$!> . numsecs: <$numsecs_pitr>");
+				if (defined $_[0]) {
+					$job->log->error("Cought error: $_[0]");	
+				}
+				$job->_output(1);
+				return 1;
+			};
+			if ($numsecs_pitr < $numsecs_restore) {
+				$job->log->error("Time to pitr <" . $job->pitr . "> makes no sense for a restore: <" . $job->snapshot . ">");
+				$job->_output(1);
+				return 1;
+
+			}
+			if ($job->snapshot =~ /_cold$/) {
+				if ($numsecs_pitr < ($numsecs_restore + 15)) {
+					$job->log->error("Using a cold snapshot <" . $job->snapshot . ">, PITR should at least 15 seconds later than snapshot!.");
+					$job->_output(1);
+					return 1;
+				}
+			} 		
+		} else {
+			$job->log->error("Problem parsing <" . $job->pitr . ">");
+			$job->_output(1);
+			return 1;
+		}
+    } elsif ( $job->snapshot =~ /_cold$/ ) {
+		$job->log->error("No PITR given and cold snapshot selected!.");
+		$job->_output(1);
+		return 1;
+	}
+	
+}
+
+sub body {
+	$job->log->debug('Executing restore  on '. $job->entity . ' with snapshot ' . $job->snapshot);
+	if (defined $job->pitr) {
+		$job->log->debug('Pitr is ' . $job->pitr);
+	}
+	my($rc,@output,$localmycnf,$entity);
+	$entity = 'dod_' . $job->entity;	
+	&CheckTimes;
+       #check if trying to restore from a snapshot on a different major version
+	my($actual_version)=$runtime->GetVersionDB($job->metadata->{'datadir'} . "/current-version");
+
+	if (defined $actual_version) {
+		if (defined $version_mysql_snap) {
+			$job->log->debug("Actual MySQL version: $actual_version");
+			if ($actual_version ne $version_mysql_snap) {
+				$job->log->error("Please contact DBoD admins, you are trying to restore your instance from a previous MySQL version.");
+				$job->_output(1);
+				return 1;
+			}
+		}
+	} else {
+		$job->log->error("Main: a version of MySQL must be defined.");
+		$job->_output(1);
+		return 1;
+	}	 
+ 	
+	if ( -r $ENV{"HOME"} . "/.my.cnf" ) { 
+		$localmycnf=1; #a priori we dont need to use user and password they are in the .my.cnf 
+		$job->log->debug("Local <~mysql/.my.cnf> in use");
+	} else {
+		$localmycnf=0;
+	}
+
+	#Get volumes and controllers for data
+	my($mntpoint,@arrpath,$index);
+	$mntpoint=$job->metadata->{'datadir'};
+	@arrpath = split '/',$mntpoint;
+	$index=$#arrpath -1;
+	$mntpoint = join '/',@arrpath[0..$index];
+	
+	#Get information about the volume to work with. Following handles both 7-mode and C-mode use case
+	my($server_zapi,$volume_name);
+	my($arref)= $runtime_zapi->GetServerAndVolname($mntpoint);
+
+	if (defined($$arref[0])) {
+		$server_zapi=$$arref[0];
+	} else {
+		 $job->log->error("server_zapi could not be generated!");
+               $job->_output(1);
+		 return 1;
+	}
+	if (defined($$arref[1])) {
+		$volume_name=$$arref[1];
+	} else {
+		$job->log->error("volume information could not be retrieved!");
+              $job->_output(1);
+		return 1;
+	}
+
+	#Check if instance is running
+	my ($cmd,$instance_down);
+	$rc=0;
+	$instance_down=0;
+	$rc=$runtime->RunStr("ps -elf | grep -i datadir=" . $job->metadata->{'datadir'} . " | grep -v grep");
+
+	if ($rc == 0) {
+		$job->log->debug("No instance running");
+		$instance_down=1;
+	}
+	
+	if (! $instance_down ) { # we need to shutdown the instance
+		#put the instance down
+		if ($job->metadata->{'crs_ref'}) {
+			$rc = $runtime->StopCRSResource($entity, $job->config->{'mysql'}->{'oracle_crs'});
+		}
+		else {
+			$rc = $mysql->StopMySQL($job->metadata->{'bindir'} . "/mysqladmin", $job->config->{'mysql'}->{'db_user'}, $job->config->{'mysql'}->{'db_password'}, $job->metadata->{'socket'});
+		}
+		if ($rc) {
+			$job->log->debug("Instance is down");
+			$instance_down=1;
+		} else	{
+			$job->log->error("Problem shutting down instance. Please check.");
+			$job->_output(1);
+			return 1;
+		}
+	}
+
+	# Perform the snap restore
+	my($fromsnap);
+	if ($job->snapshot =~ /snapscript_.*_(\d+)_$actual_version+$/ || $job->snapshot =~ /snapscript_.*_(\d+)+$/) {
+		$fromsnap=$1;
+		$job->log->debug("<$fromsnap> binlog number at the time of the snapshot.");	
+	} else {
+		$job->log->debug("<" . $job->snapshot . "> doesnt look good.");	
+		$job->_output(1);
+		return 1;
+	}
+
+	# Get all possible binarylogs
+	if (! -e $job->metadata->{'binlogdir'} ) {
+		$job->log->error("Location of backup not defined!");	
+		$job->_output(1);
+		return 1;
+	}
+	
+	@output=();
+	@output=$runtime->Read_Directory($job->metadata->{'binlogdir'},"^binlog\\.\\d+");
+		
+	@output=sort(@output); 
+
+	my($pitrlogs);
+	for (my($i)=0;$i<scalar(@output);$i++) {
+		if ($output[$i] =~ /binlog\..*?$fromsnap$/) {
+			$pitrlogs = join(" ",@output[$i..scalar(@output)-1]);
+			$job->log->debug("Binary logs to be used if PITR: <$pitrlogs>");
+		}
+	}
+	if ( ! defined $pitrlogs || ! length($pitrlogs) > 0) {
+		$job->log->error("Crash recovery will not be possible binary logs are missing!");	
+		$job->_output(1);
+		return 1;
+	}
+
+	#snapshot restore
+	
+	$rc=$runtime_zapi->SnapRestore($server_zapi,$volume_name,$job->snapshot); 
+	my($errorflag)=0;
+	if ($rc == 0 ) {
+		$job->log->error("Error restoring snapshot: <" .$job->snapshot . "> on volume: <$volume_name> !");
+		$job->_output(1);
+		return 1;
+	}  else {
+		$job->log->debug("Success restoring snapshot: <" . $job->snapshot . "> on volume: <$volume_name>.!");
+	}		
+
+	
+	# Start the instance and perform PITR, 
+	# Start the instance & perform automatic crash recovery 
+	@output=();
+	$cmd="/etc/init.d/mysql_$entity start --skip-networking  >/dev/null 2>&1";
+	$job->log->debug("Running <system $cmd &>!!!");
+	system("$cmd &");
+	sleep 10;  
+
+	#PID file
+	my($file_name);
+	@output=();
+	$cmd="hostname";
+	$rc=$runtime->RunStr($cmd,\@output);
+	if ($rc ==0) {
+		$job->log->debug("Error executing <$cmd>!!!");
+		$job->_output(1);
+		return 1;
+	}
+	$file_name=$output[0];
+	chomp $file_name;
+	$file_name .= ".pid";
+	$file_name = $job->metadata->{'datadir'} . "/$file_name";
+
+	#Timeout interval
+	my($timeout,$poll_interval);
+	$timeout=900; #15 minutes	 
+	$poll_interval=1; #every second  
+
+	
+	$job->log->debug("File <$file_name> to check for."); 
+	
+	$rc=$runtime->TimeoutOneparam($timeout,$poll_interval,\($runtime->CheckFile),$file_name);
+	if ($rc==0) {
+		$job->log->debug("mysqld didnt recover from crashed. Please check!!!");  
+		$job->_output(1);
+		return 1;
+	} 
+	
+	# if PITR
+	if (defined $job->pitr) { 
+		if ($localmycnf) {
+			$cmd="cd " .  $job->metadata->{'binlogdir'} . "; " . $job->metadata->{'bindir'} ."/mysqlbinlog  --disable-log-bin --stop-datetime=\"" . $job->pitr. "\" $pitrlogs | " . $job->metadata->{'bindir'} . "/mysql  --socket=" . $job->metadata->{'socket'};
+		} else {
+			$cmd="cd " .  $job->metadata->{'binlogdir'} . "; " . $job->metadata->{'bindir'} ."/mysqlbinlog  --disable-log-bin --stop-datetime=\"". $job->pitr . "\" $pitrlogs | " . $job->metadata->{'bindir'} . "/mysql -u " . $job->config->{'mysql'}->{'db_user'} . " -p" .$job->config->{'mysql'}->{'db_password'} . " --socket=" . $job->metadata->{'socket'};
+		}
+
+		@output=();
+		$rc=$runtime->RunStr($cmd,\@output,0,"cd " . $job->metadata->{'binlogdir'} . "; " . $job->metadata->{'bindir'} ."/mysqlbinlog --disable-log-bin --stop-datetime=\"". $job->pitr . "\" $pitrlogs | " . $job->metadata->{'bindir'} . "/mysql -u " . $job->config->{'mysql'}->{'db_user'} . " -pXXXXXX --socket=" . $job->metadata->{'socket'});
+		if ($rc==0) {
+			$job->log->error("Error replaying logs!!!");
+			$job->_output(1);
+			return 1;
+		}
+	} 
+	
+	# restart the instance
+	$rc = $runtime->StopMySQL($job->metadata->{'bindir'} . "/mysqladmin", $job->config->{'mysql'}->{'db_user'}, $job->config->{'mysql'}->{'db_password'}, $job->metadata->{'socket'});
+	if ($rc) {
+		$job->log->debug("Instance is down");
+		$instance_down=1;
+	} else	{
+		$job->log->error("Problem shutting down instance. Please check.");
+		$job->_output(1);
+		return 1;
+	}
+
+	if ($job->metadata->{'crs_ref'}) {
+		$rc = RunTime::StartCRSResource($entity, $job->config->{'mysql'}->{'oracle_crs'});
+	} else {
+		$rc = RunTime::StartMySQL($entity, $job->metadata->{'bindir'} . "/mysqladmin", $job->config->{'mysql'}->{'db_user'}, $job->config->{'mysql'}->{'db_password'}, $job->metadata->{'socket'},$job->metadata->{'datadir'} , 0);
+	}	
+	if ($rc) {
+		$job->log->debug("Instance is up");
+		$instance_down=1;
+	} else	{
+		$job->log->error("Problem shutting down instance. Please check.");
+		$job->_output(1);
+		return 1;
+	}
+	
+	
+	# The End
+	$job->log->debug("mysql_restore is over.");
+	$job->_output(0);
+}
+
+$job->run(\&body);
