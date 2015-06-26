@@ -25,6 +25,7 @@ use warnings;
 use Log::Log4perl;
 use DBOD::Runtime;
 use DBOD::Runtime_Zapi;
+use DBOD::MySQL;
 use Data::Dumper;
 use Try::Tiny;
 use Time::Local;
@@ -129,12 +130,24 @@ sub CheckTimes {
 	
 }
 
+sub CheckFileExist{
+	my($file)=@_;
+	
+	if (-e $file) {
+		$job->log->debug(" <$file> has been created!");
+		return 1; #ok
+	} 
+	return 0; #not ok
+
+}
 sub body {
 	$job->log->debug('Executing restore  on '. $job->entity . ' with snapshot ' . $job->snapshot);
 	if (defined $job->pitr) {
 		$job->log->debug('Pitr is ' . $job->pitr);
 	}
-	my($rc,@output,$localmycnf,$entity);
+
+	my($rc,@output,$localmycnf,$entity,$fake);
+	$fake=0;
 	$entity = 'dod_' . $job->entity;	
 	&CheckTimes;
        #check if trying to restore from a snapshot on a different major version
@@ -270,7 +283,7 @@ sub body {
 	# Start the instance & perform automatic crash recovery 
 	@output=();
 	$cmd="/etc/init.d/mysql_$entity start --skip-networking  >/dev/null 2>&1";
-	$job->log->debug("Running <system $cmd &>!!!");
+	$job->log->debug("Running <$cmd &>!!!");
 	system("$cmd &");
 	sleep 10;  
 
@@ -286,7 +299,7 @@ sub body {
 	}
 	$file_name=$output[0];
 	chomp $file_name;
-	$file_name .= ".pid";
+	$file_name .= ".pid"; 
 	$file_name = $job->metadata->{'datadir'} . "/$file_name";
 
 	#Timeout interval
@@ -294,10 +307,11 @@ sub body {
 	$timeout=900; #15 minutes	 
 	$poll_interval=1; #every second  
 
-	
+my $toto=`id`; 
+print "EEEEE   $toto\n";	
 	$job->log->debug("File <$file_name> to check for."); 
 	
-	$rc=$runtime->TimeoutOneparam($timeout,$poll_interval,\($runtime->CheckFile),$file_name);
+	$rc=$runtime->TimeoutOneparam($timeout,$poll_interval,\&CheckFileExist,$file_name);
 	if ($rc==0) {
 		$job->log->debug("mysqld didnt recover from crashed. Please check!!!");  
 		$job->_output(1);
@@ -313,7 +327,7 @@ sub body {
 		}
 
 		@output=();
-		$rc=$runtime->RunStr($cmd,\@output,0,"cd " . $job->metadata->{'binlogdir'} . "; " . $job->metadata->{'bindir'} ."/mysqlbinlog --disable-log-bin --stop-datetime=\"". $job->pitr . "\" $pitrlogs | " . $job->metadata->{'bindir'} . "/mysql -u " . $job->config->{'mysql'}->{'db_user'} . " -pXXXXXX --socket=" . $job->metadata->{'socket'});
+		$rc=$runtime->RunStr($cmd,\@output,$fake,"cd " . $job->metadata->{'binlogdir'} . "; " . $job->metadata->{'bindir'} ."/mysqlbinlog --disable-log-bin --stop-datetime=\"". $job->pitr . "\" $pitrlogs | " . $job->metadata->{'bindir'} . "/mysql -u " . $job->config->{'mysql'}->{'db_user'} . " -pXXXXXX --socket=" . $job->metadata->{'socket'});
 		if ($rc==0) {
 			$job->log->error("Error replaying logs!!!");
 			$job->_output(1);
@@ -322,7 +336,7 @@ sub body {
 	} 
 	
 	# restart the instance
-	$rc = $runtime->StopMySQL($job->metadata->{'bindir'} . "/mysqladmin", $job->config->{'mysql'}->{'db_user'}, $job->config->{'mysql'}->{'db_password'}, $job->metadata->{'socket'});
+	$rc = $mysql->StopMySQL($job->metadata->{'bindir'} . "/mysqladmin", $job->config->{'mysql'}->{'db_user'}, $job->config->{'mysql'}->{'db_password'}, $job->metadata->{'socket'});
 	if ($rc) {
 		$job->log->debug("Instance is down");
 		$instance_down=1;
@@ -333,9 +347,9 @@ sub body {
 	}
 
 	if ($job->metadata->{'crs_ref'}) {
-		$rc = RunTime::StartCRSResource($entity, $job->config->{'mysql'}->{'oracle_crs'});
+		$rc = $runtime->StartCRSResource($entity, $job->config->{'mysql'}->{'oracle_crs'});
 	} else {
-		$rc = RunTime::StartMySQL($entity, $job->metadata->{'bindir'} . "/mysqladmin", $job->config->{'mysql'}->{'db_user'}, $job->config->{'mysql'}->{'db_password'}, $job->metadata->{'socket'},$job->metadata->{'datadir'} , 0);
+		$rc = $mysql->StartMySQL($entity, $job->metadata->{'bindir'} . "/mysqladmin", $job->config->{'mysql'}->{'db_user'}, $job->config->{'mysql'}->{'db_password'}, $job->metadata->{'socket'},$job->metadata->{'datadir'} , 0);
 	}	
 	if ($rc) {
 		$job->log->debug("Instance is up");
