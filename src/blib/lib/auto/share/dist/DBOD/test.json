@@ -1,0 +1,5 @@
+[
+    ["a", {"prop1":"value1", "prop2": "value2"}],
+    ["b", {"prop1":"value1", "prop2": "value2"}],
+    ["c", {"prop1":"value1", "prop2": "value2"}]
+]
