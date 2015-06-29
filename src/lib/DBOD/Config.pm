@@ -21,6 +21,11 @@ $VERSION     = 0.1;
 @ISA         = qw(Exporter);
 @EXPORT_OK   = qw( load );
 
+# Initializes Log4Perl 
+INIT {
+    my $share_dir = File::ShareDir::dist_dir('DBOD');
+    Log::Log4perl::init( "${share_dir}/logger.conf" );
+}
 
 sub load {
     my $share_dir = File::ShareDir::dist_dir('DBOD');
