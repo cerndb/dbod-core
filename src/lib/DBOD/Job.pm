@@ -25,6 +25,7 @@ use DBOD::DB;
 
 # Input
 has 'entity' => ( is => 'ro', isa => 'Str', required => 1);
+has 'debug' => (is => 'ro', isa => 'Bool', default=> 0);
 
 # Internal attributes
 has 'md_cache' => (is => 'rw', isa =>'HashRef');
@@ -40,6 +41,10 @@ has '_result' => ( is => 'rw', isa => 'Num', );
 
 sub BUILD {
     my $self = shift;
+    # Remove screen appender from logger if debug is not enabled
+    unless( $self->debug ) {
+        Log::Log4perl::eradicate_appender('screen');
+    }
     # Load General Configuration from file
     $self->config(DBOD::Config::load());
     # Load cache file
