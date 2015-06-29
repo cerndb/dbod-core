@@ -10,6 +10,7 @@ license 'GPLv3';
 name    'DBOD';
 
 requires    'Log::Log4perl' => 0;
+requires    'Log::Dispatch::FileRotate' => 0;
 requires    'YAML::Syck' => 0;
 requires    'File::ShareDir' => 0;
 requires    'Moose' => 0;
