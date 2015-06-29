@@ -1,0 +1,86 @@
+#!/usr/bin/env perl
+# Copyright (C) 2015, CERN
+# This software is distributed under the terms of the GNU General Public
+# Licence version 3 (GPL Version 3), copied verbatim in the file "LICENSE".
+# In applying this license, CERN does not waive the privileges and immunities
+# granted to it by virtue of its status as Intergovernmental Organization
+# or submit itself to any jurisdiction.
+
+
+# Extension of the base DBOD::Job class to add extra required parameters
+package DBOD::MySQL::start;
+use Moose;
+
+extends 'DBOD::Job';
+
+with 'MooseX::Getopt::Usage',
+     'MooseX::Getopt::Usage::Role::Man';
+
+
+
+has 'help' => (is => 'ro', isa => 'Bool', documentation => qq{Print command usage} );
+
+# Main 
+package main;
+
+use strict;
+use warnings;
+
+use Log::Log4perl;
+use DBOD::Runtime;
+use DBOD::MySQL;
+use Data::Dumper;
+use Time::Local;
+use Time::localtime;
+
+# Initiates logger
+BEGIN { 
+    Log::Log4perl->easy_init() ;
+}
+
+
+my $job = DBOD::MySQL::start->new_with_options();
+my $runtime = DBOD::Runtime->new;
+my $mysql = DBOD::MySQL->new;
+
+sub body {
+	$job->log->info('Executing mysql start-up on '. $job->entity );
+	
+       my($rc,$entity);
+	$entity = 'dod_' . $job->entity;	
+	
+	#Check if instance is running
+	$rc=$runtime->RunStr("ps -elf | grep -i datadir=" . $job->metadata->{'datadir'} . " | grep -v grep");
+
+	if ($rc == 0) {
+		$job->log->debug("No instance running");
+	} else {
+		$job->log->debug("Instance is already up. Nothing to be done.");
+		$job->log->debug("mysql_start is over.");
+		$job->_output(0);
+		return 0;
+	}
+
+	
+	#If instance is CRS
+	if ($job->metadata->{'crs_ref'}) {
+		$rc = $runtime->StartCRSResource($entity, $job->config->{'mysql'}->{'oracle_crs'});
+	} else {
+		$rc = $mysql->StartMySQL($entity, $job->metadata->{'bindir'} . "/mysqladmin", $job->config->{'mysql'}->{'db_user'}, $job->config->{'mysql'}->{'db_password'}, $job->metadata->{'socket'},$job->metadata->{'datadir'} , 0);
+	}	
+	if ($rc) {
+		$job->log->debug("Instance is up");
+	} else	{
+		$job->log->error("Problem shutting down instance. Please check.");
+		$job->_output(1);
+		return 1;
+	}
+
+
+
+	# The End
+	$job->log->debug("mysql_start is over.");
+	$job->_output(0);
+}
+
+$job->run(\&body);
