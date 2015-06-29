@@ -57,12 +57,13 @@ sub BUILD {
     my $db_type = lc $self->metadata->{'subcategory'};
     my $db_user = $self->config->{$db_type}->{'db_user'};
     my $db_password = $self->config->{$db_type}->{'db_password'};
+
+
     my $dsn;
     my $db_attrs;
     switch($db_type) {
         case 'mysql' {
-            $dsn = "DBI:mysql:host=" . $self->metadata->{'hosts'}[0] .
-             ";port=" . $self->metadata->{'port'};
+            $dsn = "DBI:mysql:mysql_socket=" . $self->metadata->{'socket'};
             $db_attrs = {
                 AutoCommit => 1, 
                 };
