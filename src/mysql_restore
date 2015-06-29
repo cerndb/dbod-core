@@ -13,8 +13,13 @@ use Moose;
 
 extends 'DBOD::Job';
 
-has 'snapshot' => (is => 'ro', isa => 'Str', required => 1);
-has 'pitr' => (is => 'ro', isa => 'Str');
+with 'MooseX::Getopt::Usage',
+     'MooseX::Getopt::Usage::Role::Man';
+
+
+has 'snapshot' => (is => 'ro', isa => 'Str', required => 1, documentation => qq{Target snapshot to be restored} );
+has 'pitr' => (is => 'ro', isa => 'Str', documentation => qq{In case of a PITR, format:  yyyy-mm-dd_H24:MM:SS } );
+has 'help' => (is => 'ro', isa => 'Bool', documentation => qq{Print command usage} );
 
 # Main 
 package main;
@@ -43,6 +48,9 @@ my $runtime = DBOD::Runtime->new;
 my $mysql = DBOD::MySQL->new;
 my $version_mysql_snap;
 
+
+
+# perl mysql_restore --entity pinocho --snapshot snapscript_24062015_125419_58_5617 --pitr 2015-06-24_13:00:00
 sub CheckTimes {
 	# Check times provided.
 	my($numsecs_restore);	
@@ -307,8 +315,7 @@ sub body {
 	$timeout=900; #15 minutes	 
 	$poll_interval=1; #every second  
 
-my $toto=`id`; 
-print "EEEEE   $toto\n";	
+
 	$job->log->debug("File <$file_name> to check for."); 
 	
 	$rc=$runtime->TimeoutOneparam($timeout,$poll_interval,\&CheckFileExist,$file_name);

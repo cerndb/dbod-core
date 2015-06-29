@@ -13,7 +13,8 @@ use Moose;
 
 extends 'DBOD::Job';
 
-
+with 'MooseX::Getopt::Usage',
+     'MooseX::Getopt::Usage::Role::Man';
 
 # Main 
 package main;
