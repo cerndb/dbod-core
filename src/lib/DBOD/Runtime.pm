@@ -46,7 +46,8 @@ sub run_cmd {
             $self->log->error("Exception found: " . $_);
             return;
         }
-    }
+    };
+    return;
 }
 
 sub ssh {
