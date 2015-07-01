@@ -28,16 +28,13 @@ use base qw(Exporter);
 sub load_cache {
     my $config = shift;
     my $filename = $config->{'api'}->{'cachefile'};
-    my $json_text = do { 
-        local $/ = undef;
-        open(my $json_fh, "<:encoding(UTF-8)", $filename)
-            or return ();
-        <$json_fh>;
-        close($json_fh);
-    };
+    local $/ = undef;
+    open(my $json_fh, "<:encoding(UTF-8)", $filename)
+        or return ();
+    my $json_text = <$json_fh>;
+    close($json_fh);
     my $nested_array = decode_json $json_text;
     my @flat_array = map{@$_} @$nested_array;
-
     return @flat_array;
 }
 
