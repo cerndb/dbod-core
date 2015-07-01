@@ -32,7 +32,8 @@ sub load_cache {
         local $/ = undef;
         open(my $json_fh, "<:encoding(UTF-8)", $filename)
             or return ();
-        <$json_fh>
+        <$json_fh>;
+        close($json_fh);
     };
     my $nested_array = decode_json $json_text;
     my @flat_array = map{@$_} @$nested_array;
