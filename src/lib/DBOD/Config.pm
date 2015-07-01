@@ -15,10 +15,10 @@ use Config::General;
 use YAML::Syck;
 use File::ShareDir;
 
-our ($VERSION, @ISA, @EXPORT_OK);
+our ($VERSION, @EXPORT_OK);
 
 $VERSION     = 0.1;
-@ISA         = qw(Exporter);
+use base qw(Exporter);
 @EXPORT_OK   = qw( load );
 
 # Initializes Log4Perl 
