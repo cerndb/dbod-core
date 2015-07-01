@@ -91,13 +91,14 @@ sub BUILD {
                   db_user => $db_user,
                   db_password => $db_password,
                   db_attrs => $db_attrs,));
-
+    return;
 };
 
 sub run {
     my ($self, $body, $params) = @_;
     my $result = $body->($params);
     $self->_result($result);
+    return;
 }
 
 after 'run' => sub {
