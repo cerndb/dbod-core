@@ -372,7 +372,7 @@ sub CreateServerFromMountPoint {
 		$ipcluster=$$arref[3];
 	} else {
 		$self->log->error("No password to connect to NAS defined!");	
-		return undef; #not ok
+		return; #not ok
 	}
 
 	$server = $self->CreateServer($ipcluster,$user_storage,$password_nas,undef,$server_version); 

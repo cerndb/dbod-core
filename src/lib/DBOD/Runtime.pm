@@ -210,7 +210,7 @@ sub RetrievePasswordForUser {
 	}
 
 	$self->log->debug("Password not found for <$user>");	
-	return undef;
+	return;
  
 }
 
@@ -221,7 +221,7 @@ sub GetVersionDB {
 		my(@arr)=$self->ReadFile("$file"); 
 		if (scalar(@arr) ==0 ) {
 			$self->log->error("File <$file>  is empty. Strange.");
-			return undef;
+			return;
 		} else {
 			foreach (@arr) {
 				if (/(\d+)\.(\d+)\.(\d+)/) {
@@ -233,7 +233,7 @@ sub GetVersionDB {
 	} else {   
 		$self->log->error("<$file> file doesnt exist"); 
 	}  
-	return undef;
+	return;
 }
 
 #Returns 1 if the instanc is CRS, 0 otherwise
@@ -269,7 +269,7 @@ sub GetCRSResourceState {
 	}
 	else {
 		$self->log->debug("Error getting CRS resource state!");
-		return undef;
+		return;
 	}
 }
 
