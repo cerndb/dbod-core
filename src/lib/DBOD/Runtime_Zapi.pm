@@ -180,9 +180,8 @@ sub GetVolInfoCmode {
 		
 		$tag= $out->child_get_string("next-tag");
 		my @volList = $out->child_get("attributes-list")->children_get();
-		my $volInfo;
 	
-		foreach $volInfo (@volList) {	
+		foreach my $volInfo (@volList) {	
 			#$volInfo = $volList[0]; # should be only one volume
 
 			my $volIdAttrs = $volInfo->child_get("volume-id-attributes");
@@ -262,9 +261,8 @@ sub GetVolInfoCmode {
        		}	 
 			$tag= $out->child_get_string("next-tag");
 			my @aggrList = $out->child_get("attributes-list")->children_get();
-			my $aggrInfo;
 	 
-			foreach $aggrInfo (@aggrList) {	
+			foreach my $aggrInfo (@aggrList) {	
 				my $aggrSizeAttrs = $aggrInfo->child_get("aggr-space-attributes");
 				if (defined $aggrSizeAttrs ) {
        				$aggrusedsize = $aggrSizeAttrs->child_get_string("size-used"); # in bytes
