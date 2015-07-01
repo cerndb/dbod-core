@@ -10,12 +10,13 @@ package DBOD::Job;
 use strict;
 use warnings;
 
+use feature 'switch';
+
 use Moose;
 with 'MooseX::Log::Log4perl';
 with 'MooseX::Getopt';
 
 use Data::Dumper;
-use Switch;
 use DBD::Oracle qw(:ora_session_modes :ora_types);
 
 use DBOD::Config;
@@ -58,24 +59,23 @@ sub BUILD {
     my $db_user = $self->config->{$db_type}->{'db_user'};
     my $db_password = $self->config->{$db_type}->{'db_password'};
 
-
     my $dsn;
     my $db_attrs;
-    switch($db_type) {
-        case 'mysql' {
+    for ($db_type) {
+        when (/^mysql$/) {
             $dsn = "DBI:mysql:mysql_socket=" . $self->metadata->{'socket'};
             $db_attrs = {
                 AutoCommit => 1, 
                 };
         }
-        case 'pgsql' {
+        when (/^pgsql$/) {
             $dsn = "DBI:Pg:host=" . $self->metadata->{'hosts'}[0] .
              ";port=" . $self->metadata->{'port'};
             $db_attrs = {
                 AutoCommit => 1, 
                 };
         }
-        case 'oracle' {
+        when (/^oracle$/) {
             my $sid = $self->metadata->{'sid'};
             $dsn = "DBI:oracle:$sid";
             $db_attrs = {
@@ -83,7 +83,8 @@ sub BUILD {
                 ora_session_mode => ORA_SYSDBA,
                 ora_client_info => 'DBOD-core', 
                 ora_verbose => 0 };
-            }
+        }
+        default {};
     };
 
     $self->db(DBOD::DB->new(
