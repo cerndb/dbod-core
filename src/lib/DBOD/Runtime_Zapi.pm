@@ -592,3 +592,4 @@ sub CheckErrInAPIInvoke(){
         return $err; #no errors occurred if err stays undef
 }
 
+1;
