@@ -389,9 +389,9 @@ sub ReadFile {
 	my($self,$file)=@_;
 	$self->log->info("Parameters file: <$file>");
 
-	open(F,$file) || $self->log->error("Cant read file $file. Error: $! ");
-	my(@text) = <F>;
-	close(F);
+	open my $F, '<', $file || $self->log->error("Cant read file $file. Error: $! ");
+	my(@text) = <$F>;
+	close($F);
 	return @text;
 }
 
