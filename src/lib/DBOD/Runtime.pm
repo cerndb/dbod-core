@@ -376,9 +376,9 @@ sub Read_Directory {
 
 	opendir (D,$dir) || $self->log->debug("Cannot read directory $dir : $!");
 	if (defined $pattern) {
-		@files=grep(/$pattern/,readdir(D));
+		@files = grep {/$pattern/} readdir(D);
 	} else {
-		@files=grep(!/^\.\.?$/,readdir(D));
+        @files = grep {!/^\.\.?$/} readdir(D);
 	}
 	closedir(D);
  
