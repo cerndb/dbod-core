@@ -21,31 +21,27 @@ use Try::Tiny;
 
 sub execute_sql_file {
     my ($self, $filename) = @_;
-    try{
-        open my $fh, '<', $filename or do {
-            $self->log->error("Can't open SQL File for reading: $!");
-            return;
-            };
-        try {
-            # local $/=';';
-            my @statements = <$fh>;
-            foreach my $statement (@statements) {
-                $self->log->debug("Executing: ${statement}");
-                $self->db_conn->dbh->do($statement);
-            }
-            return 0;
-        } catch {
-            $self->log->error(
-                sprintf("An error ocurred executing SQL file:\n%s:%s", 
-                    $self->db_conn->dbh->err,
-                    $self->db_conn->dbh->errstr));
-            return $self->db_conn->dbh->err;
-        };
-    }
-    catch {
-        $self->log->error("An error ocurred reading $filename: $!");
+    open my $fh, '<', $filename or do {
+        $self->log->error("Can't open SQL File for reading: $!");
         return;
-    }
+        };
+    my @statements = <$fh>;
+    close($fh);
+    try {
+        # local $/=';';
+        foreach my $statement (@statements) {
+            $self->log->debug("Executing: ${statement}");
+            $self->db_conn->dbh->do($statement);
+        }
+        return 0;
+    } catch {
+        $self->log->error(
+            sprintf("An error ocurred executing SQL file:\n%s:%s", 
+                $self->db_conn->dbh->err,
+                $self->db_conn->dbh->errstr));
+        return $self->db_conn->dbh->err;
+    };
+    return; # Needed because Perlcritic doesn't support Try:Tiny
 }
 
 sub select {
