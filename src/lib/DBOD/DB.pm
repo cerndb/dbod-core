@@ -44,6 +44,11 @@ sub execute_sql_file {
     return; # Needed because Perlcritic doesn't support Try:Tiny
 }
 
+# Perlcritic gives a severity 4 warning related to the following two methods,
+# as they are homonyms to Perl builtin function. As they are object methods
+# which need to be used for an instance, we consider there is no scope
+# overlapping.
+
 sub select {
     my ($self, $statement, $bind_values) = @_;
     $self->log->debug("Running SQL statement: " . $statement);
@@ -61,8 +66,10 @@ sub select {
                 $self->db_conn->dbh->errstr));
         return $self->db_conn->dbh->err;
     };
+    return;
 }
 
+ 
 sub do {
     my ($self, $statement, $bind_values) = @_;
     $self->log->debug("Running SQL statement: " . $statement);
@@ -80,6 +87,7 @@ sub do {
                 $self->db_conn->dbh->errstr));
         return $self->db_conn->dbh->err;
     };
+    return;
 }
 
 1;
