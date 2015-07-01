@@ -10,8 +10,6 @@ package DBOD::Job;
 use strict;
 use warnings;
 
-use feature 'switch';
-
 use Moose;
 with 'MooseX::Log::Log4perl';
 with 'MooseX::Getopt';
@@ -62,20 +60,20 @@ sub BUILD {
     my $dsn;
     my $db_attrs;
     for ($db_type) {
-        when (/^mysql$/) {
+        if (/^mysql$/) {
             $dsn = "DBI:mysql:mysql_socket=" . $self->metadata->{'socket'};
             $db_attrs = {
                 AutoCommit => 1, 
                 };
         }
-        when (/^pgsql$/) {
+        if (/^pgsql$/) {
             $dsn = "DBI:Pg:host=" . $self->metadata->{'hosts'}[0] .
              ";port=" . $self->metadata->{'port'};
             $db_attrs = {
                 AutoCommit => 1, 
                 };
         }
-        when (/^oracle$/) {
+        if (/^oracle$/) {
             my $sid = $self->metadata->{'sid'};
             $dsn = "DBI:oracle:$sid";
             $db_attrs = {
@@ -84,7 +82,6 @@ sub BUILD {
                 ora_client_info => 'DBOD-core', 
                 ora_verbose => 0 };
         }
-        default {};
     };
 
     $self->db(DBOD::DB->new(
