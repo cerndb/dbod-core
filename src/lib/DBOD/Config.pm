@@ -22,7 +22,7 @@ use base qw(Exporter);
 @EXPORT_OK   = qw( load );
 
 # Initializes Log4Perl 
-INIT {
+BEGIN {
     my $share_dir = File::ShareDir::dist_dir('DBOD');
     Log::Log4perl::init( "${share_dir}/logger.conf" );
 }

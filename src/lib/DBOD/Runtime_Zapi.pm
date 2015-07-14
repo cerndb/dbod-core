@@ -86,7 +86,8 @@ sub IsCmodeMount() {
 #Get Mount points following a regex C-mode, hash: controler -> (mountpoint1, mountpoint2,...) 
 sub GetMountPointNASRegex {
 	my($self,$regex,$exclusion_list)=@_;
-	$self->log->info("Parameters regex: <$regex> exclusion_list: <$exclusion_list>");
+	$self->log->info("Parameters regex: <$regex>");
+	$self->log->info("Parameters: exclusion_list: <$exclusion_list>") if defined $exclusion_list;
 
 	my(@output,%pairsfsnas,$rc);
 	
@@ -447,6 +448,50 @@ sub GetUserPassFromMountPoint {
 	}
 	$self->log->debug("Returning: $user_storage, XXXXXX, $server_version, $ipcluster");
 	return [$user_storage, $password_nas, $server_version, $ipcluster];
+} 
+
+sub SnapClone {
+	my($self,$server_zapi,$volume_name,$snapshot,$junction)=@_;
+	$self->log->info("Parameters server_zapi: not displayed, volume_name: <$volume_name>");
+	$self->log->info("Parameters snapshot: <$snapshot>") if defined $snapshot;
+	$self->log->info("Parameters junction-path: <$junction>") if defined $junction;
+
+
+	my($suffix)= `date +%d%m%Y%H%M%S`; 
+	chomp $suffix;
+	my($newvol)= $volume_name . $suffix . "clone";
+	my($newjunction) = $junction;
+	
+	$self->log->debug("Trying to create new volume name: <$newvol> and new junction path: <$newjunction>");
+
+	my($isCmode); 
+	if ($junction =~ /^\/vol\//) { 
+		$isCmode=0;
+	} else {
+		$isCmode=1;
+	}
+	my $api = new NaElement('volume-clone-create');
+	if ($isCmode) {
+		$api->child_add_string('junction-active','true');
+		$api->child_add_string('junction-path',$newjunction);
+	}
+	if (defined $snapshot) {
+		$api->child_add_string('parent-snapshot',$snapshot);
+	}
+	$api->child_add_string('parent-volume',$volume_name);
+#$api->child_add_string('space-reserve','true');
+#$api->child_add_string('use-snaprestore-license','<use-snaprestore-license>');
+	$api->child_add_string('volume',$newvol);
+
+	my $output = $server_zapi->invoke_elem($api);
+	if (defined ($self->CheckErrInAPIInvoke($output))) {
+                my $r = $output->results_reason();
+                $self->log->error("volume-clone-create failed: $r");
+                return undef; #error
+        } else {
+                $self->log->debug("Cloned successfully new volume name: <$newvol> and new junction path: <$newjunction>!!");
+                return "$newvol:$newjunction"; #ok
+        }
 }
 
 sub SnapCreate {
