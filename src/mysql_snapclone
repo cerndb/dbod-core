@@ -1,0 +1,156 @@
+#!/usr/bin/env perl
+# Copyright (C) 2015, CERN
+# This software is distributed under the terms of the GNU General Public
+# Licence version 3 (GPL Version 3), copied verbatim in the file "LICENSE".
+# In applying this license, CERN does not waive the privileges and immunities
+# granted to it by virtue of its status as Intergovernmental Organization
+# or submit itself to any jurisdiction.
+
+
+# Extension of the base DBOD::Job class to add extra required parameters
+package DBOD::MySQL::snapclone;
+use Moose;
+
+extends 'DBOD::Job';
+
+with 'MooseX::Getopt::Usage',
+     'MooseX::Getopt::Usage::Role::Man';
+
+
+has 'snapshot' => (is => 'ro', isa => 'Str', required => 1, documentation => qq{Target snapshot to be cloned from} );
+
+# Main 
+package main;
+
+use strict;
+use warnings;
+
+use Log::Log4perl;
+use DBOD::Runtime;
+use DBOD::Runtime_Zapi;
+# Initiates logger
+BEGIN { 
+    Log::Log4perl->easy_init() ;
+}
+
+
+my $job = DBOD::MySQL::snapclone->new_with_options();
+my $runtime_zapi  = DBOD::Runtime_Zapi->new;
+my $runtime = DBOD::Runtime->new;
+
+
+
+sub body {
+	$job->log->debug('Executing clone on '. $job->entity . ' with snapshot ' . $job->snapshot);
+
+ 	my($localmycnf);
+	if ( -r $ENV{"HOME"} . "/.my.cnf" ) { 
+		$localmycnf=1; #a priori we dont need to use user and password they are in the .my.cnf 
+		$job->log->debug("Local <~mysql/.my.cnf> in use");
+	} else {
+		$localmycnf=0;
+	}
+
+	my($my_cnf)=$job->metadata->{'datadir'} . "/my.cnf";
+	$job->log->debug("my.cnf file: <$my_cnf>");
+	if (! (-e $job->metadata->{'datadir'}  && -e $my_cnf) ){
+		$job->log->error("Either directory: <" . $job->metadata->{'datadir'} . "> or file: <$my_cnf> doesnt exist. Check entity definition!");
+		$job->_output(1);	
+		return 1;
+	} 
+	
+	#Get volumes and controllers for data
+	#check for Cmode style
+	my($mntpoint,@arrpath,$index,$fake);
+	$fake =0;
+	$mntpoint=$job->metadata->{'datadir'};
+	@arrpath = split '/',$mntpoint;
+	$index=$#arrpath -1;
+	$mntpoint = join '/',@arrpath[0..$index];
+	
+	#check if snapshot exists
+	my $cmd = "ls -1 $mntpoint/.snapshot | grep " . $job->snapshot;
+	my @output=();
+	my $rc = $runtime->RunStr($cmd,\@output);
+	
+	if ($rc == 0) {
+    	 	$job->log->error("Snapshot <" . $job->snapshot . "> doesnt exist.");
+		$job->_output(1);	
+		return 1;
+	}	
+
+	
+	
+	my($server_zapi,$volume_name);
+	my($arref)= $runtime_zapi->GetServerAndVolname($mntpoint);
+
+	if (defined($$arref[0])) {
+		$server_zapi=$$arref[0];
+	} else {
+		$job->log->error("Snapshot <" . $job->snapshot . "> doesnt exist.");
+		$job->_output(1);	
+		return 1;
+       }
+	if (defined($$arref[1])) {
+		$volume_name=$$arref[1];
+	} else {
+		$job->log->error("Volume information could not be retrieved!");
+		$job->_output(1);	
+		return 1;
+       }
+
+	
+	#Prepare to create a clone for data
+	
+	my($tag)=`date +%d%m%Y_%H%M%S`; 
+	chomp $tag;
+	my $junction = $mntpoint . "_" . $job->snapshot . "_" . $tag;
+		
+	$rc=$runtime_zapi->SnapClone($server_zapi,$volume_name,$job->snapshot,$junction); 
+	if (!defined $rc) {
+		$job->log->error("Error creating clone: <" . $job->snapshot . "> on volume: <$volume_name>");
+		$job->_output(1);	
+		return 1;
+	}  else {
+		$job->log->debug("Success creating clone with snapshot: <" . $job->snapshot ."> on volume: <$volume_name>.!");
+	}		
+	
+	# Create clones for the other file systems: binlogs	
+	my @arr = ('dbs02');
+	foreach (@arr) {
+		my ($mntpoint_cmd, $junction_cmd);
+		$mntpoint_cmd = $mntpoint; # copy the mount point for data.
+		$mntpoint_cmd =~ s/dbs03/$_/g;
+		$job->log->debug("Getting information from <$mntpoint_cmd>");
+		$rc=$runtime_zapi->GetVolInfoCmode($server_zapi,$mntpoint_cmd,0);
+		if (!%$rc) {
+			$job->log->error("no information could be retrieved from <$mntpoint_cmd>");
+			$job->_output(1);	
+			return 1;
+		} else {
+			$volume_name = $rc ->{'name'}; 
+			$job->log->debug("Working with volume <$volume_name> on mount: <$mntpoint_cmd>");
+		}	
+			
+		#create a clone
+		$junction_cmd = $junction; # copy the data junction path
+		$junction_cmd  =~ s/dbs03/$_/g;
+		$job->log->debug("New junction path is <$junction_cmd>");
+
+		$rc=$runtime_zapi->SnapClone($server_zapi,$volume_name,undef,$junction_cmd); 
+		if (!defined $rc) {
+			$job->log->error("Error creating clone on volume: <$volume_name> !");
+			$job->_output(1);	
+			return 1;
+		}  else {
+			$job->log->debug("Success creating clone on volume: <$volume_name>.!");
+		}		
+	}
+
+	$job->log->debug("mysql_snapclone is over.");
+	$job->_output(0);	
+	return 0;
+ 	
+}
+
+$job->run(\&body);
