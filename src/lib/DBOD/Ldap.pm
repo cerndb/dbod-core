@@ -5,7 +5,9 @@
 # granted to it by virtue of its status as Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-package DBOD::LDAPHelper;
+package DBOD::Ldap;
+use strict;
+use warnings;
 
 use Net::LDAP;
 use Net::LDAP::Entry;
@@ -16,9 +18,9 @@ sub get_LDAP_conn {
     if ($#_) {
        ($url, $port, $protocol, $userdn, $pass) = @_;
     }
-    my $conn = Net::LDAP->new($url, port => $port, scheme => $protocol) or die("$@");
+    my $conn = Net::LDAP->new($url, port => $port, scheme => $protocol) or croak("$@");
     $msg = $conn->bind($userdn, password => $pass);
-    $msg->code && die $msg->error;
+    $msg->code && croak $msg->error;
     return $conn;
 }
 
@@ -64,7 +66,8 @@ sub add_attributes {
     #
     my ($conn, $entity_base, @attributes) = @_;
     my $result = $conn->modify($entity_base, add => @attributes);
-    $result->code && die $result->error;
+    $result->code && croak $result->error;
+    return $result->code;
 }
 
 sub modify_attributes {
@@ -75,7 +78,8 @@ sub modify_attributes {
     #
     my ($conn, $entity_base, @attributes) = @_;
     my $result = $conn->modify($entity_base, replace => @attributes);
-    $result->code && die $result->error;
+    $result->code && croak $result->error;
+    return $result->code;
 }
 
 1;
