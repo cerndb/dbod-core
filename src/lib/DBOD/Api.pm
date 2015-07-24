@@ -85,4 +85,49 @@ sub get_entity_metadata {
     }
 }
 
+sub set_ip_alias {
+    my ($entity, $config) = @_;
+    my $client = _api_client($config, 1);
+    $client->POST(join '/', 
+        $config->{'api'}->{'entity_ipalias_endpoint'}, $entity);
+    my %result;
+    $result{'code'} = $client->responseCode();
+    if ($result{'code'} eq '201') {
+        $result{'response'} = decode_json $client->responseContent();
+    } else {
+        $result{'response'} = ''; 
+    }
+    return \%result;
+}
+
+sub get_ip_alias {
+    my ($entity, $config) = @_;
+    my $client = _api_client($config);
+    $client->GET(join '/', 
+        $config->{'api'}->{'entity_ipalias_endpoint'}, $entity);
+    my %result;
+    $result{'code'} = $client->responseCode();
+    if ($result{'code'} eq '200') {
+        $result{'response'} = decode_json $client->responseContent();
+    } else {
+        return;
+    }
+    return \%result;
+}
+
+sub remove_ip_alias {
+    my ($entity, $config) = @_;
+    my $client = _api_client($config, 1);
+    $client->DELETE(join '/', 
+        $config->{'api'}->{'entity_ipalias_endpoint'}, $entity);
+    my %result;
+    $result{'code'} = $client->responseCode();
+    if ($result{'code'} eq '204') {
+        # Successfully removed
+    } else {
+        # Error removing ip alias
+    }
+    return \%result;
+}
+
 1;
