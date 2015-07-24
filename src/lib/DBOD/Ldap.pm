@@ -17,7 +17,9 @@ use YAML::Syck;
 use base qw(Exporter);
 
 sub get_LDAP_conn {
-    my %config = shift;
+    # Expects a references to a configuration hash
+    my $conf_ref = shift;
+    my %config = %{$conf_ref};
     my $conn = Net::LDAP->new($config->{'ldap'}->{'url'}, 
         port => $config->{'ldap'}->{'port'}, 
         scheme => $config->{'ldap'}->{'protocol'}) or croak("$@");
@@ -43,7 +45,8 @@ sub get_entity {
 
 sub load_LDIF {
     # Loads LDIF template, return LDAP::Entry
-    my ($template, %config) = @_;
+    my ($template, $conf_ref) = @_;
+    my %config = %{$conf_ref};
     my $template_dir = $config->{'ldap'}->{'template_folder'};
     $ldif = Net::LDAP::LDIF->new( $template_dir . "${template}.ldif", "r", onerror => 'undef' );
     my @entries;

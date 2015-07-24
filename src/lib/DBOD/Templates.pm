@@ -138,8 +138,7 @@ sub set_crs {
 
 sub create_instance {
     # Creates a new entry on the LDAP by filling appropiate values on a template.
-    my $new_entity = shift;
-    
+    my ($new_entity, $conf_ref) = @_;
     # Hash unpacking, for readability
     my $dbname = $new_entity->{'dbname'};
     my $port = $new_entity->{'port'};
@@ -157,7 +156,7 @@ sub create_instance {
     my $entity = "dod_" . lc($dbname);
     my $template_name = $entity_template->{$subcategory};
 
-    my $conn = DBOD::Ldap::GetConnection("/ORA/dbs01/syscontrol/projects/dod/etc/syscontrol_ldap.yaml");
+    my $conn = DBOD::Ldap::get_LDAP_conn($conf_ref);
     # Fetches template according to Instance subcategory
     my $template_base_address = "SC-ENTITY=${template_name},SC-CATEGORY=entities,ou=syscontrol,dc=cern,dc=ch";
     my $template = DBOD::Ldap::get_entity($conn, $template_base_address);
@@ -234,7 +233,7 @@ sub create_instance {
     timestamp_entity($conn, $entity);
 
     # create TNS-net-services entry
-    create_tnsnetservice($entity, uc $dbname);
+    create_tnsnetservice($conn, $entity, uc $dbname);
 
     # Closes LDAP connection
     $conn->unbind();
@@ -244,8 +243,7 @@ sub create_instance {
 }
 
 sub create_tnsnetservice {
-    my ($entity_name, $dbname) = @_;
-    my $conn = DBOD::Ldap::GetConnection("/ORA/dbs01/syscontrol/projects/dod/etc/syscontrol_ldap.yaml");
+    my ($conn, $entity_name, $dbname) = @_;
     my $tnsnames_address_base = "SC-TNS-NET-SERVICE-NAME=dbod_template_con," .
         "SC-CATEGORY=tnsnetservices,ou=syscontrol,dc=cern,dc=ch";
     # Fetches tnsnetservice template
@@ -272,9 +270,9 @@ sub create_tnsnetservice {
 }
 
 sub migrate_instance_template {
-    my ($entity_name, $migrate_to) = @_;
+    my ($entity_name, $migrate_to, $conf_ref) = @_;
     
-    my $conn = DBOD::Ldap::GetConnection("/ORA/dbs01/syscontrol/projects/dod/etc/syscontrol_ldap.yaml");
+    my $conn = DBOD::Ldap::get_LDAP_conn($conf_ref);
     
     my $dbname = $migrate_to->{'dbname'};
     my $port = $migrate_to->{'port'};
