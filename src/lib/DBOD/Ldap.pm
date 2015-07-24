@@ -14,10 +14,10 @@ use Net::LDAP::Entry;
 use Net::LDAP::LDIF;
 use YAML::Syck;
 
+use base qw(Exporter);
+
 sub get_LDAP_conn {
-    if ($#_) {
-       ($url, $port, $protocol, $userdn, $pass) = @_;
-    }
+    ($url, $port, $protocol, $userdn, $pass) = @_;
     my $conn = Net::LDAP->new($url, port => $port, scheme => $protocol) or croak("$@");
     $msg = $conn->bind($userdn, password => $pass);
     $msg->code && croak $msg->error;
