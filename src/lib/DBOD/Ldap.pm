@@ -17,9 +17,12 @@ use YAML::Syck;
 use base qw(Exporter);
 
 sub get_LDAP_conn {
-    ($url, $port, $protocol, $userdn, $pass) = @_;
-    my $conn = Net::LDAP->new($url, port => $port, scheme => $protocol) or croak("$@");
-    $msg = $conn->bind($userdn, password => $pass);
+    my %config = shift;
+    my $conn = Net::LDAP->new($config->{'ldap'}->{'url'}, 
+        port => $config->{'ldap'}->{'port'}, 
+        scheme => $config->{'ldap'}->{'protocol'}) or croak("$@");
+    $msg = $conn->bind($config->{'ldap'}->{'userdn'}, 
+        password => $config->{'ldap'}->{'password'});
     $msg->code && croak $msg->error;
     return $conn;
 }
@@ -40,8 +43,8 @@ sub get_entity {
 
 sub load_LDIF {
     # Loads LDIF template, return LDAP::Entry
-    my $template = shift;
-    my $template_dir = "/ORA/dbs01/syscontrol/projects/dod/etc/templates/";
+    my ($template, %config) = @_;
+    my $template_dir = $config->{'ldap'}->{'template_folder'};
     $ldif = Net::LDAP::LDIF->new( $template_dir . "${template}.ldif", "r", onerror => 'undef' );
     my @entries;
     while ( not $ldif->eof ( ) ) {
