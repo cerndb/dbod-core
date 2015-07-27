@@ -11,9 +11,7 @@ use strict;
 use warnings;
 use Exporter;
 
-use YAML::Syck;
-use File::ShareDir;
-use Log::Log4perl;
+use Log::Log4perl qw(:easy);
 use REST::Client;
 use MIME::Base64;
 use JSON;
@@ -28,6 +26,7 @@ use base qw(Exporter);
 sub load_cache {
     my $config = shift;
     my $filename = $config->{'api'}->{'cachefile'};
+    DEBUG 'Loading cache from ' . $filename;
     local $/ = undef;
     open(my $json_fh, "<:encoding(UTF-8)", $filename)
         or return ();
@@ -41,6 +40,7 @@ sub load_cache {
 
 sub _api_client {
     my ($config, $auth) = @_;
+    DEBUG 'Api client connecting to ' . $config->{'api'}->{'host'};
     my $client = REST::Client->new(
         host => $config->{'api'}->{'host'},
         timeout => $config->{'api'}->{'timeout'},
@@ -68,6 +68,7 @@ sub _api_get_entity_metadata {
     if ($result{'code'} eq '200') {
         $result{'response'} = decode_json $client->responseContent();
     } else {
+        ERROR 'Failed to contact API server';
         $result{'response'} = ''; 
     }
     return \%result;
@@ -79,8 +80,10 @@ sub get_entity_metadata {
     if ($result->{'code'} eq '200') {
         return $result->{'response'};
     } elsif ($result->{'code'} eq '500') {
+        WARN 'Returning metadata info from cache';
         return $cache->{$entity} // {};
     } else {
+        ERROR 'Metadata not available for entity' . $entity;
         return {};
     }
 }
@@ -93,9 +96,9 @@ sub set_ip_alias {
     my %result;
     $result{'code'} = $client->responseCode();
     if ($result{'code'} eq '201') {
-        $result{'response'} = decode_json $client->responseContent();
+        INFO 'IP Alias succesfully created for ' . $entity;
     } else {
-        $result{'response'} = ''; 
+        ERROR 'Resource not available. IP alias creation failed for ' . $entity; 
     }
     return \%result;
 }
@@ -108,8 +111,10 @@ sub get_ip_alias {
     my %result;
     $result{'code'} = $client->responseCode();
     if ($result{'code'} eq '200') {
+        INFO 'IP Alias fetched for ' . $entity;
         $result{'response'} = decode_json $client->responseContent();
     } else {
+        ERROR 'IP alias does not exist for ' . $entity;
         return;
     }
     return \%result;
@@ -123,11 +128,12 @@ sub remove_ip_alias {
     my %result;
     $result{'code'} = $client->responseCode();
     if ($result{'code'} eq '204') {
-        # Successfully removed
+        INFO 'IP Alias removed for ' . $entity;
     } else {
-        # Error removing ip alias
+        ERROR 'IP alias could not be removed for ' . $entity;
     }
     return \%result;
 }
 
-1;
+1
+;
