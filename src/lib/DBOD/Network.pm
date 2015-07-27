@@ -11,13 +11,8 @@ use strict;
 use warnings;
 use Exporter;
 
-use YAML::Syck;
-use File::ShareDir;
-use Log::Log4perl;
+use Log::Log4perl qw(:easy);
 use SOAP::Lite;
-use MIME::Base64;
-use JSON;
-use Carp;
 
 use base qw(Exporter);
 
@@ -36,7 +31,7 @@ sub _get_landb_connection {
     my $call = $client->getAuthToken($username, $password, 'NICE');
     my $auth = $call->result;
     if ($call->fault) {
-        croak "FAILED: " . $call->faultstring;
+        ERROR "FAILED: " . $call->faultstring;
     }
     my $authHeader = SOAP::Header->name('Auth' => { "token" => $auth });
     return ($client, $authHeader);
@@ -47,7 +42,7 @@ sub _landb_add_alias {
     my ($conn, $auth) = _get_landb_connection();
     my $call = $conn->interfaceAddAlias($auth, uc($host), $alias);
     if ($call->fault) {
-            croak "FAILED: " . $call->faultstring;
+        ERROR "FAILED: " . $call->faultstring;
     }
 }
 
@@ -58,7 +53,7 @@ sub set_ip_alias {
     foreach my $scope_view (@views) {
         my $call = $conn->dnsDelegatedAliasAdd($auth, $dnsname, $scope_view, $alias);
         if ($call->fault) {
-            croak "FAILED: " . $call->faultstring;
+            ERROR "FAILED: " . $call->faultstring;
         }
     }
 }
@@ -69,7 +64,7 @@ sub remove_ip_alias {
     foreach my $scope_view (@views) {
         my $call = $conn->dnsDelegatedAliasRemove($auth, $dnsname, $scope_view, $alias);
         if ($call->fault) {
-            croak "FAILED: " . $call->faultstring;
+            ERROR "FAILED: " . $call->faultstring;
         }
     }
 }
@@ -79,8 +74,9 @@ sub get_ip_alias {
     my ($conn, $auth) = _get_landb_connection();
     my $call = $conn->dnsDelegatedAliasAdd($auth, $search);
     if ($call->fault) {
-        croak "FAILED: " . $call->faultstring;
+        ERROR "FAILED: " . $call->faultstring;
     }
 }
 
-1;
+1
+
