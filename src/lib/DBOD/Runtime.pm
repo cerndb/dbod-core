@@ -24,8 +24,8 @@ use Time::localtime;
 sub run_cmd {
     my ($self, $cmd_str, $timeout) = @_;
     my @cmd = split ' ', $cmd_str ;
+    my ($out, $err);
     try {
-        my ($out, $err);
         if (defined $timeout) {
             $self->log->debug("Executing ${cmd_str} with timeout: ${timeout}");
             run \@cmd, ,'>', \$out, '2>', \$err, (my $t = timeout $timeout);
@@ -35,6 +35,7 @@ sub run_cmd {
             run \@cmd, ,'>', \$out, '2>', \$err;
         }
         # If the command executed succesfully we return its exit code
+        $self->log->debug("${cmd_str} stdout: " . $out);
         $self->log->debug("${cmd_str} return code: " . $?);
         return scalar $?;
     } 
@@ -42,11 +43,13 @@ sub run_cmd {
         if ($_ =~ /^IPC::Run: .*timeout/) {
             # Timeout exception
             $self->log->error("Timeout exception: " . $_);
+            $self->log->error("CMD stderr: " . $err);
             return;
         }
         else {
             # Other type of exception ocurred
             $self->log->error("Exception found: " . $_);
+            $self->log->error("CMD stderr: " . $err);
             return;
         }
     };
