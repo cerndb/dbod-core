@@ -1,0 +1,50 @@
+#!/usr/bin/env perl
+# Copyright (C) 2015, CERN
+# This software is distributed under the terms of the GNU General Public
+# Licence version 3 (GPL Version 3), copied verbatim in the file "LICENSE".
+# In applying this license, CERN does not waive the privileges and immunities
+# granted to it by virtue of its status as Intergovernmental Organization
+# or submit itself to any jurisdiction.
+
+use warnings;
+use strict;
+
+$ENV{PERL_LWP_SSL_VERIFY_HOSTNAME}=0;
+
+use Log::Log4perl;
+
+use DBOD::Job;
+use Data::Dumper;
+use DBOD::Api;
+use JSON; 
+
+use DBOD::IPalias;
+
+# Initiates logger
+INIT { 
+    Log::Log4perl->easy_init() ;
+}
+my $job = DBOD::Job->new_with_options();
+
+sub body {
+    my $params = shift;
+    $ENV{PERL_LWP_SSL_VERIFY_HOSTNAME}=0;
+    
+    $job->log->debug('Fetching ip alias');
+    my $result = DBOD::Api::get_ip_alias('iptest', $job->config);
+    print Dumper $result;
+    sleep 5;
+    if ($result->{'code'} eq '200') { 
+        $job->log->debug('Removing ip alias');
+        $result = DBOD::IPalias::remove_alias('iptest', 'db-50019', $job->config);
+    }
+    else {
+        $job->log->debug('Adding ip alias');
+        $result = DBOD::IPalias::add_alias('iptest', 'db-50019', $job->config);
+        print Dumper $result;
+    }
+    return 0;
+}
+
+$job->run(\&body);
+
