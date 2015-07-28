@@ -52,6 +52,7 @@ sub _api_client {
     if (defined $auth) {
         my $api_user = $config->{'api'}->{'user'};
         my $api_pass = $config->{'api'}->{'password'};
+        DEBUG 'Using basic authentication for user: ' . $api_user;
         $client->addHeader("Authorization", "Basic " . 
             encode_base64("$api_user:$api_pass", "")); 
     }
@@ -89,10 +90,13 @@ sub get_entity_metadata {
 }
 
 sub set_ip_alias {
-    my ($entity, $config) = @_;
+    my ($entity, $ipalias, $config) = @_;
     my $client = _api_client($config, 1);
-    $client->POST(join '/', 
-        $config->{'api'}->{'entity_ipalias_endpoint'}, $entity);
+    my $params = $client->buildQuery([ alias => $ipalias ]);
+    $client->POST(
+        join('/', $config->{'api'}->{'entity_ipalias_endpoint'}, $entity) .
+        $params
+    );
     my %result;
     $result{'code'} = $client->responseCode();
     if ($result{'code'} eq '201') {
