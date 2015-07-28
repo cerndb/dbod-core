@@ -28,6 +28,7 @@ sub _get_landb_connection {
     #Get Auth token
     my $username = $config->{'network'}->{'username'};
     my $password = $config->{'network'}->{'password'};
+    DEBUG 'LANDB Api client connection for ' . $username;
     my $call = $client->getAuthToken($username, $password, 'NICE');
     my $auth = $call->result;
     if ($call->fault) {
@@ -37,18 +38,9 @@ sub _get_landb_connection {
     return ($client, $authHeader);
 }
 
-sub _landb_add_alias {
-    my ($host, $alias) = @_;
-    my ($conn, $auth) = _get_landb_connection();
-    my $call = $conn->interfaceAddAlias($auth, uc($host), $alias);
-    if ($call->fault) {
-        ERROR "FAILED: " . $call->faultstring;
-    }
-}
-
-sub set_ip_alias {
-    my ($dnsname, $alias) = @_;
-    my ($conn, $auth) = _get_landb_connection();
+sub add_ip_alias {
+    my ($dnsname, $alias, $config) = @_;
+    my ($conn, $auth) = _get_landb_connection($config);
     my @views = ('internal', 'external');
     foreach my $scope_view (@views) {
         my $call = $conn->dnsDelegatedAliasAdd($auth, $dnsname, $scope_view, $alias);
@@ -58,8 +50,8 @@ sub set_ip_alias {
     }
 }
 sub remove_ip_alias {
-    my ($dnsname, $alias) = @_;
-    my ($conn, $auth) = _get_landb_connection();
+    my ($dnsname, $alias, $config) = @_;
+    my ($conn, $auth) = _get_landb_connection($config);
     my @views = ('internal', 'external');
     foreach my $scope_view (@views) {
         my $call = $conn->dnsDelegatedAliasRemove($auth, $dnsname, $scope_view, $alias);
@@ -70,8 +62,8 @@ sub remove_ip_alias {
 }
 
 sub get_ip_alias {
-    my ($search) = @_;
-    my ($conn, $auth) = _get_landb_connection();
+    my ($search, $config) = @_;
+    my ($conn, $auth) = _get_landb_connection($config);
     my $call = $conn->dnsDelegatedAliasAdd($auth, $search);
     if ($call->fault) {
         ERROR "FAILED: " . $call->faultstring;
