@@ -33,6 +33,7 @@ sub _get_landb_connection {
     my $auth = $call->result;
     if ($call->fault) {
         ERROR "FAILED: " . $call->faultstring;
+        return;
     }
     my $authHeader = SOAP::Header->name('Auth' => { "token" => $auth });
     return ($client, $authHeader);
@@ -46,8 +47,10 @@ sub add_ip_alias {
         my $call = $conn->dnsDelegatedAliasAdd($auth, $dnsname, $scope_view, $alias);
         if ($call->fault) {
             ERROR "FAILED: " . $call->faultstring;
+            return scalar 1;
         }
     }
+    return scalar 0;
 }
 sub remove_ip_alias {
     my ($dnsname, $alias, $config) = @_;
@@ -57,8 +60,10 @@ sub remove_ip_alias {
         my $call = $conn->dnsDelegatedAliasRemove($auth, $dnsname, $scope_view, $alias);
         if ($call->fault) {
             ERROR "FAILED: " . $call->faultstring;
+            return scalar 1;
         }
     }
+    return scalar 0;
 }
 
 sub get_ip_alias {
@@ -67,8 +72,10 @@ sub get_ip_alias {
     my $call = $conn->dnsDelegatedAliasAdd($auth, $search);
     if ($call->fault) {
         ERROR "FAILED: " . $call->faultstring;
+        return;
     }
+    return $call->result;
 }
 
-1
+1;
 
