@@ -14,18 +14,25 @@ use Net::LDAP::Entry;
 use Net::LDAP::LDIF;
 use YAML::Syck;
 
+use Log::Log4perl qw(:easy);
+use Data::Dumper;
+
 use base qw(Exporter);
 
-sub get_LDAP_conn {
+sub get_connection {
     # Expects a references to a configuration hash
-    my $conf_ref = shift;
-    my %config = %{$conf_ref};
+    my $config = shift;
+    DEBUG 'Opening LDAP connection to ' . 
+        join ":", $config->{'ldap'}->{'protocol'}, 
+            $config->{'ldap'}->{'url'}, 
+            $config->{'ldap'}->{'port'};
     my $conn = Net::LDAP->new($config->{'ldap'}->{'url'}, 
         port => $config->{'ldap'}->{'port'}, 
         scheme => $config->{'ldap'}->{'protocol'}) or croak("$@");
-    $msg = $conn->bind($config->{'ldap'}->{'userdn'}, 
+    DEBUG 'Binding connection to ' . $config->{'ldap'}->{'userdn'};
+    my $msg = $conn->bind($config->{'ldap'}->{'userdn'}, 
         password => $config->{'ldap'}->{'password'});
-    $msg->code && croak $msg->error;
+    $msg->code && ERROR $msg->error;
     return $conn;
 }
 
@@ -34,6 +41,7 @@ sub get_entity {
     my ($conn, $entity_base, $scope) = @_;
     my $filter = "(objectClass=*)";
     $scope = 'subtree' unless defined $scope;
+    DEBUG "Fetching LDAP entity at: " . $entity_base;
     my $mesg = $conn->search(
             base => $entity_base,
             scope => $scope,
@@ -45,16 +53,16 @@ sub get_entity {
 
 sub load_LDIF {
     # Loads LDIF template, return LDAP::Entry
-    my ($template, $conf_ref) = @_;
-    my %config = %{$conf_ref};
+    my ($template, $config) = @_;
     my $template_dir = $config->{'ldap'}->{'template_folder'};
-    $ldif = Net::LDAP::LDIF->new( $template_dir . "${template}.ldif", "r", onerror => 'undef' );
+    DEBUG "Loading LDIF template:  " . $template . " from :" . $template_dir;
+    my $ldif = Net::LDAP::LDIF->new( $template_dir . "${template}.ldif", "r", onerror => 'undef' );
     my @entries;
     while ( not $ldif->eof ( ) ) {
-      $entry = $ldif->read_entry ( );
+      my $entry = $ldif->read_entry ( );
       if ( $ldif->error ( ) ) {
-        print "Error msg: ", $ldif->error ( ), "\n";
-        print "Error lines:\n", $ldif->error_lines ( ), "\n";
+        ERROR "Error msg: ", $ldif->error( );
+        ERROR "Error lines:\n", $ldif->error_lines( );
       }
       else {
           push @entries, $entry;
@@ -71,8 +79,9 @@ sub add_attributes {
     #      'SC-PACKAGES-GROUP' => 'DBOD_SLC6OS',]
     #
     my ($conn, $entity_base, @attributes) = @_;
+    DEBUG "Adding attributes:  " . Dumper @attributes . " to :" . $entity_base;
     my $result = $conn->modify($entity_base, add => @attributes);
-    $result->code && croak $result->error;
+    $result->code && ERROR $result->error;
     return $result->code;
 }
 
@@ -83,8 +92,9 @@ sub modify_attributes {
     #      'SC-PACKAGES-GROUP' => 'DBOD_SLC6OS',]
     #
     my ($conn, $entity_base, @attributes) = @_;
+    DEBUG "Modifying attributes:  " . Dumper @attributes . " at :" . $entity_base;
     my $result = $conn->modify($entity_base, replace => @attributes);
-    $result->code && croak $result->error;
+    $result->code && ERROR $result->error;
     return $result->code;
 }
 
