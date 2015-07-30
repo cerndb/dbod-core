@@ -140,7 +140,7 @@ sub set_crs {
 
 sub create_instance {
     # Creates a new entry on the LDAP by filling appropiate values on a template.
-    my ($new_entity, $conf_ref) = @_;
+    my ($new_entity, $config) = @_;
     DEBUG 'Creating LDAP entity: ' . Dumper $new_entity;
     # Hash unpacking, for readability
     my $dbname = $new_entity->{'dbname'};
@@ -159,7 +159,7 @@ sub create_instance {
     my $entity = "dod_" . lc($dbname);
     my $template_name = $entity_template->{$subcategory};
 
-    my $conn = DBOD::Ldap::get_connection($conf_ref);
+    my $conn = DBOD::Ldap::get_connection($config);
     # Fetches template according to Instance subcategory
     my $template_base_address = "SC-ENTITY=${template_name},SC-CATEGORY=entities,ou=syscontrol,dc=cern,dc=ch";
     DEBUG 'Downloading LDAP entity template: ' . $template_base_address;
@@ -251,7 +251,66 @@ sub create_instance {
     $conn->disconnect();
 
     return;
+} 
+
+sub create_metadata {
+    # Creates a new metadata object.
+    my ($new_entity, $config) = @_;
+    DEBUG 'Creating Metadata object for entity: ' . Dumper $new_entity;
+
+    my $template_name = $metadata_template->{$subcategory};
+    # Load Template
+    my $dbname = $new_entity->{'dbname'};
+
+    $metadata->{'subcategory'} = $new_entity->{'subcategory'};
+    $metadata->{'type'} = $new_entity->{'type'};
+    $metadata->{'version'} = $new_entity->{'version'};
+    $metadata->{'port'} = $new_entity->{'port'};
+    $metadata->{'socket'} = $new_entity->{'socket'};
+    $metadata->{'socket'} =~ s/PORT/$metadata->{'port'}/;
+    $metadata->{'socket'} =~ s/DBNAME/uc($dbname)/;
+    $metadata->{'basedir'} =~ s/VERSION/$metadata->{'version'}/;
+    $metadata->{'bindir'} =~ s/VERSION/$metadata->{'version'}/;
+    $metadata->{'datadir'} =~ s/DBNAME/uc($dbname)/;
+    # Subcategory differences
+    for ($metadata->{'subcategory'}) {
+        if (/^mysql$/) {
+            $metadata->{'binlogdir'} =~ s/DBNAME/uc($dbname)/;
+            $metadata->{'innodb_buffer_pool'} = $new_entity->{'buffer'};
+        }
+        if (/^pgsql$/) {
+            $metadata->{'xlogdir'} =~ s/DBNAME/uc($dbname)/;
+            $metadata->{'shared_buffers'} = $new_entity->{'buffer'};
+        }
+    };
+    
+    # Servers (an array, need to iterate?)
+    @volumes = $metadata->{'serverdata'};
+    for my $volume (@volumes) {
+        $volume->{'mounting_path'} = ~s/DBNAME/uc($dbname)/;
+        if ($volume->{'mounting_path'} =~ /dbs02/) {
+            $volume->{'server'} = $new_entity->{'serverlogs'};
+        }
+        else {
+            $volume->{'server'} = $new_entity->{'serverdata'};
+        }
+    } 
+    # CRS
+    if (defined $new_entity->{'crs'}) {
+        $metadata->{'crs'} = $new_entity->{'crs'};
+        # Need to get list of hosts forming the referenced CRS
+        my @hosts = ($new_entity->{'hostname'});
+        $metadata->{'hosts'} = \@hosts;
+    }
+    else {
+        my @hosts = ($new_entity->{'hostname'});
+        $metadata->{'hosts'} = \@hosts;
+    }
+    
+    return encode_json($metadata);
 }
+
+
 
 sub create_tnsnetservice {
     my ($conn, $entity_name, $dbname) = @_;
@@ -280,9 +339,9 @@ sub create_tnsnetservice {
 
 #TODO : Evaluate this method
 sub migrate_instance_template {
-    my ($entity_name, $migrate_to, $conf_ref) = @_;
+    my ($entity_name, $migrate_to, $config) = @_;
     
-    my $conn = DBOD::Ldap::get_LDAP_conn($conf_ref);
+    my $conn = DBOD::Ldap::get_LDAP_conn($config);
     
     my $dbname = $migrate_to->{'dbname'};
     my $port = $migrate_to->{'port'};
