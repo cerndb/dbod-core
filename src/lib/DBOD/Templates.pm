@@ -14,6 +14,8 @@ use Exporter;
 use DBOD::Ldap;
 use Data::Dumper;
 
+use Log::Log4perl qw(:easy);
+
 use base qw(Exporter);
 
 my $entity_template = {
@@ -139,6 +141,7 @@ sub set_crs {
 sub create_instance {
     # Creates a new entry on the LDAP by filling appropiate values on a template.
     my ($new_entity, $conf_ref) = @_;
+    DEBUG 'Creating LDAP entity: ' . Dumper $new_entity;
     # Hash unpacking, for readability
     my $dbname = $new_entity->{'dbname'};
     my $port = $new_entity->{'port'};
@@ -156,30 +159,32 @@ sub create_instance {
     my $entity = "dod_" . lc($dbname);
     my $template_name = $entity_template->{$subcategory};
 
-    my $conn = DBOD::Ldap::get_LDAP_conn($conf_ref);
+    my $conn = DBOD::Ldap::get_connection($conf_ref);
     # Fetches template according to Instance subcategory
     my $template_base_address = "SC-ENTITY=${template_name},SC-CATEGORY=entities,ou=syscontrol,dc=cern,dc=ch";
+    DEBUG 'Downloading LDAP entity template: ' . $template_base_address;
     my $template = DBOD::Ldap::get_entity($conn, $template_base_address);
 
-    # Substitutes entity name in template and commits to LDAP
     for my $entry(@{$template}) {
         my $dn = $entry->dn();
         $dn =~ s/$template_name/$entity/g; 
+        DEBUG 'Creating LDAP entry: ' . $dn;
         $entry->dn($dn);
         if (defined ($entry->get_value('SC-ENTITY'))) {
             $entry->replace( 'SC-ENTITY' => $entity );
         }
+        DEBUG 'Adding LDAP entry: ' . Dumper $entry;
         my $mesg = $conn->add($entry);
 		$mesg->code && die $mesg->error; 
     } 
 
-    # Entity level modifications
+    DEBUG 'Entity level parameter customization';
     my $entity_address_base = "SC-ENTITY=$entity,SC-CATEGORY=entities,ou=syscontrol,dc=cern,dc=ch";
     DBOD::Ldap::modify_attributes($conn, $entity_address_base, 
         ['SC-DB-DATABASE-NAME' => $dbname,
          'SC-TYPE' => $type, 
          'SC-VERSION' => $version,]);
-    # SUBCATEGORY (mysql, postgres...) dependant parameters
+    DEBUG 'Subcategory level coustomization';
     my $attributes = $subcategory_attributes->{$subcategory};
     my $DBNAME = uc $dbname;
     while (my ($attribute, $value) = each(%{$attributes})) {
@@ -191,6 +196,7 @@ sub create_instance {
     # TODO: Use buffer size parameter
 
     # Sets NFS Binlog server
+    DEBUG 'NFS Binary logs server customization';
     my $nfs_binlogs_address_base = "SC-NFS-VOLUME-ID=1,SC-NFS-VOLUMES=nfs-volumes," .
         "SC-ENTITY=$entity,SC-CATEGORY=entities,ou=syscontrol,dc=cern,dc=ch";
     DBOD::Ldap::modify_attributes($conn, $nfs_binlogs_address_base, 
@@ -199,6 +205,7 @@ sub create_instance {
          'SC-NFS-VOLUME-SERVER' => $serverlogs,]);
     
     # Sets NFS Datadir server
+    DEBUG 'NFS Datadir server customization';
     my $nfs_datadir_address_base = "SC-NFS-VOLUME-ID=2,SC-NFS-VOLUMES=nfs-volumes,".
         "SC-ENTITY=$entity,SC-CATEGORY=entities,ou=syscontrol,dc=cern,dc=ch";
     DBOD::Ldap::modify_attributes($conn, $nfs_datadir_address_base, 
@@ -207,6 +214,7 @@ sub create_instance {
          'SC-NFS-VOLUME-SERVER' => $serverdata,]);
     
     # Modify SC-ADDRESSES
+    DEBUG 'Address customization';
     my $address_base = "SC-DB-ADDRESS-ID=0,SC-DB-ADDRESSES=db-addresses," .
         "SC-ENTITY=$entity,SC-CATEGORY=entities,ou=syscontrol,dc=cern,dc=ch";
     DBOD::Ldap::modify_attributes($conn, $address_base, 
@@ -215,6 +223,7 @@ sub create_instance {
     
     # If the instance is going to be in a CRS:
     if (defined $crs) {
+        DEBUG 'CRS Customization';
         DBOD::Ldap::modify_attributes($conn, $address_base, 
             ['SC-DB-ADDRESS-IP' => "${ip_alias}"]);
         set_crs($conn, $new_entity);
@@ -222,6 +231,7 @@ sub create_instance {
     else {
         # Single host (normal) case
         # Modify SC-HOSTS
+        DEBUG 'Single instance customization';
         my $host_base = "SC-HOST-ID=1,SC-HOSTS=hosts,SC-ENTITY=$entity," .
             "SC-CATEGORY=entities,ou=syscontrol,dc=cern,dc=ch";
         DBOD::Ldap::modify_attributes($conn, $host_base, 
@@ -229,10 +239,11 @@ sub create_instance {
              'SC-TNS-LISTENER-NAME' => $socket, ]);
         }
 
-    # Timestamp entity in SC-COMMENT attribute
+    DEBUG 'Timestamping LDAP entity';
     timestamp_entity($conn, $entity);
 
     # create TNS-net-services entry
+    DEBUG 'Creating tnsnetservices LDAP entry';
     create_tnsnetservice($conn, $entity, uc $dbname);
 
     # Closes LDAP connection
@@ -246,7 +257,7 @@ sub create_tnsnetservice {
     my ($conn, $entity_name, $dbname) = @_;
     my $tnsnames_address_base = "SC-TNS-NET-SERVICE-NAME=dbod_template_con," .
         "SC-CATEGORY=tnsnetservices,ou=syscontrol,dc=cern,dc=ch";
-    # Fetches tnsnetservice template
+    DEBUG 'Fetches tnsnetservice template';
     my $template = DBOD::Ldap::get_entity($conn, $tnsnames_address_base);
     
     # Substitutes entity name in template
@@ -258,17 +269,16 @@ sub create_tnsnetservice {
         $entry->replace( 'SC-ENTITY-REF' => $entity_name );
         $entry->replace( 'SC-TNS-INSTANCE-NAME' => $dbname );
         $entry->replace( 'SC-TNS-NET-SERVICE-NAME' => $tnsname );
+        DEBUG 'Adding LDAP entry: ' . $entry;
         my $mesg = $conn->add($entry); # Writes new entry
         $mesg->code && die $mesg->error; 
         }
 
-    # Closes LDAP connection
-    $conn->unbind();
-    $conn->disconnect();
-
     return;
 }
 
+
+#TODO : Evaluate this method
 sub migrate_instance_template {
     my ($entity_name, $migrate_to, $conf_ref) = @_;
     
