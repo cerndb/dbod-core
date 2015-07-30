@@ -157,5 +157,20 @@ sub set_metadata {
     return \%result;
 }
 
-1
-;
+sub create_entity { 
+    my ($entity, $metadata, $config) = @_;
+    my $client = _api_client($config, 1);
+    $client->POST(
+        join('/', $config->{'api'}->{'entity_metadata_endpoint'}, $entity)
+    );
+    my %result;
+    $result{'code'} = $client->responseCode();
+    if ($result{'code'} eq '201') {
+        INFO 'Entity created: ' . $entity;
+    } else {
+        ERROR 'Error creating entity: ' . $entity; 
+    }
+    return \%result;
+}
+
+1;
