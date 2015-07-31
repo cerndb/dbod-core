@@ -51,27 +51,6 @@ sub get_entity {
     return \@entries;
 }
 
-sub load_LDIF {
-    # Loads LDIF template, return LDAP::Entry
-    my ($template, $config) = @_;
-    my $template_dir = $config->{'ldap'}->{'template_folder'};
-    DEBUG "Loading LDIF template:  " . $template . " from :" . $template_dir;
-    my $ldif = Net::LDAP::LDIF->new( $template_dir . "${template}.ldif", "r", onerror => 'undef' );
-    my @entries;
-    while ( not $ldif->eof ( ) ) {
-      my $entry = $ldif->read_entry ( );
-      if ( $ldif->error ( ) ) {
-        ERROR "Error msg: ", $ldif->error( );
-        ERROR "Error lines:\n", $ldif->error_lines( );
-      }
-      else {
-          push @entries, $entry;
-      }
-    }
-    $ldif->done ( );
-    return \@entries;
-}
-
 sub add_attributes {
     # Sample @attributes:
     #

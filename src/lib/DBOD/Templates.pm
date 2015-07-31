@@ -25,6 +25,12 @@ my $entity_template = {
     tnsnames   => 'dbod_template_con',
     };
 
+my $metadata_template = {
+    MYSQL    => 'metadata_mysql',
+    PG => 'metadata_postgresql',
+    ORA   => 'metadata_oracle',
+};
+
 my $subcategory_attributes = {
     'MYSQL' => {
         'SC-BASEDIR-LOCATION' => "/usr/local/mysql/mysql-#VERSION#",
@@ -253,12 +259,50 @@ sub create_instance {
     return;
 } 
 
+sub load_LDIF {
+    # Loads LDIF template, return LDAP::Entry
+    my ($template, $config) = @_;
+    my $template_dir = $config->{'common'}->{'template_folder'};
+    DEBUG "Loading LDIF template:  " . $template . " from :" . $template_dir;
+    my $ldif = Net::LDAP::LDIF->new( $template_dir . "${template}.ldif", "r", onerror => 'undef' );
+    my @entries;
+    while ( not $ldif->eof ( ) ) {
+      my $entry = $ldif->read_entry ( );
+      if ( $ldif->error ( ) ) {
+        ERROR "Error msg: ", $ldif->error( );
+        ERROR "Error lines:\n", $ldif->error_lines( );
+      }
+      else {
+          push @entries, $entry;
+      }
+    }
+    $ldif->done ( );
+    return \@entries;
+}
+
+
+sub load_JSON {
+    # Loads LDIF template, return LDAP::Entry
+    my ($template_name, $config) = @_;
+    my $template_dir = $config->{'common'}->{'template_folder'};
+    DEBUG "Loading JSON  template:  " . $template_name . " from :" . $template_dir;
+    local $/ = undef;
+    open(my $json_fh, "<:encoding(UTF-8)", (join '/', $template_dir, $template_name))
+        or return ();
+    my $json_text = <$json_fh>;
+    close($json_fh);
+    my $template = decode_json $json_text;
+    return $template;
+}
+
+
 sub create_metadata {
     # Creates a new metadata object.
     my ($new_entity, $config) = @_;
     DEBUG 'Creating Metadata object for entity: ' . Dumper $new_entity;
 
-    my $template_name = $metadata_template->{$subcategory};
+    my $template_name = $metadata_template->{$new_entity->{'subcategory'}};
+    my $metadata = load_JSON $template_name, $config;
     # Load Template
     my $dbname = $new_entity->{'dbname'};
 
@@ -285,7 +329,7 @@ sub create_metadata {
     };
     
     # Servers (an array, need to iterate?)
-    @volumes = $metadata->{'serverdata'};
+    my @volumes = $metadata->{'serverdata'};
     for my $volume (@volumes) {
         $volume->{'mounting_path'} = ~s/DBNAME/uc($dbname)/;
         if ($volume->{'mounting_path'} =~ /dbs02/) {
@@ -299,7 +343,7 @@ sub create_metadata {
     if (defined $new_entity->{'crs'}) {
         $metadata->{'crs'} = $new_entity->{'crs'};
         # Need to get list of hosts forming the referenced CRS
-        my @hosts = ($new_entity->{'hostname'});
+        my @hosts = split /,/, $new_entity->{'hostname'};
         $metadata->{'hosts'} = \@hosts;
     }
     else {
