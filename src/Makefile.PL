@@ -23,8 +23,8 @@ requires    'DBD::Oracle' => 0;
 requires    'DBD::mysql' => 0;
 requires    'DBD::Pg' => 0;
 requires    'DBI' => 0;
-requires    'Switch' => 0;
 requires    'REST::Client' => 0;
+requires    'Template' => 0;
 
 test_requires 'Test::More' => 0;
 

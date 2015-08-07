@@ -13,6 +13,8 @@ use Exporter;
 
 use DBOD::Ldap;
 use Data::Dumper;
+use Template;
+use Try::Tiny;
 
 use Log::Log4perl qw(:easy);
 
@@ -24,12 +26,6 @@ my $entity_template = {
     ORA   => 'dbod_template_oracle',
     tnsnames   => 'dbod_template_con',
     };
-
-my $metadata_template = {
-    MYSQL    => 'metadata_mysql',
-    PG => 'metadata_postgresql',
-    ORA   => 'metadata_oracle',
-};
 
 my $subcategory_attributes = {
     'MYSQL' => {
@@ -44,6 +40,28 @@ my $subcategory_attributes = {
         'SC-XLOGDIR-LOCATION' => "/ORA/dbs02/#DBNAME#/pg_xlog",
         'SC-DATADIR-LOCATION' => "/ORA/dbs03/#DBNAME#/data",  },
     };
+
+sub load_template {
+    my ($format, $db_type, $vars, $config) = @_;
+    try {
+        DEBUG "Template folder: %s",  $config->{'common'}->{'template_folder'};
+         my $tt = Template->new({
+            INCLUDE_PATH => $config->{'common'}->{'template_folder'},
+            INTERPOLATE  => 1,
+         });
+        my $output;
+        DEBUG "Loading %s/%s", $format, $db_type;
+        my $result = $tt->process(join('/',$format, $db_type), $vars, \$output);
+        unless ($result) {
+            ERROR "Error populating template: %s/%s:", $format, $db_type;
+            ERROR $tt->error();
+        }
+        return $output;
+    } catch {
+        ERROR "$Template::ERROR\n";
+    };
+    return;
+}
 
 sub timestamp_entity {
     # Adds a timestampt with the last modification time to the 
