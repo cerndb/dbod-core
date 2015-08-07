@@ -101,8 +101,10 @@ sub set_ip_alias {
     $result{'code'} = $client->responseCode();
     if ($result{'code'} eq '201') {
         INFO 'IP Alias succesfully created for ' . $entity;
+        $result{'response'} = decode_json $client->responseContent();
     } else {
         ERROR 'Resource not available. IP alias creation failed for ' . $entity; 
+        $result{'response'} = undef;
     }
     return \%result;
 }
@@ -119,7 +121,7 @@ sub get_ip_alias {
         $result{'response'} = decode_json $client->responseContent();
     } else {
         ERROR 'IP alias does not exist for ' . $entity;
-        return;
+        $result{'response'} = undef;
     }
     return \%result;
 }
