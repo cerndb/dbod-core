@@ -298,22 +298,6 @@ sub load_LDIF {
     return \@entries;
 }
 
-
-sub load_JSON {
-    # Loads LDIF template, return LDAP::Entry
-    my ($template_name, $config) = @_;
-    my $template_dir = $config->{'common'}->{'template_folder'};
-    DEBUG "Loading JSON  template:  " . $template_name . " from :" . $template_dir;
-    local $/ = undef;
-    open(my $json_fh, "<:encoding(UTF-8)", (join '/', $template_dir, $template_name))
-        or return ();
-    my $json_text = <$json_fh>;
-    close($json_fh);
-    my $template = decode_json $json_text;
-    return $template;
-}
-
-
 sub create_metadata {
     # Creates a new metadata object.
     my ($new_entity, $config) = @_;
