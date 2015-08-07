@@ -277,27 +277,6 @@ sub create_instance {
     return;
 } 
 
-sub load_LDIF {
-    # Loads LDIF template, return LDAP::Entry
-    my ($template, $config) = @_;
-    my $template_dir = $config->{'common'}->{'template_folder'};
-    DEBUG "Loading LDIF template:  " . $template . " from :" . $template_dir;
-    my $ldif = Net::LDAP::LDIF->new( $template_dir . "${template}.ldif", "r", onerror => 'undef' );
-    my @entries;
-    while ( not $ldif->eof ( ) ) {
-      my $entry = $ldif->read_entry ( );
-      if ( $ldif->error ( ) ) {
-        ERROR "Error msg: ", $ldif->error( );
-        ERROR "Error lines:\n", $ldif->error_lines( );
-      }
-      else {
-          push @entries, $entry;
-      }
-    }
-    $ldif->done ( );
-    return \@entries;
-}
-
 sub create_metadata {
     # Creates a new metadata object.
     my ($new_entity, $config) = @_;
@@ -381,67 +360,5 @@ sub create_tnsnetservice {
 
     return;
 }
-
-
-#TODO : Evaluate this method
-sub migrate_instance_template {
-    my ($entity_name, $migrate_to, $config) = @_;
-    
-    my $conn = DBOD::Ldap::get_LDAP_conn($config);
-    
-    my $dbname = $migrate_to->{'dbname'};
-    my $port = $migrate_to->{'port'};
-    my $socket = $migrate_to->{'socket'};
-    my $hostname = $migrate_to->{'host'};
-    my $ip_alias = "${hostname}.cern.ch";
-    my $serverdata = $migrate_to->{'serverdata'};
-    my $serverlogs = $migrate_to->{'serverlogs'};
-    
-    # Adds NFS volumes
-    my $nfsvols = DBOD::Ldap::load_LDIF('nfsvols');
-    substitute_template_dns($nfsvols, $entity_name);
-    foreach my $nfs_entry (@{$nfsvols}) {
-         $nfs_entry->update($conn);
-     }
-    # binlog nfs vol server
-    my $nfs_binlogs_address_base = "SC-NFS-VOLUME-ID=1,SC-NFS-VOLUMES=nfs-volumes," .
-        "SC-ENTITY=$entity_name,SC-CATEGORY=entities,ou=syscontrol,dc=cern,dc=ch";
-    DBOD::Ldap::modify_attributes($conn, $nfs_binlogs_address_base, 
-        ['SC-NFS-VOLUME-LOCAL-PATH' => "/ORA/dbs02/$dbname",
-         'SC-NFS-VOLUME-SERVER-PATH' => "/ORA/dbs02/$dbname",
-         'SC-NFS-VOLUME-SERVER' => "$serverlogs",]);
-    
-    # datadir nfs vol server
-    my $nfs_datadir_address_base = "SC-NFS-VOLUME-ID=2,SC-NFS-VOLUMES=nfs-volumes,".
-        "SC-ENTITY=$entity_name,SC-CATEGORY=entities,ou=syscontrol,dc=cern,dc=ch";
-    DBOD::Ldap::modify_attributes($conn, $nfs_datadir_address_base, 
-        ['SC-NFS-VOLUME-LOCAL-PATH' => "/ORA/dbs03/$dbname",
-         'SC-NFS-VOLUME-SERVER-PATH' => "/ORA/dbs03/$dbname",
-         'SC-NFS-VOLUME-SERVER' => "$serverdata",]);
-    
-    # Modify SC-ADDRESSES
-    my $address_base = "SC-DB-ADDRESS-ID=0,SC-DB-ADDRESSES=db-addresses," .
-        "SC-ENTITY=$entity_name,SC-CATEGORY=entities,ou=syscontrol,dc=cern,dc=ch";
-    DBOD::Ldap::modify_attributes($conn, $address_base, 
-        ['SC-DB-ADDRESS-IP' => $ip_alias,
-         'SC-DB-ADDRESS-PORT' => $port, ]);
-
-    # Modify SC-HOSTS
-    my $host_base = "SC-HOST-ID=1,SC-HOSTS=hosts,SC-ENTITY=$entity_name," .
-        "SC-CATEGORY=entities,ou=syscontrol,dc=cern,dc=ch";
-    DBOD::Ldap::modify_attributes($conn, $host_base, 
-        ['SC-HOST-NAME' => $hostname ,
-         'SC-TNS-LISTENER-NAME' => $socket, ]);
-
-    # Timestamp entity in SC-COMMENT attribute
-    timestamp_entity($conn, $entity_name);
-
-    # Closes LDAP connection
-    $conn->unbind();
-    $conn->disconnect();
-
-    return;
-}
-
 
 1;
