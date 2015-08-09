@@ -144,9 +144,7 @@ sub remove_ip_alias {
 }
 
 sub set_metadata { 
-    my ($entity, $input, $config) = @_;
-    my $metadata = DBOD::Templates::create_metadata($input, $config);
-    DEBUG Dumper $metadata;
+    my ($entity, $metadata, $config) = @_;
     my $client = _api_client($config, 1);
     $client->PUT(
         join('/', $config->{'api'}->{'entity_metadata_endpoint'}, $entity),
@@ -164,7 +162,9 @@ sub set_metadata {
 }
 
 sub create_entity { 
-    my ($entity, $metadata, $config) = @_;
+    my ($entity, $input, $config) = @_;
+    my $metadata = DBOD::Templates::create_metadata($input, $config);
+    DEBUG Dumper $metadata;
     my $client = _api_client($config, 1);
     $client->POST(
         join('/', $config->{'api'}->{'entity_metadata_endpoint'}, $entity)
