@@ -77,5 +77,27 @@ sub get_ip_alias {
     return $call->result;
 }
 
+sub create_alias {
+    my ($input, $config) = @_;
+
+    DEBUG "Registering ip aplias $input->{ip_alias} in API for entity: $input->{dbname}";
+    my $call = DBOD::Api::set_ip_alias($input->{dbname}, $input->{ip_alias}, $config);
+    DEBUG Dumper $call;
+    my $dnsname = $call->{response}->[0];
+    DEBUG Dumper $dnsname;
+    my $cmd = $config->{'ipalias'}->{'change_command'};
+    my $host = $input->{hosts}->[0];
+    my $command = $cmd . " --dnsname=" . $dnsname . " --add_ip=" . $host;
+    DEBUG 'Adding entry to DNS by executing: ' . $command;
+    my $runtime = DBOD::Runtime->new();
+    my $return_code = $runtime->run_cmd($command);
+    if ($return_code) {
+        # An error ocurred executing external command
+        ERROR 'An error occurred creating DNS entry for ip-alias';
+    }
+    DEBUG "Adding ipalias $input->{ip_alias} to dnsname: $input->{dnsname}";
+    DBOD::Network::add_ip_alias($dnsname, $input->{ip_alias}, $config);
+}
+
 1;
 
