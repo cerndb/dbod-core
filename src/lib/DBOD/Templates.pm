@@ -42,26 +42,25 @@ my $subcategory_attributes = {
     };
 
 sub load_template {
-    my ($format, $db_type, $vars, $config) = @_;
+    my ($format, $db_type, $vars, $config, $output) = @_;
     try {
         DEBUG sprintf("Template folder: %s",  $config->{'common'}->{'template_folder'});
          my $tt = Template->new({
             INCLUDE_PATH => $config->{'common'}->{'template_folder'},
             INTERPOLATE  => 1,
          });
-        my $output;
         DEBUG sprintf("Loading %s/%s", $format, $db_type);
-        my $result = $tt->process(join('/',$format, $db_type), $vars, \$output);
+        my $result = $tt->process(join('/',$format, $db_type), $vars, $output);
         unless ($result) {
             ERROR sprintf("Error populating template: %s/%s:", $format, $db_type);
             ERROR $tt->error();
         }
-        DEBUG $output;
-        return $output;
+        return scalar 0;
     } catch {
         ERROR "Template error: $Template::ERROR\n";
+        return scalar 1;
     };
-    return;
+    return scalar 0;
 }
 
 sub timestamp_entity {
@@ -283,9 +282,10 @@ sub create_metadata {
     my ($new_entity, $config) = @_;
     DEBUG 'Creating Metadata object for entity: ' . Dumper $new_entity;
     my $type = lc $new_entity->{subcategory};
-    my $metadata = load_template 'json', $type, $new_entity, $config;
+    my $metadata;
+    load_template 'json', $type, $new_entity, $config, \$metadata;
     DEBUG 'Metadata: ' . Dumper $metadata;
-    return encode_json($metadata);
+    return $metadata;
 }
 
 
