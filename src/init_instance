@@ -1,0 +1,97 @@
+#!/usr/bin/env perl
+# Copyright (C) 2015, CERN
+# This software is distributed under the terms of the GNU General Public
+# Licence version 3 (GPL Version 3), copied verbatim in the file "LICENSE".
+# In applying this license, CERN does not waive the privileges and immunities
+# granted to it by virtue of its status as Intergovernmental Organization
+# or submit itself to any jurisdiction.
+
+
+# Extension of the base DBOD::Job class to add extra required parameters
+package DBOD::Init;
+use Moose;
+use DBOD::Templates;
+
+extends 'DBOD::Job';
+with 'MooseX::Getopt::Usage',
+     'MooseX::Getopt::Usage::Role::Man';
+
+# Traditionally named dbname parameter is now 'entity'
+has 'subcategory' => (
+    is => 'ro', 
+    isa => 'Str', 
+    required => 1, 
+    documentation => qq{Database server: (MYSQL, PG, ORACLE} );
+has 'type' => (
+    is => 'ro', 
+    isa => 'Str', 
+    required => 1, 
+    documentation => qq{Database type: (DEV, PROD} );
+has 'version' => (
+    is => 'ro', 
+    isa => 'Str', 
+    required => 1, 
+    documentation => qq{Database server version: (e.g: 5.6.17, 9.4.4, ...} );
+has 'port' => (
+    is => 'ro', 
+    isa => 'Str', 
+    required => 1, 
+    documentation => qq{TCP port for the server to listen at });
+has 'buffer' => (
+    is => 'ro', 
+    isa => 'Str', 
+    required => 1, 
+    documentation => qq{Innodb_buffer_pool_size/shared_buffer} );
+has 'hostname' => (
+    is => 'ro', 
+    isa => 'Str', 
+    required => 1, 
+    documentation => qq{Comma separated list of hosts to set the instance in} );
+has 'type' => (
+    is => 'ro', 
+    isa => 'Str', 
+    required => 1, 
+    documentation => qq{Database type: (DEV, PROD} );
+has 'size' => (
+    is => 'ro', 
+    isa => 'Str', 
+    required => 1, 
+    documentation => qq{Data volume creation size, in GB});
+has 'crs' => (
+    is => 'ro', 
+    isa => 'Str', 
+    documentation => qq{Optional: CRS reference} );
+has 'skip-volumes-creation' => (
+    is => 'ro', 
+    isa => 'Bool', 
+    documentation => qq{If set, skip instance volumes creation} );
+has 'debug' => (
+    is => 'ro', 
+    isa => 'Bool', 
+    documentation => qq{If set, output debug level messages} );
+    
+# Main 
+package main;
+
+use strict;
+use warnings;
+
+use Log::Log4perl;
+use DBOD::Runtime;
+use DBOD::MySQL;
+use Data::Dumper;
+
+
+# Initiates logger
+BEGIN { 
+    Log::Log4perl->easy_init() ;
+}
+
+
+my $job = DBOD::Init->new_with_options();
+
+sub body {
+    print Dumper $job;
+}
+
+$job->run(\&body, );
