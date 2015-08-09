@@ -15,6 +15,8 @@ use Log::Log4perl qw(:easy);
 use REST::Client;
 use MIME::Base64;
 use JSON;
+use Data::Dumper;
+use DBOD::Templates;
 
 our ($VERSION, @EXPORT_OK);
 
@@ -142,7 +144,9 @@ sub remove_ip_alias {
 }
 
 sub set_metadata { 
-    my ($entity, $metadata, $config) = @_;
+    my ($entity, $input, $config) = @_;
+    my $metadata = DBOD::Templates::create_metadata($input, $config);
+    DEBUG Dumper $metadata;
     my $client = _api_client($config, 1);
     $client->PUT(
         join('/', $config->{'api'}->{'entity_metadata_endpoint'}, $entity),
