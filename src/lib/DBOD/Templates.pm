@@ -5,7 +5,7 @@
 # granted to it by virtue of its status as Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-package Templates;
+package DBOD::Templates;
 
 use warnings;
 use strict;
@@ -15,8 +15,8 @@ use DBOD::Ldap;
 use Data::Dumper;
 use Template;
 use Try::Tiny;
-
 use Log::Log4perl qw(:easy);
+use JSON;
 
 use base qw(Exporter);
 
@@ -281,8 +281,9 @@ sub create_metadata {
     # Creates a new metadata object.
     my ($new_entity, $config) = @_;
     DEBUG 'Creating Metadata object for entity: ' . Dumper $new_entity;
-    my $type = $new_entity->{'subcategory'};
+    my $type = lc $new_entity->{subcategory};
     my $metadata = load_template 'json', $type, $new_entity, $config;
+    DEBUG 'Metadata: ' . Dumper $metadata;
     return encode_json($metadata);
 }
 
