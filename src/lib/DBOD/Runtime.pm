@@ -56,6 +56,42 @@ sub run_cmd {
     return;
 }
 
+sub mywait {
+    my ($self, $method, @params) = @_;
+    my $result;
+    $self->log->debug( "Calling $method with @params until obtaining results");
+    $result= $method->(@params);
+    my $time = 1.0;
+    while (! defined $result) {
+        $self->log->debug( "Received: $result. Waiting $time seconds" );
+        sleep $time;
+        $time = $time * 2;
+        $result = $method->(@params);
+    }
+    $self->log->debug($result);
+    return $result;
+}
+
+sub result_code{
+    my ($self, $log) = @_;
+    my @lines = split(m{\n}x, $log);
+    my $code = undef;
+    foreach (@lines){
+        if ( $_ =~ m{\[(\d)\]}x ){
+            $code = $1;
+            print $_,"\n";
+            print $code,"\n";
+        }
+    }
+    if (defined $code){
+        return scalar int($code);
+    }
+    else{
+        # If the command doesn't return any result code, we take it as bad
+        return scalar 1;
+    }
+}
+
 sub ssh {
     my ($self, $arg_ref) = @_; 
     # Using named parameters, but unpacking for clarity and usability
