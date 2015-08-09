@@ -180,6 +180,16 @@ sub create_instance {
     my $buffer = $new_entity->{'buffer'};
     my $crs = $new_entity->{'crs'};
     
+    # Socket path
+    if ($subcategory eq 'MYSQL') {
+        $new_instance->{'socket'} = "/var/lib/mysql/mysql.sock.${dbname}.${port}";
+    } elsif ($subcategory eq 'PG') {
+        $new_instance->{'socket'} = "/var/lib/pgsql";
+        }
+        else { 
+            # TODO: Oracle
+    }
+    
     my $entity = "dod_" . lc($dbname);
     my $template_name = $entity_template->{$subcategory};
 
@@ -285,7 +295,7 @@ sub create_metadata {
     my $metadata;
     load_template 'json', $type, $new_entity, $config, \$metadata;
     DEBUG 'Metadata: ' . Dumper $metadata;
-    return $metadata;
+    return $metadata);
 }
 
 
