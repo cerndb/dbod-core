@@ -295,7 +295,7 @@ sub create_metadata {
     my $metadata;
     load_template 'json', $type, $new_entity, $config, \$metadata;
     DEBUG 'Metadata: ' . Dumper $metadata;
-    return $metadata);
+    return $metadata;
 }
 
 
