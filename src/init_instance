@@ -21,7 +21,7 @@ has 'subcategory' => (
     is => 'ro', 
     isa => 'Str', 
     required => 1, 
-    documentation => qq{Database server: (MYSQL, PG, ORACLE} );
+    documentation => qq{Database server: (MYSQL, PG, ORACLE)} );
 has 'type' => (
     is => 'ro', 
     isa => 'Str', 
@@ -41,12 +41,13 @@ has 'buffer' => (
     is => 'ro', 
     isa => 'Str', 
     required => 1, 
+    default => '1',
     documentation => qq{Innodb_buffer_pool_size/shared_buffer} );
-has 'hostname' => (
+has 'hosts' => (
     is => 'ro', 
     isa => 'Str', 
     required => 1, 
-    documentation => qq{Comma separated list of hosts to set the instance in} );
+    documentation => qq{Comma separated list of hosts to install the instance in} );
 has 'type' => (
     is => 'ro', 
     isa => 'Str', 
@@ -56,6 +57,7 @@ has 'size' => (
     is => 'ro', 
     isa => 'Str', 
     required => 1, 
+    default => '10',
     documentation => qq{Data volume creation size, in GB});
 has 'crs' => (
     is => 'ro', 
@@ -69,7 +71,7 @@ has 'debug' => (
     is => 'ro', 
     isa => 'Bool', 
     documentation => qq{If set, output debug level messages} );
-    
+
 # Main 
 package main;
 
@@ -91,7 +93,37 @@ BEGIN {
 my $job = DBOD::Init->new_with_options();
 
 sub body {
-    print Dumper $job;
+    # Set up hash containing new instance parameters
+    my $input = {};
+    $input->{dbname} = $job->entity();
+    $input->{DBNAME} = uc $input->{dbname};
+    $input->{subcategory} = $job->subcategory();
+    $input->{type} = $job->type();
+    $input->{version} = $job->version();
+    $input->{port} = $job->port();
+    $input->{crs} = $job->crs();
+    $input->{size} = $job->size();
+    $input->{buffer} = $job->buffer();
+    my @hosts = split /,/ , $job->hosts();
+    $input->{hosts} = \@hosts;
+
+    # Create Volumes
+
+    # After call we have:
+    $input->{dataserver} = 'dataserver';
+    $input->{binlogserver} = 'binlogserver';
+    $job->log->debug(Dumper $input);
+
+    # Create metadata entry and register using the API
+    DBOD::Api::create_entity($job->entity(), $input, $job->$config); 
+    
+    # Create LDAP entry
+    
+    # Network registration
+
+    # Job done!
+    $job->_result(0);
+
 }
 
 $job->run(\&body, );
