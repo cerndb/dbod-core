@@ -44,21 +44,22 @@ my $subcategory_attributes = {
 sub load_template {
     my ($format, $db_type, $vars, $config) = @_;
     try {
-        DEBUG "Template folder: %s",  $config->{'common'}->{'template_folder'};
+        DEBUG sprintf("Template folder: %s",  $config->{'common'}->{'template_folder'});
          my $tt = Template->new({
             INCLUDE_PATH => $config->{'common'}->{'template_folder'},
             INTERPOLATE  => 1,
          });
         my $output;
-        DEBUG "Loading %s/%s", $format, $db_type;
+        DEBUG sprintf("Loading %s/%s", $format, $db_type);
         my $result = $tt->process(join('/',$format, $db_type), $vars, \$output);
         unless ($result) {
-            ERROR "Error populating template: %s/%s:", $format, $db_type;
+            ERROR sprintf("Error populating template: %s/%s:", $format, $db_type);
             ERROR $tt->error();
         }
+        DEBUG $output;
         return $output;
     } catch {
-        ERROR "$Template::ERROR\n";
+        ERROR "Template error: $Template::ERROR\n";
     };
     return;
 }
