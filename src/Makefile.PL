@@ -27,9 +27,11 @@ requires    'REST::Client' => 0;
 requires    'Template' => 0;
 requires    'IPC::Run' => 0;
 requires    'Net::OpenSSH' => 0;
+requires    'Net::LDAP' => 0;
 requires    'JSON' => 0;
 requires    'MooseX::Getopt::Usage' => 0;
 requires    'Try::Tiny' => 0;
+requires    'XML::Parser' => 0;
 
 test_requires 'Test::More' => 0;
 
