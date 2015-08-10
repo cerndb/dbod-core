@@ -59,37 +59,44 @@ sub BUILD {
 
     my $dsn;
     my $db_attrs;
-    for ($db_type) {
-        if (/^mysql$/) {
-            $dsn = "DBI:mysql:mysql_socket=" . $self->metadata->{'socket'};
-            $db_attrs = {
-                AutoCommit => 1, 
-                };
-        }
-        if (/^pgsql$/) {
-            $dsn = "DBI:Pg:host=" . $self->metadata->{'hosts'}[0] .
-             ";port=" . $self->metadata->{'port'};
-            $db_attrs = {
-                AutoCommit => 1, 
-                };
-        }
-        if (/^oracle$/) {
-            my $sid = $self->metadata->{'sid'};
-            $dsn = "DBI:oracle:$sid";
-            $db_attrs = {
-                AutoCommit => 1, 
-                ora_session_mode => ORA_SYSDBA,
-                ora_client_info => 'DBOD-core', 
-                ora_verbose => 0 };
-        }
-    };
+    
+    if (defined $self->metadata->{'subcategory'}) {
+        $self->log->info('Creating DB connection with instance');
+        for ($db_type) {
+            if (/^mysql$/) {
+                $dsn = "DBI:mysql:mysql_socket=" . $self->metadata->{'socket'};
+                $db_attrs = {
+                    AutoCommit => 1, 
+                    };
+            }
+            if (/^pgsql$/) {
+                $dsn = "DBI:Pg:host=" . $self->metadata->{'hosts'}[0] .
+                 ";port=" . $self->metadata->{'port'};
+                $db_attrs = {
+                    AutoCommit => 1, 
+                    };
+            }
+            if (/^oracle$/) {
+                my $sid = $self->metadata->{'sid'};
+                $dsn = "DBI:oracle:$sid";
+                $db_attrs = {
+                    AutoCommit => 1, 
+                    ora_session_mode => ORA_SYSDBA,
+                    ora_client_info => 'DBOD-core', 
+                    ora_verbose => 0 };
+            }
+        };
 
-    $self->db(DBOD::DB->new(
-                  db_dsn  => $dsn,
-                  db_user => $db_user,
-                  db_password => $db_password,
-                  db_attrs => $db_attrs,));
-    return;
+        $self->db(DBOD::DB->new(
+                      db_dsn  => $dsn,
+                      db_user => $db_user,
+                      db_password => $db_password,
+                      db_attrs => $db_attrs,));
+        }
+        else { 
+            $self->log->info('Skipping DB connection with instance');
+        }
+        return;
 };
 
 sub run {
