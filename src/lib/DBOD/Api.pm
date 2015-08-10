@@ -86,7 +86,7 @@ sub get_entity_metadata {
         WARN 'Returning metadata info from cache';
         return $cache->{$entity} // {};
     } else {
-        ERROR 'Metadata not available for entity' . $entity;
+        ERROR 'Metadata not available for entity ' . $entity;
         return {};
     }
 }
@@ -148,8 +148,10 @@ sub set_metadata {
     my $client = _api_client($config, 1);
     $client->PUT(
         join('/', $config->{'api'}->{'entity_metadata_endpoint'}, $entity),
-        Content_Type => 'application/json',
-        Content => $metadata
+        {
+            Content_Type => 'application/json',
+            Content => $metadata
+        }
     );
     my %result;
     $result{'code'} = $client->responseCode();
@@ -162,21 +164,30 @@ sub set_metadata {
 }
 
 sub create_entity { 
-    my ($entity, $input, $config) = @_;
+    my ($input, $config) = @_;
+    my $entity = $input->{dbname};
     my $metadata = DBOD::Templates::create_metadata($input, $config);
-    DEBUG Dumper $metadata;
-    my $client = _api_client($config, 1);
-    $client->POST(
-        join('/', $config->{'api'}->{'entity_metadata_endpoint'}, $entity)
-    );
-    my %result;
-    $result{'code'} = $client->responseCode();
-    if ($result{'code'} eq '201') {
-        INFO 'Entity created: ' . $entity;
+    if (defined $metadata) { 
+        my $client = _api_client($config, 1);
+        $client->POST(
+            join('/', $config->{'api'}->{'entity_metadata_endpoint'}, $entity),
+            {
+                Content_Type => 'application/x-www-form-urlencoded',
+                Content => $metadata
+            }
+        );
+        my %result;
+        $result{'code'} = $client->responseCode();
+        if ($result{'code'} eq '201') {
+            INFO 'Entity created: ' . $entity;
+        } else {
+            ERROR 'Error creating entity: ' . $entity; 
+        }
+        return \%result;
     } else {
-        ERROR 'Error creating entity: ' . $entity; 
+        ERROR "Entity metadata not valid. Aborting operation";
+        return;
     }
-    return \%result;
 }
 
 1;
