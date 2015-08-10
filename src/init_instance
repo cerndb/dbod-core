@@ -93,14 +93,12 @@ my $job = DBOD::Init->new_with_options();
 
 sub body {
 
-    $ENV{PERL_LWP_SSL_VERIFY_HOSTNAME} = 0;
-
     # Set up hash containing new instance parameters
     my $input = {};
     $input->{dbname} = $job->entity();
-    $input->{dbname} =~ s/-/_/g;
+    $input->{dbname} =~ s/\-/\_/g;
     $input->{DBNAME} = uc $input->{dbname};
-    $input->{DBNAME} =~ s/-/_/g;
+    $input->{DBNAME} =~ s/\-/\_/g;
     $input->{subcategory} = $job->subcategory();
     $input->{type} = $job->type();
     $input->{version} = $job->version();
@@ -140,13 +138,9 @@ sub body {
         $input->{'serverdata'} =  'NASDATASERVER';
     }
 
-    $job->log->debug( Dumper $input );
-
     # Create metadata entry and register using the API
-    DBOD::Api::create_entity($input, $job->config); 
+    #DBOD::Api::create_entity($input, $job->config); 
 
-    exit 0;
-    
     # Create LDAP entry. All this needs to be migrated to use templates
     # like we do for the metadat entries
     $input->{entity} = 'dod_' . $job->entity;
@@ -154,6 +148,8 @@ sub body {
     $input->{ip_alias} = 'dbod-' . $input->{dbname};
     $input->{ip_alias} =~ s/\_/\-/g;
     DBOD::Templates::create_instance($input, $job->config);
+    
+    exit 0;
     
     # Network registration
     DBOD::Network::create_alias($input, $job->config);
