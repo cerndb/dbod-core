@@ -182,9 +182,9 @@ sub create_instance {
     
     # Socket path
     if ($subcategory eq 'MYSQL') {
-        $new_instance->{'socket'} = "/var/lib/mysql/mysql.sock.${dbname}.${port}";
+        $new_entity->{'socket'} = "/var/lib/mysql/mysql.sock.${dbname}.${port}";
     } elsif ($subcategory eq 'PG') {
-        $new_instance->{'socket'} = "/var/lib/pgsql";
+        $new_entity->{'socket'} = "/var/lib/pgsql";
         }
         else { 
             # TODO: Oracle
