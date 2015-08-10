@@ -171,9 +171,9 @@ sub create_entity {
         my $client = _api_client($config, 1);
         $client->POST(
             join('/', $config->{'api'}->{'entity_metadata_endpoint'}, $entity),
+            "metadata=$metadata",
             {
                 Content_Type => 'application/x-www-form-urlencoded',
-                Content => $metadata
             }
         );
         my %result;
