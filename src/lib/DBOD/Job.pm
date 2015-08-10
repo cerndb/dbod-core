@@ -52,15 +52,15 @@ sub BUILD {
     # Load entity metadata
     $self->metadata(
         get_entity_metadata($self->entity, $self->md_cache, $self->config));
-    # Set up db connector
-    my $db_type = lc $self->metadata->{'subcategory'};
-    my $db_user = $self->config->{$db_type}->{'db_user'};
-    my $db_password = $self->config->{$db_type}->{'db_password'};
-
-    my $dsn;
-    my $db_attrs;
     
     if (defined $self->metadata->{'subcategory'}) {
+        # Set up db connector
+        my $db_type = lc $self->metadata->{'subcategory'};
+        my $db_user = $self->config->{$db_type}->{'db_user'};
+        my $db_password = $self->config->{$db_type}->{'db_password'};
+
+        my $dsn;
+        my $db_attrs;
         $self->log->info('Creating DB connection with instance');
         for ($db_type) {
             if (/^mysql$/) {
