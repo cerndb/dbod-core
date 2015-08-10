@@ -77,8 +77,10 @@ use warnings;
 use Log::Log4perl;
 use Data::Dumper;
 use DBOD::Runtime;
-use DBOD::Runtime_Zapi;
+# Using the old Runtime_Zapi, as the new version is missing methods
 
+use lib '/ORA/dbs01/syscontrol/projects/recovery/bin';
+use RunTime_Zapi;
 
 # Initiates logger
 BEGIN { 
@@ -106,23 +108,23 @@ sub body {
 
     # If volumes are to be created
     my $rt = DBOD::Runtime->new();
-    my $rt_zapi = DBOD::Runtime_Zapi->new();
 
     unless ($job->skip_volumes_creation()) {
 
-        my $cmd = "/etc/init.d/syscontrol -i dfm.db-cmode DFM_create_dod_volumes_Cmode -name ${dbname} -size ${datasize} -server ${hostname}  -type ${subcategory} -debug";
+        my $cmd = "/etc/init.d/syscontrol -i dfm.db-cmode DFM_create_dod_volumes_Cmode -name $input->{dbname} -size $input->{datasize} -server $input->{hosts}->[0]  -type $input->{subcategory} -debug";
         $job->log->debug( "Executing: $cmd" );
         my $vol_creation_output = `$cmd`;
-        if (result_code($vol_creation_output)) {
+        if ($rt->result_code($vol_creation_output)) {
             $job->log->error( "An error ocurred creating volumes:" );
             $job->log->error( $vol_creation_output );
             $job->_output(-1);
+            return;
         }
 
         # Fetch volumes mounting details. Will wait until details are available
         $job->log->debug("Fetching volumes server information");
-        my $datavol = $rt->mywait(\&DBOD::RunTime_Zapi::GetDODMountpoint, ("dod${dbname}03", $hosts[0]));
-        my $logvol = $rt->mywait(\&DBOD::RunTime_Zapi::GetDODMountpoint, ("dod${dbname}02", $hosts[0]));
+        my $datavol = $rt->mywait(\&DBOD::RunTime_Zapi::GetDODMountpoint, ("dod$input->{dbname}03", $hosts[0]));
+        my $logvol = $rt->mywait(\&DBOD::RunTime_Zapi::GetDODMountpoint, ("dod$input->{dbname}02", $hosts[0]));
         my ($serverdata, $data_mounting_path) = split ':', $datavol;
         my ($serverlogs, $logs_mounting_path) = split ':', $logvol;
 
