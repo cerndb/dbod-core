@@ -149,14 +149,11 @@ sub body {
     $input->{ip_alias} =~ s/\_/\-/g;
     DBOD::Templates::create_instance($input, $job->config);
     
-    exit 0;
-    
     # Network registration
     DBOD::Network::create_alias($input, $job->config);
 
     # Job done!
     $job->_result(0);
-
 }
 
 $job->run(\&body, );
