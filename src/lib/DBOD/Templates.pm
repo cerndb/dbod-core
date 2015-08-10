@@ -169,22 +169,22 @@ sub create_instance {
     # Hash unpacking, for readability
     my $dbname = $new_entity->{'dbname'};
     my $port = $new_entity->{'port'};
-    my $socket = $new_entity->{'socket'};
     my $subcategory = $new_entity->{'subcategory'};
     my $type = $new_entity->{'type'};
-    my $hostname = $new_entity->{'hostname'};
+    my $hostname = $new_entity->{'hosts'}->[0];
     my $ip_alias = $new_entity->{'ip_alias'};
     my $serverdata = $new_entity->{'serverdata'};
     my $serverlogs = $new_entity->{'serverlogs'};
     my $version = $new_entity->{'version'};
     my $buffer = $new_entity->{'buffer'};
     my $crs = $new_entity->{'crs'};
+    my $socket;
     
     # Socket path
-    if ($subcategory eq 'MYSQL') {
-        $new_entity->{'socket'} = "/var/lib/mysql/mysql.sock.${dbname}.${port}";
-    } elsif ($subcategory eq 'PG') {
-        $new_entity->{'socket'} = "/var/lib/pgsql";
+    if ($new_entity->{subcategory} eq 'MYSQL') {
+        $socket = "/var/lib/mysql/mysql.sock.${dbname}.${port}";
+    } elsif ($new_entity->{subcategory} eq 'PG') {
+        $socket = "/var/lib/pgsql";
         }
         else { 
             # TODO: Oracle
