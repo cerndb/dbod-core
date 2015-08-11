@@ -93,7 +93,7 @@ sub create_alias {
         # An error ocurred executing external command
         ERROR 'An error occurred creating DNS entry for ip-alias';
     }
-    DEBUG "Adding ipalias $input->{ip_alias} to dnsname: $input->{dnsname}";
+    DEBUG "Adding ipalias $input->{ip_alias} to dnsname: $dnsname";
     add_ip_alias($dnsname, $input->{ip_alias}, $config);
 }
 
