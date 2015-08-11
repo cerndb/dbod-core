@@ -76,7 +76,10 @@ use warnings;
 
 use Log::Log4perl;
 use Data::Dumper;
+use DBOD::Api;
 use DBOD::Runtime;
+use DBOD::Network;
+use DBOD::Templates;
 
 # Using the old Runtime_Zapi, as the new version is missing methods
 use lib '/ORA/dbs01/syscontrol/projects/recovery/bin';
