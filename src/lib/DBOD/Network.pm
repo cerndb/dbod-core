@@ -96,7 +96,7 @@ sub create_alias {
         ERROR 'An error occurred creating DNS entry for ip-alias';
     }
     DEBUG "Adding ipalias $input->{ip_alias} to dnsname: $input->{dnsname}";
-    DBOD::Network::add_ip_alias($dnsname, $input->{ip_alias}, $config);
+    add_ip_alias($dnsname, $input->{ip_alias}, $config);
 }
 
 1;
