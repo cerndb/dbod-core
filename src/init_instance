@@ -77,8 +77,8 @@ use warnings;
 use Log::Log4perl;
 use Data::Dumper;
 use DBOD::Runtime;
-# Using the old Runtime_Zapi, as the new version is missing methods
 
+# Using the old Runtime_Zapi, as the new version is missing methods
 use lib '/ORA/dbs01/syscontrol/projects/recovery/bin';
 use RunTime_Zapi;
 
@@ -126,8 +126,8 @@ sub body {
 
         # Fetch volumes mounting details. Will wait until details are available
         $job->log->debug("Fetching volumes server information");
-        my $datavol = $rt->mywait(\&DBOD::RunTime_Zapi::GetDODMountpoint, ("dod$input->{dbname}03", $hosts[0]));
-        my $logvol = $rt->mywait(\&DBOD::RunTime_Zapi::GetDODMountpoint, ("dod$input->{dbname}02", $hosts[0]));
+        my $datavol = $rt->mywait(\&RunTime_Zapi::GetDODMountpoint, ("dod$input->{dbname}03", $hosts[0]));
+        my $logvol = $rt->mywait(\&RunTime_Zapi::GetDODMountpoint, ("dod$input->{dbname}02", $hosts[0]));
         my ($serverdata, $data_mounting_path) = split ':', $datavol;
         my ($serverlogs, $logs_mounting_path) = split ':', $logvol;
 
@@ -139,7 +139,7 @@ sub body {
     }
 
     # Create metadata entry and register using the API
-    #DBOD::Api::create_entity($input, $job->config); 
+    DBOD::Api::create_entity($input, $job->config); 
 
     # Create LDAP entry. All this needs to be migrated to use templates
     # like we do for the metadat entries
