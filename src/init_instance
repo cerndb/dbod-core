@@ -114,7 +114,7 @@ sub body {
 
     unless ($job->skip_volumes_creation()) {
 
-        my $cmd = "/etc/init.d/syscontrol -i dfm.db-cmode DFM_create_dod_volumes_Cmode -name $input->{dbname} -size $input->{datasize} -server $input->{hosts}->[0]  -type $input->{subcategory} -debug";
+        my $cmd = "/etc/init.d/syscontrol -i dfm.db-cmode DFM_create_dod_volumes_Cmode -name $input->{dbname} -size $input->{size} -server $input->{hosts}->[0]  -type $input->{subcategory} -debug";
         $job->log->debug( "Executing: $cmd" );
         my $vol_creation_output = `$cmd`;
         if ($rt->result_code($vol_creation_output)) {
