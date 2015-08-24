@@ -1,0 +1,126 @@
+#!/usr/bin/env perl
+# Copyright (C) 2015, CERN
+# This software is distributed under the terms of the GNU General Public
+# Licence version 3 (GPL Version 3), copied verbatim in the file "LICENSE".
+# In applying this license, CERN does not waive the privileges and immunities
+# granted to it by virtue of its status as Intergovernmental Organization
+# or submit itself to any jurisdiction.
+
+
+# Extension of the base DBOD::Job class to add extra required parameters
+package DBOD::MySQL::ping;
+use Moose;
+
+extends 'DBOD::Job';
+
+with 'MooseX::Getopt::Usage',
+     'MooseX::Getopt::Usage::Role::Man';
+
+
+
+has 'help' => (is => 'ro', isa => 'Bool', documentation => qq{Print command usage} );
+
+# Main 
+package main;
+
+use strict;
+use warnings;
+
+use Log::Log4perl;
+use DBOD::Runtime;
+use DBOD::MySQL;
+
+# Initiates logger
+BEGIN { 
+    Log::Log4perl->easy_init() ;
+}
+
+
+my $job = DBOD::MySQL::ping->new_with_options();
+my $runtime = DBOD::Runtime->new;
+my $mysql = DBOD::MySQL->new;
+
+sub body {
+	$job->log->info('Executing posgresql start-up on '. $job->entity );
+	
+       my($rc,$entity);
+	$entity = 'dod_' . $job->entity;	
+	
+	#Check if instance is running
+	$rc=$mysql->CheckMySQLState($job->metadata->{'datadir'}) ;
+
+	if ($rc == 0) {
+		$job->log->debug("No instance running");
+		$job->_output(1);
+		return 1;
+	}
+	my($localmycnf); 
+	if ( -r $ENV{"HOME"} . "/.my.cnf" ) { 
+		$localmycnf=1; #a priori we dont need to use user and password they are in the .my.cnf 
+		$job->log->debug("Local <~mysql/.my.cnf> in use");
+	} else {
+		$localmycnf=0;
+	}
+	#build ping file
+	my(@lines)=<DATA>;
+	if (scalar(@lines) != 4) {	#we didnt read properly the data
+		$job->log->error("pg_hba_local.conf couldnt be generated, wrong number of lines. Please contact dbod admins!.");
+		$job->_output(1);
+		return 1;
+	}
+	my $tempfile = $runtime->GetTempFileName('mysql_ping_' . $job->entity . 'XXXX','/tmp','.sql');
+
+	$runtime->WriteFileArr($tempfile,\@lines);
+	if (! -e $tempfile) {
+		$job->log->error("<$tempfile> file couldnt be written. Please contact dbod admins!.");
+		$job->_output(1);
+		return 1;
+	} else {
+		$rc=$runtime->Chmod($tempfile,'700');
+		if ($rc == 0) {
+			$job->log->error("<$tempfile> permissions couldnt be set. Please contact dbod admins!.");
+			$job->_output(1);
+			return 1;
+		}
+	}
+
+	my $rc_ping; 
+	my @output=();
+	if ($localmycnf) {
+		$rc_ping = $runtime->RunStr($job->metadata->{'bindir'} . "/mysql --socket=" . $job->metadata->{'socket'} ." -u " . $job->config->{'mysql'}->{'db_user'} . " < $tempfile" , \@output);
+	} else {
+		$rc_ping = $runtime->RunStr($job->metadata->{'bindir'} . "/mysql --socket=" . $job->metadata->{'socket'} ." -u " . $job->config->{'mysql'}->{'db_user'} . " -p" . $job->config->{'mysql'}->{'db_password'} . " < $tempfile" , \@output);
+	}
+
+	if (-e $tempfile) {
+		$rc = $runtime->Remove($tempfile);
+		$job->log->debug("Temp file has been removed: <$tempfile>") if ($rc); 
+	}
+	if ($rc_ping)  {
+		$job->log->debug("database is up");
+		$job->_output(0);
+		return 0;
+	}
+	else {  
+		$job->log->error("Problem pinging database. Please check!");
+		$job->_output(1);
+		return 1;
+	}
+
+	
+
+
+	# The End
+	$job->log->debug("mysql_ping is over.");
+	$job->_output(0);
+}
+
+$job->run(\&body);
+
+
+
+__DATA__
+use dod_dbmon;
+select * from ping;
+delete from ping;
+insert into ping values (curdate(),curtime());
