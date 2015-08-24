@@ -30,8 +30,7 @@ use Log::Log4perl;
 use DBOD::Runtime;
 use DBOD::MySQL;
 use Data::Dumper;
-use Time::Local;
-use Time::localtime;
+
 
 # Initiates logger
 BEGIN { 
@@ -50,17 +49,17 @@ sub body {
 	$entity = 'dod_' . $job->entity;	
 	
 	#Check if instance is running
-	$rc=$runtime->RunStr("ps -elf | grep -i datadir=" . $job->metadata->{'datadir'} . " | grep -v grep");
-
+	$rc=$mysql->CheckMySQLState($job->metadata->{'datadir'});
 	if ($rc == 0) {
-		$job->log->debug("No instance running");
+		$job->log->debug("Instance " . $job->entity . " not running");
 	} else {
-		$job->log->debug("Instance is already up. Nothing to be done.");
+		$job->log->debug("Instance is up.");
 		$job->log->debug("mysql_start is over.");
 		$job->_output(0);
 		return 0;
 	}
 
+	
 	
 	#If instance is CRS
 	if ($job->metadata->{'crs_ref'}) {
@@ -71,7 +70,7 @@ sub body {
 	if ($rc) {
 		$job->log->debug("Instance is up");
 	} else	{
-		$job->log->error("Problem shutting down instance. Please check.");
+		$job->log->error("Problem starting up instance. Please check.");
 		$job->_output(1);
 		return 1;
 	}

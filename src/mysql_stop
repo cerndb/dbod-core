@@ -48,10 +48,9 @@ sub body {
 	$entity = 'dod_' . $job->entity;	
 	
 	#Check if instance is running
-	$rc=$runtime->RunStr("ps -elf | grep -i datadir=" . $job->metadata->{'datadir'} . " | grep -v grep");
-
+	$rc=$mysql->CheckMySQLState($job->metadata->{'datadir'});
 	if ($rc == 0) {
-		$job->log->debug("Instance not running");
+		$job->log->debug("Instance " . $job->entity . " not running");
 		$job->log->debug("mysql_stop is over.");
 		$job->_output(0);
 		return 0;
