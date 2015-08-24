@@ -1,0 +1,83 @@
+#!/usr/bin/env perl
+# Copyright (C) 2015, CERN
+# This software is distributed under the terms of the GNU General Public
+# Licence version 3 (GPL Version 3), copied verbatim in the file "LICENSE".
+# In applying this license, CERN does not waive the privileges and immunities
+# granted to it by virtue of its status as Intergovernmental Organization
+# or submit itself to any jurisdiction.
+
+
+# Extension of the base DBOD::Job class to add extra required parameters
+package DBOD::PG::stop;
+use Moose;
+
+extends 'DBOD::Job';
+
+with 'MooseX::Getopt::Usage',
+     'MooseX::Getopt::Usage::Role::Man';
+
+
+
+has 'help' => (is => 'ro', isa => 'Bool', documentation => qq{Print command usage} );
+
+# Main 
+package main;
+
+use strict;
+use warnings;
+
+use Log::Log4perl;
+use DBOD::Runtime;
+use DBOD::PG;
+
+# Initiates logger
+BEGIN { 
+    Log::Log4perl->easy_init() ;
+}
+
+
+my $job = DBOD::PG::stop->new_with_options();
+my $runtime = DBOD::Runtime->new;
+my $pg = DBOD::PG->new;
+
+sub body {
+	$job->log->info('Executing posgresql stop on '. $job->entity );
+	
+       my($rc,$entity);
+	$entity = 'dod_' . $job->entity;	
+	
+	#Check if instance is running
+	$rc=$pg->CheckPostgreSQLState($job->metadata->{'bindir'} . "/pg_ctl", $job->metadata->{'datadir'}) ;
+
+	if ($rc == 0) {
+		$job->log->debug("No instance running");
+		$job->log->debug("pg_stop is over.");
+		$job->_output(0);
+		return 0;
+	} else {
+		$job->log->debug("Instance is already up. Needs to be stopped.");
+	}
+
+	
+	#If instance is CRS
+	if ($job->metadata->{'crs_ref'}) {
+		$rc = $runtime->StopCRSResource($entity, $job->config->{'common'}->{'crsctl'});
+	} else {
+		$rc = $pg->StopPostgreSQL($entity, $job->metadata->{'bindir'} . "/pg_ctl",$job->metadata->{'datadir'});
+	}	
+	if ($rc) {
+		$job->log->debug("Instance is down");
+	} else	{
+		$job->log->error("Problem shutting down instance. Please check.");
+		$job->_output(1);
+		return 1;
+	}
+
+
+
+	# The End
+	$job->log->debug("pg_stop is over.");
+	$job->_output(0);
+}
+
+$job->run(\&body);

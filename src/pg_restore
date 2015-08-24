@@ -1,0 +1,435 @@
+#!/usr/bin/env perl
+# Copyright (C) 2015, CERN
+# This software is distributed under the terms of the GNU General Public
+# Licence version 3 (GPL Version 3), copied verbatim in the file "LICENSE".
+# In applying this license, CERN does not waive the privileges and immunities
+# granted to it by virtue of its status as Intergovernmental Organization
+# or submit itself to any jurisdiction.
+
+
+# Extension of the base DBOD::Job class to add extra required parameters
+package DBOD::PG::restore;
+use Moose;
+
+extends 'DBOD::Job';
+
+with 'MooseX::Getopt::Usage',
+     'MooseX::Getopt::Usage::Role::Man';
+
+
+has 'snapshot' => (is => 'ro', isa => 'Str', required => 1, documentation => qq{Target snapshot to be restored} );
+has 'pitr' => (is => 'ro', isa => 'Str', documentation => qq{In case of a PITR, format:  yyyy-mm-dd_H24:MM:SS } );
+has 'help' => (is => 'ro', isa => 'Bool', documentation => qq{Print command usage} );
+
+# Main 
+package main;
+
+use strict;
+use warnings;
+
+use Log::Log4perl;
+use DBOD::Runtime;
+use DBOD::Runtime_Zapi;
+use DBOD::PG;
+use Data::Dumper;
+use Try::Tiny;
+use Time::Local;
+use Time::localtime;
+
+# Initiates logger
+BEGIN { 
+    Log::Log4perl->easy_init() ;
+}
+
+
+my $job = DBOD::PG::restore->new_with_options();
+my $runtime_zapi  = DBOD::Runtime_Zapi->new;
+my $runtime = DBOD::Runtime->new;
+my $pg = DBOD::PG->new;
+my $version_pg_snap;
+
+
+
+# perl pg_restore --entity pgtest --snapshot snapscript_24062015_125419_58_5617 --pitr 2015-06-24_13:00:00
+sub CheckTimes {
+	# Check times provided.
+	my($numsecs_restore);	
+	if ( $job->snapshot =~ /snapscript_(\d\d)(\d\d)(\d\d\d\d)_(\d\d)(\d\d)(\d\d)_(\d+)/ ) {
+		my($year_snap,$month_snap,$day_snap,$hour_snap,$min_snap,$sec_snap);
+			$year_snap=$3;
+			$month_snap=$2;
+			$day_snap=$1;
+			$hour_snap=$4;
+			$min_snap=$5;
+			$sec_snap=$6;
+			$version_pg_snap=$7;
+			if (defined $version_pg_snap) {
+				$job->log->debug("snap restore: year: <$year_snap> month: <$month_snap> day: <$day_snap> hour: <$hour_snap> min: <$min_snap> sec: <$sec_snap> version_pg: <$version_pg_snap>");
+			} else {
+				$job->log->debug("snap restore: year: <$year_snap> month: <$month_snap> day: <$day_snap> hour: <$hour_snap> min: <$min_snap> sec: <$sec_snap> version_pg: <not available>");
+			}
+			try {
+				$numsecs_restore=timelocal($sec_snap,$min_snap,$hour_snap,$day_snap,($month_snap -1),$year_snap);
+
+			} catch {
+				$job->log->error("Problem with timelocal <$!>  numsecs: <$numsecs_restore>");	
+				if (defined $_[0]) {
+					$job->log->error("Cought error: $_[0]");	
+				}
+				$job->_output(1);
+				return 1;
+			};
+	} else {
+			$job->log->error("problem parsing <" . $job->snapshot . ">");	
+			$job->_output(1);
+			return 1;
+	}
+	
+ 	my($numsecs_pitr);
+	if (defined $job->pitr) {
+			if ($job->pitr =~ /(\d\d\d\d)-(\d\d)-(\d\d)_(\d+):(\d+):(\d+)/) {
+			my($year_pitr,$month_pitr,$day_pitr,$hour_pitr,$min_pitr,$sec_pitr);
+			$year_pitr=$1;
+			$month_pitr=$2;
+			$day_pitr=$3;
+			$hour_pitr=$4;
+			$min_pitr=$5;
+			$sec_pitr=$6;
+			
+			$job->log->debug("year: <$year_pitr> month: <$month_pitr> day: <$day_pitr> hour: <$hour_pitr> min: <$min_pitr> sec: <$sec_pitr>");
+			if ($month_pitr > 12 ) {
+				$job->log->error("PITR: not right time format <" . $job->pitr . ">");
+				$job->pitr(undef);
+			}
+			try {
+				$numsecs_pitr=timelocal($sec_pitr,$min_pitr,$hour_pitr,$day_pitr,($month_pitr -1),$year_pitr);
+
+			} catch {
+				$job->log->error("Problem with timelocal <$!> . numsecs: <$numsecs_pitr>");
+				if (defined $_[0]) {
+					$job->log->error("Cought error: $_[0]");	
+				}
+				$job->_output(1);
+				return 1;
+			};
+			if ($numsecs_pitr < $numsecs_restore) {
+				$job->log->error("Time to pitr <" . $job->pitr . "> makes no sense for a restore: <" . $job->snapshot . ">");
+				$job->_output(1);
+				return 1;
+
+			}
+			if ($job->snapshot =~ /_cold$/) {
+				if ($numsecs_pitr < ($numsecs_restore + 15)) {
+					$job->log->error("Using a cold snapshot <" . $job->snapshot . ">, PITR should at least 15 seconds later than snapshot!.");
+					$job->_output(1);
+					return 1;
+				}
+			} 		
+		} else {
+			$job->log->error("Problem parsing <" . $job->pitr . ">");
+			$job->_output(1);
+			return 1;
+		}
+    } elsif ( $job->snapshot =~ /_cold$/ ) {
+		$job->log->error("No PITR given and cold snapshot selected!.");
+		$job->_output(1);
+		return 1;
+	}
+	
+}
+
+sub CheckFileExist{
+	my($file)=@_;
+	
+	if (-e $file) {
+		$job->log->debug(" <$file> has been created!");
+		return 1; #ok
+	} 
+	return 0; #not ok
+
+}
+sub body {
+	$job->log->debug('Executing restore  on '. $job->entity . ' with snapshot ' . $job->snapshot);
+	if (defined $job->pitr) {
+		$job->log->debug('Pitr is ' . $job->pitr);
+	}
+
+	my($entity,$fake);
+	$fake=0;
+	$entity = 'dod_' . $job->entity;	
+	&CheckTimes;
+       #check if trying to restore from a snapshot on a different major version
+	my($actual_version)=$runtime->GetVersionDB( $job->metadata->{'datadir'} . "/current-version");
+
+	if (defined $actual_version) {
+		if (defined $version_pg_snap) {
+			$job->log->debug("actual PG version: $actual_version");
+			if ($actual_version ne $version_pg_snap) {
+				$job->log->error("Please contact DBoD admins, you are trying to restore your instance from a previous Postgresql version.");
+				$job->_output(1);
+				return 1;
+			}
+		}
+	} else {
+		$job->log->error("A version of Postgresql must be defined.");
+		$job->_output(1);
+		return 1;
+	}	 
+	# Check if the server can be configured to allow local connections
+	my($rc);
+	my(@lines)=<DATA>;
+	if (scalar(@lines) != 2) {	#we read properly the data
+		$job->log->error("pg_hba_local.conf couldnt be generated, wrong number of lines. Please contact dbod admins!.");
+		$job->_output(1);
+		return 1;
+	}
+	my($isrunning) = $pg->CheckPostgreSQLState($job->metadata->{'bindir'} . "/pg_ctl", $job->metadata->{'datadir'});
+	my($cmd,@output,$user_storage,$mountpoint);
+
+	#look for mountpoints
+	my($pg_datadir_nosuffix) = $job->metadata->{'datadir'};
+	$pg_datadir_nosuffix =~ s/\/data\/?$//g;
+	
+	#Get information about the volume to work with. Following handles both 7-mode and C-mode use case
+
+	my($server_zapi,$volume_name);
+	my($arref)= $runtime_zapi->GetServerAndVolname($pg_datadir_nosuffix);
+	if (defined($$arref[0])) {
+		$server_zapi=$$arref[0];
+	} else {
+		$job->log->error("server_zapi could not be generated!");
+		$job->_output(1);
+		return 1;
+       }
+	if (defined($$arref[1])) {
+		$volume_name=$$arref[1];
+	} else {
+		$job->log->error("volume information could not be retrieved!");
+		$job->_output(1);
+		return 1;
+       }
+	
+	# stop database if running
+	my $outputline =0;
+	if ($isrunning) { #running instance
+		if ($job->metadata->{'crs_ref'}) {
+			$rc = $runtime->StopCRSResource($entity, $job->config->{'common'}->{'crsctl'});
+		} else {
+			$rc = $pg->StopPostgreSQL($entity, $job->metadata->{'bindir'} . "/pg_ctl",$job->metadata->{'datadir'});
+		}	
+		if ($rc) {
+			$job->log->debug("Instance is down");
+		} else	{
+			$job->log->error("Problem shutting down instance. Please check.");
+			$job->_output(1);
+			return 1;
+		}
+	}
+
+	
+
+	#snapshot restore 
+	
+	$rc=$runtime_zapi->SnapRestore($server_zapi,$volume_name,$job->snapshot); 
+	my($errorflag)=0;
+	if ($rc == 0 ) {
+		$job->log->error("Error restoring snapshot: <" . $job->snapshot . "> on volume: <$volume_name> !");
+		$job->_output(1);
+		return 1;
+	}  else {
+		$job->log->debug("Success restoring snapshot: <" . $job->snapshot  . "> on volume: <$volume_name>.!");
+	}		
+
+	# create restore file
+	my(@arr_file);
+	$arr_file[0]="restore_command = 'ln -fns " . $job->metadata->{'archivedir'} . "/%f %p'\n";
+	if (defined $job->pitr) {
+		my($localpitr)=$job->pitr;
+		$localpitr =~ s/_/ /g;
+		$arr_file[1]= "recovery_target_time = '" . $localpitr . "'\n";
+	} else {
+		$arr_file[1]= "recovery_target_name = '" . $job->snapshot . "'\n";
+	}
+#$arr_file[2]= "recovery_target_timeline= 'latest'\n";
+	$job->log->debug("recovery.conf will be written: " . Data::Dumper->Dump([\@arr_file],['arr_file']));
+	$runtime->WriteFileArr($job->metadata->{'datadir'} . "/recovery.conf",\@arr_file);
+	if (! -e $job->metadata->{'datadir'}. "/recovery.conf") {
+		$job->log->error("recovery.conf file couldnt be written. Please contact dbod admins!.");
+		$job->_output(1);
+		return 1;
+	} else {
+		$job->log->debug("<". $job->metadata->{'datadir'} . "/recovery.conf> has been created.");
+	}
+	if (-e  $job->metadata->{'datadir'} . "/recovery.done") {
+		$job->log->debug("We are deleting previous <". $job->metadata->{'datadir'} . "/recovery.done>");
+		my(@arr_recodone)=$runtime->ReadFile($job->metadata->{'datadir'} . "/recovery.done");
+		$job->log->debug("file <". $job->metadata->{'datadir'} . "/recovery.done> will be deleted. It contains: " . Data::Dumper->Dump([\@arr_recodone],['arr_recodone']));
+	}
+	
+	# Create pg_hba_local.conf
+	$runtime->WriteFileArr($job->metadata->{'datadir'} . "/pg_hba_local.conf",\@lines);
+	if (! -e $job->metadata->{'datadir'}. "/pg_hba_local.conf") {
+		$job->log->error("pg_hba_local.conf file couldnt be written. Please contact dbod admins!.");
+		$job->_output(1);
+		return 1;
+	} else {
+		$rc=$runtime->Chmod($job->metadata->{'datadir'} . "/pg_hba_local.conf",'700');
+		if ($rc == 0) {
+			$job->log->error("pg_hba_local.conf permissions couldnt be set. Please contact dbod admins!.");
+			$job->_output(1);
+			return 1;
+		}
+		$job->log->debug("<". $job->metadata->{'datadir'} . "/pg_hba_local.conf> has been created.");
+	}
+	
+	# Replace pg_hba.conf file for local one
+	my $tempfile = $runtime->GetTempFileName('pg_hbaXXXXX',$job->metadata->{'datadir'},'.conf');
+	if (! defined ($tempfile)) {
+		$job->log->derror("we couldnt create a tempfile name");
+		$job->_output(1);
+		return 1;
+	}
+	$job->log->debug("tempfile is <$tempfile>");
+
+	$rc=$runtime->Copy($job->metadata->{'datadir'} . "/pg_hba.conf","$tempfile",'-p','postgres:postgres','700'); 
+	if ($rc == 0) {
+		$job->log->debug("problem copying <" . $job->metadata->{'datadir'} . "/pg_hba.conf> into <$tempfile>");
+		$job->_output(1);
+		return 1;
+	}
+
+	$rc=$runtime->Copy($job->metadata->{'datadir'} . "/pg_hba_local.conf",$job->metadata->{'datadir'} ."/pg_hba.conf",'-p','postgres:postgres','700'); 
+	if ($rc == 0) {
+		$job->log->debug("problem replacing <" . $job->metadata->{'datadir'} ."/pg_hba_local.conf> by <" . $job->metadata->{'datadir'} . "/pg_hba.conf>");
+		$job->_output(1);
+		return 1;
+	}
+
+
+	$cmd = $job->metadata->{'bindir'} . "/pg_ctl start -w -t 1800 -s -D ". $job->metadata->{'datadir'} ." -l " . $job->metadata->{'datadir'} . "/postgresql.log 2>&1";
+	
+	@output=();
+	$rc=$runtime->RunStr($cmd,\@output);
+	if ($rc == 0) {
+		$job->log->debug("couldnt start database. Please check:   <@output>");
+		$job->_output(1);
+		return 1;
+	} else {
+		$job->log->debug("Database has been started.");
+	}
+	
+	my($file_name)=$job->metadata->{'datadir'} . "/recovery.done";
+
+	#Timeout interval
+	my($timeout,$poll_interval);
+	$timeout=900; #15 minutes	
+	$poll_interval=1; #every second   
+
+	
+	$job->log->debug("file <$file_name> to check for.");  
+	
+	$rc=$runtime->TimeoutOneparam($timeout,$poll_interval,\&CheckFileExist,$file_name);
+	if ($rc==0) {
+		$job->log->debug("postgress didnt recover from crashed. Please check!!!");  
+		$job->_output(1);
+		return 1;
+	} 
+
+	# check for hash indexes, need to be rebuilt version 9.2
+	#my(@databases);	
+	#$cmd = $job->metadata->{'bindir'} . "/psql -h " . $job->metadata->{'socket'} . " -p " . $job->metadata->{'port'} . " -l";
+	#@output=();
+	#$rc=0;
+	#$rc=$runtime->RunStr($cmd,\@output);
+	#if ($rc == 0) {
+	#	$job->log->debug("Error retrieving postgres databases."); 
+	#} else {
+	#	$job->log->debug("Retrieving postgres databases:");
+	#	foreach (@output) {
+	#		chomp $_;
+	#		$job->log->debug("working with: $_");
+	#		if (/^\s+(\w+)\s+\|\s+\w+/) {
+	#			if (! ($1 =~ /template/ || length($1) == 0 )) {
+	#				$job->log->debug("found database <$1>"); 
+	#				if ($1 ne "Name") {
+	#					push @databases,$1;
+	#				}
+	#			}
+	#		}
+	#	}
+	#}
+ 
+	#foreach (@databases) {
+	#	$cmd = $job->metadata->{'bindir'} . "/psql -h ". $job->metadata->{'socket'} . "-p ". $job->metadata->{'port'} . " -d $_ -c \"select count(*) from pg_class where relam = 405;\"";
+	#	$job->log->debug("running command to check hash indexes database: <$cmd> ");
+	#	@output=();
+	#	$rc=0;
+	#	$rc=$runtime->RunStr($cmd,\@output);
+	#	if ($rc == 0) {
+	#		$job->log->debug("couldnt query about hash indexes <$cmd> "); 
+	#	} else { 
+	#		foreach (@output) {
+	#			if (/(\d+)$/) {
+	#				if ($1 > 0) {
+	#					$job->log->debug("we got <$1> hash indexes, please considered rebuilt!! "); 
+	#				}
+	#			}
+	#		}
+	#	 
+	#	}
+	#}
+
+	#stop and restart the postgres server
+	$job->log->debug("Stopping instance");
+	if ($job->metadata->{'crs_ref'}) {
+		$rc = $runtime->StopCRSResource($entity, $job->config->{'common'}->{'crsctl'});
+	} else {
+		$rc = $pg->StopPostgreSQL($entity, $job->metadata->{'bindir'} . "/pg_ctl",$job->metadata->{'datadir'});
+	}	
+	if ($rc) {
+		$job->log->debug("Instance is down");
+	} else	{
+		$job->log->error("Problem shutting down instance. Please check.");
+		$job->_output(1);
+		return 1;
+	}
+
+	
+	$rc = $runtime->Copy("$tempfile",$job->metadata->{'datadir'} ."/pg_hba.conf",'-p','postgres:postgres','700'); 
+	if ($rc == 0) {
+		$job->log->debug("problem replacing <" . $job->metadata->{'datadir'} ."/pg_hba.conf> by <$tempfile>");
+		$job->_output(1);
+		return 1;
+	}
+	$job->log->debug("Starting instance with network");
+
+	if ($job->metadata->{'crs_ref'}) {
+		$rc = $runtime->StartCRSResource($entity, $job->config->{'pg'}->{'oracle_crs'});
+	} else {
+		$rc = $pg->StartPostgreSQL($entity, $job->metadata->{'bindir'} . "/pg_ctl",$job->metadata->{'datadir'} );
+	}	
+	if ($rc) {
+		$job->log->debug("Instance is up");
+	} else	{
+		$job->log->error("Problem starting up instance. Please check.");
+		$job->_output(1);
+		return 1;
+	}
+	if (-e $tempfile) {
+		$rc = $runtime->Remove($tempfile);
+		$job->log->debug("Temp file has been removed: <$tempfile>") if ($rc); 
+	}
+	$job->log->debug("restore operation is successfully over");
+	$job->_output(0);
+	return 0;
+	
+	
+ 
+
+}
+
+$job->run(\&body);
+
+__DATA__
+local   all             postgres                                trust
+local   dod_dbmon       dod_dbmon                               trust
