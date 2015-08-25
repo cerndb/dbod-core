@@ -45,7 +45,7 @@ sub body {
 
 	#look for mountpoints
 	my($pg_datadir_nosuffix) = $job->metadata->{'datadir'};
-	$pg_datadir_nosuffix =~ s/\/data\/?$//g;
+	$pg_datadir_nosuffix =~ s/\/data\/?$//gx;
 	
 	#Get information about the volume to work with. Following only C-mode use case
 

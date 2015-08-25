@@ -78,6 +78,7 @@ sub body {
 	# The End
 	$job->log->debug("pg_start is over.");
 	$job->_output(0);
+	return 0;	
 }
 
 $job->run(\&body);

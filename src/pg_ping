@@ -87,7 +87,6 @@ sub body {
 	}
 	if ($rc_ping)  {
 		$job->log->debug("database is up");
-		return 0;
 	}
 	else {  
 		$job->log->error("Problem pinging database. Please check!");
@@ -100,6 +99,7 @@ sub body {
 	# The End
 	$job->log->debug("pg_ping is over.");
 	$job->_output(0);
+	return 0;	
 }
 
 $job->run(\&body);
