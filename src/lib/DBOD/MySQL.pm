@@ -20,6 +20,22 @@ use Data::Dumper;
 
 my $runtime = DBOD::Runtime->new;
 
+sub CheckMySQLState {
+	my($self, $datadir) = @_;
+	$self->log->info("Parameters: datadir: <$datadir>"); 
+
+	my $rc=$runtime->RunStr("ps -elf | grep -i datadir="  . $datadir . " | grep -v grep");
+
+	if ($rc == 0) {
+		$self->log->debug("Instance not running");
+		return 0;
+
+	} else {
+		$self->log->debug("Instance is up.");
+		return 1; #ok
+	}
+}
+
 #Starts a MySQL database 
 #local =1 -> skip network, local=0, it doesnt.
 sub StartMySQL {
@@ -88,6 +104,7 @@ sub StopMySQL {
 	}
 	else {
 		#Put the instance down
+		$self->log->error("Instance running. Shutting down");
 		if ( -r $ENV{"HOME"} . "/.my.cnf" ) {
 			$cmd = "$mysql_admin --socket=$mysql_socket shutdown";
 		} else {

@@ -14,6 +14,7 @@ use Exporter;
 use Config::General;
 use YAML::Syck;
 use File::ShareDir;
+use Log::Log4perl;
 
 our ($VERSION, @EXPORT_OK);
 

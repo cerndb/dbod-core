@@ -17,6 +17,9 @@ use Try::Tiny;
 use IPC::Run qw(run timeout);
 use Net::OpenSSH;
 use Data::Dumper;
+use File::Temp;
+use Time::Local;
+use Time::localtime;
 
 sub run_cmd {
     my ($self, $cmd_str, $timeout) = @_;
@@ -134,6 +137,90 @@ sub parse_err_file {
     my $res = `tail $file -n $lines`;
     return $res;
 }
+
+# perl pg_restore --entity pgtest --snapshot snapscript_24062015_125419_58_5617 --pitr 2015-06-24_13:00:00
+sub CheckTimes {
+	# Check times provided.
+	my($self,$snapshot,$pitr,$version_snap)=@_;
+	my($numsecs_restore);	
+	if ( $snapshot =~ /snapscript_(\d\d)(\d\d)(\d\d\d\d)_(\d\d)(\d\d)(\d\d)_(\d+)/x ) {
+		my($year_snap,$month_snap,$day_snap,$hour_snap,$min_snap,$sec_snap);
+			$year_snap=$3;
+			$month_snap=$2;
+			$day_snap=$1;
+			$hour_snap=$4;
+			$min_snap=$5;
+			$sec_snap=$6;
+			$$version_snap=$7;
+			if (defined $$version_snap) {
+				$self->log->debug("snap restore: year: <$year_snap> month: <$month_snap> day: <$day_snap> hour: <$hour_snap> min: <$min_snap> sec: <$sec_snap> version_snap: <$$version_snap>");
+			} else {
+				$self->log->debug("snap restore: year: <$year_snap> month: <$month_snap> day: <$day_snap> hour: <$hour_snap> min: <$min_snap> sec: <$sec_snap> version_snap: <not available>");
+			}
+			try {
+				$numsecs_restore=timelocal($sec_snap,$min_snap,$hour_snap,$day_snap,($month_snap -1),$year_snap);
+
+			} catch {
+				$self->log->error("Problem with timelocal <$!>  numsecs: <$numsecs_restore>");	
+				if (defined $_[0]) {
+					$self->log->error("Cought error: $_[0]");	
+				}
+				return 0;
+			};
+	} else {
+			$self->log->error("problem parsing <" . $snapshot . ">");	
+			return 0;
+	}
+	
+ 	my($numsecs_pitr);
+	if (defined $pitr) {
+			if ($pitr =~ /(\d\d\d\d)-(\d\d)-(\d\d)_(\d+):(\d+):(\d+)/x) {
+			my($year_pitr,$month_pitr,$day_pitr,$hour_pitr,$min_pitr,$sec_pitr);
+			$year_pitr=$1;
+			$month_pitr=$2;
+			$day_pitr=$3;
+			$hour_pitr=$4;
+			$min_pitr=$5;
+			$sec_pitr=$6;
+			
+			$self->log->debug("year: <$year_pitr> month: <$month_pitr> day: <$day_pitr> hour: <$hour_pitr> min: <$min_pitr> sec: <$sec_pitr>");
+			if ($month_pitr > 12 ) {
+				$self->log->error("PITR: not right time format <" . $pitr . ">");
+				$self->pitr(undef);
+			}
+			try {
+				$numsecs_pitr=timelocal($sec_pitr,$min_pitr,$hour_pitr,$day_pitr,($month_pitr -1),$year_pitr);
+
+			} catch {
+				$self->log->error("Problem with timelocal <$!> . numsecs: <$numsecs_pitr>");
+				if (defined $_[0]) {
+					$self->log->error("Cought error: $_[0]");	
+				}
+				return 0;
+			};
+			if ($numsecs_pitr < $numsecs_restore) {
+				$self->log->error("Time to pitr <" . $pitr . "> makes no sense for a restore: <" . $snapshot . ">");
+				return 0;
+
+			}
+			if ($snapshot =~ /_cold$/x) {
+				if ($numsecs_pitr < ($numsecs_restore + 15)) {
+					$self->log->error("Using a cold snapshot <" . $snapshot . ">, PITR should at least 15 seconds later than snapshot!.");
+					return 0;
+				}
+			} 		
+		} else {
+			$self->log->error("Problem parsing <" . $pitr . ">");
+			return 0;
+		}
+    } elsif ( $snapshot =~ /_cold$/x ) {
+		$self->log->error("No PITR given and cold snapshot selected!.");
+		return 0;
+    }
+    return 1;	
+	
+}
+
 
 sub RunStr {   
 	my($self, $cmd,$str,$fake,$text) = @_; 
@@ -548,6 +635,7 @@ sub ReadFile {
 
 sub CheckFile {
 	my($self,$file,$check)=@_;
+	$self->log->info("Parameters file: <$file> check: <$check>");
 	my($flag)=0;
 	if (! defined $check) {
 		$check="e";
@@ -577,7 +665,104 @@ sub CheckFile {
 		return 0; 
 	}
 
+}
+sub WriteFileArr {
+	my($self,$file,$text)=@_;
+	$self->log->info("Parameters file: <$file> text: just_number_of_lines " . scalar(@$text) );
+  	open (F,">$file") || $self->log->debug("cant write <$file>");
+	foreach (@$text) {
+  		print F $_;
+	}
+  	close(F);
+}
+
+#it expects three arguments, otherwise returns undef
+#it returns a full patch <dir>/<filename>
+sub GetTempFileName {
+    	my($self, $template,$directory,$suffix)=@_;
+    	$self->log->debug("template: <$template> directory: <$directory> suffix: <$suffix> ");
+	if (! defined $template || ! defined $directory || ! defined $suffix) {
+		$self->log->debug("some variable missing, please check ");
+		return undef;
+	}			
+    	my $fh = File::Temp->new(
+       	TEMPLATE => $template,
+        	DIR      => $directory, 
+        	SUFFIX   => $suffix, 
+    	);
+
+	#it returns a full patch <dir>/<filename>
+    	return $fh->filename; 
+}
+
+sub Chown { 
+	my($self,$f,$owners)=@_;
+	$self->log->info("Parameters file: <$f> owners: <$owners>");
+	my($cmd)= "chown $owners $f";
+	`$cmd`;
+	if ($? > 0) {
+		$self->log->debug("error executing <$cmd> : $! ");
+		return 0; #bad
+	}
+	return 1; #ok	
 
 }
+
+sub Chmod {
+	my($self,$f,$owners)=@_;
+	$self->log->info("Parameters file: <$f> owners: <$owners>");
+
+	my($cmd)= "chmod $owners $f";
+	`$cmd`;
+	if ($? > 0) {
+		$self->log->debug("error executing <$cmd> : $! ");
+		return 0; #bad
+	}
+	return 1; #ok
+}
+
+sub Copy {
+	my ($self,$f1,$f2,$options,$owners,$modes) =@_;
+	$self->log->info("Parameters file1: <$f1> file2: <$f2>");
+	$self->log->info("Parameters options: $options") if (defined $options); 
+	$self->log->info("Parameters owners: $owners") if (defined $owners);
+	$self->log->info("Parameters modes: $modes") if (defined $modes);
+	my($cmd)="cp $options $f1 $f2";
+	`$cmd`;
+	
+	if ($? > 0) {
+		$self->log->debug("error executing <$cmd> : $! ");
+		return 0; #bad
+	}
+		
+
+	if ($owners) {
+		$self->Chown($f2,$owners);
+	}
+	if ($modes) { 
+		$self->Chmod($f2,$modes);
+	}
+	return 1;
+}
+
+sub Remove {
+	my($self, $file) = @_;
+	$self->log->info("Parameter file: <$file>");
+
+	my($cmd);
+	if (-d $file) {
+		$cmd="rm -rf $file";
+	} else {
+		$cmd="rm -f $file";
+	}
+	my(@output);
+	`$cmd`;
+	if ($? > 0 || scalar(@output)>0) {
+		$self->log->("error deleting $file : $! ");
+		return 0; #bad
+	}
+	return 1; #ok
+}
+
 
 1;

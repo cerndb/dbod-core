@@ -9,7 +9,7 @@ package DBOD::Runtime_Zapi;
 
 use strict;
 use warnings;
-use lib '/opt/netapp-manageability-sdk-5.0R1/lib/perl/NetApp'; 
+use lib '/opt/netapp-manageability-sdk-5.3.1/lib/perl/NetApp'; 
 
 use Moose;
 with 'MooseX::Log::Log4perl';
@@ -29,8 +29,8 @@ sub CreateServer {
 	$self->log->info("Parameters versiong: <$version>") if defined $version;
 
 	if (! defined $version) { 
-#		$version="21"; # default C-mode 
-		$version="17"; # default C-mode 
+		$version="21"; # default C-mode 
+#		$version="17"; # default C-mode 
 	}
 	my $server = NaServer->new($ipaddr, 1, $version);
 	my $resp= $server->set_style("LOGIN");

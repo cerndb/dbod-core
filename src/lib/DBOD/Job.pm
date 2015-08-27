@@ -26,7 +26,7 @@ use DBOD::DB;
 has 'entity' => ( is => 'ro', isa => 'Str', required => 1);
 has 'debug' => (is => 'ro', isa => 'Bool', default=> 0);
 
-# Internal attributes
+# Internal attributes 
 has 'md_cache' => (is => 'rw', isa =>'HashRef');
 has 'config' => (is => 'rw', isa => 'HashRef');
 has 'metadata' => (is => 'rw', isa => 'HashRef');
@@ -34,8 +34,8 @@ has 'db' => (is => 'rw', isa => 'Object');
 
 
 # output
-has '_output' => ( is => 'rw', isa => 'Str', );
-has '_result' => ( is => 'rw', isa => 'Num', );
+has '_output' => ( is => 'rw', isa => 'Str' );
+has '_result' => ( is => 'rw', isa => 'Num' );
 
 
 sub BUILD {
