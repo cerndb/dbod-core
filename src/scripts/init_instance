@@ -1,0 +1,162 @@
+#!/usr/bin/env perl
+# Copyright (C) 2015, CERN
+# This software is distributed under the terms of the GNU General Public
+# Licence version 3 (GPL Version 3), copied verbatim in the file "LICENSE".
+# In applying this license, CERN does not waive the privileges and immunities
+# granted to it by virtue of its status as Intergovernmental Organization
+# or submit itself to any jurisdiction.
+
+
+# Extension of the base DBOD::Job class to add extra required parameters
+package DBOD::Init;
+use Moose;
+use DBOD::Templates;
+
+extends 'DBOD::Job';
+with 'MooseX::Getopt::Usage',
+     'MooseX::Getopt::Usage::Role::Man';
+
+# Traditionally named dbname parameter is now 'entity'
+has 'subcategory' => (
+    is => 'ro', 
+    isa => 'Str', 
+    required => 1, 
+    documentation => qq{Database server: MYSQL/PG/ORACLE} );
+has 'type' => (
+    is => 'ro', 
+    isa => 'Str', 
+    required => 1, 
+    documentation => qq{Database type: DEV/PROD });
+has 'version' => (
+    is => 'ro', 
+    isa => 'Str', 
+    required => 1, 
+    documentation => qq{Database server version: (e.g: 5.6.17, 9.4.4, ...)} );
+has 'port' => (
+    is => 'ro', 
+    isa => 'Str', 
+    required => 1, 
+    documentation => qq{TCP port for the server to listen at });
+has 'buffer' => (
+    is => 'ro', 
+    isa => 'Str', 
+    required => 1, 
+    default => '1',
+    documentation => qq{Innodb_buffer_pool_size/shared_buffer} );
+has 'hosts' => (
+    is => 'ro', 
+    isa => 'Str', 
+    required => 1, 
+    documentation => qq{Comma separated list of hosts to install the instance in} );
+has 'size' => (
+    is => 'ro', 
+    isa => 'Str', 
+    required => 1, 
+    default => '10',
+    documentation => qq{Data volume creation size, in GB});
+has 'crs' => (
+    is => 'ro', 
+    isa => 'Str', 
+    documentation => qq{Optional: CRS reference} );
+has 'skip_volumes_creation' => (
+    is => 'ro', 
+    isa => 'Bool',
+    default => '0',
+    documentation => qq{If set, skip instance volumes creation} );
+has 'debug' => (
+    is => 'ro', 
+    isa => 'Bool', 
+    documentation => qq{If set, output debug level messages} );
+
+# Main 
+package main;
+
+use strict;
+use warnings;
+
+use Log::Log4perl;
+use Data::Dumper;
+use DBOD::Api;
+use DBOD::Runtime;
+use DBOD::Network;
+use DBOD::Templates;
+
+# Using the old Runtime_Zapi, as the new version is missing methods
+use lib '/ORA/dbs01/syscontrol/projects/recovery/bin';
+use RunTime_Zapi;
+
+# Initiates logger
+BEGIN { 
+    Log::Log4perl->easy_init() ;
+}
+
+
+$ENV{PERL_LWP_SSL_VERIFY_HOSTNAME} = 0;
+my $job = DBOD::Init->new_with_options();
+
+sub body {
+
+    # Set up hash containing new instance parameters
+    my $input = {};
+    $input->{dbname} = $job->entity();
+    $input->{dbname} =~ s/\-/\_/g;
+    $input->{DBNAME} = uc $input->{dbname};
+    $input->{DBNAME} =~ s/\-/\_/g;
+    $input->{subcategory} = $job->subcategory();
+    $input->{type} = $job->type();
+    $input->{version} = $job->version();
+    $input->{port} = $job->port();
+    $input->{crs} = $job->crs();
+    $input->{size} = $job->size();
+    $input->{buffer} = $job->buffer();
+    my @hosts = split /,/ , $job->hosts();
+    $input->{hosts} = \@hosts;
+
+    # If volumes are to be created
+    my $rt = DBOD::Runtime->new();
+
+    unless ($job->skip_volumes_creation()) {
+
+        my $cmd = "/etc/init.d/syscontrol -i dfm.db-cmode DFM_create_dod_volumes_Cmode -name $input->{dbname} -size $input->{size} -server $input->{hosts}->[0]  -type $input->{subcategory} -debug";
+        $job->log->debug( "Executing: $cmd" );
+        my $vol_creation_output = `$cmd`;
+        if ($rt->result_code($vol_creation_output)) {
+            $job->log->error( "An error ocurred creating volumes:" );
+            $job->log->error( $vol_creation_output );
+            $job->_output(-1);
+            return;
+        }
+
+        # Fetch volumes mounting details. Will wait until details are available
+        $job->log->debug("Fetching volumes server information");
+        my $datavol = $rt->mywait(\&RunTime_Zapi::GetDODMountpoint, ("dod$input->{dbname}03", $hosts[0]));
+        my $logvol = $rt->mywait(\&RunTime_Zapi::GetDODMountpoint, ("dod$input->{dbname}02", $hosts[0]));
+        my ($serverdata, $data_mounting_path) = split ':', $datavol;
+        my ($serverlogs, $logs_mounting_path) = split ':', $logvol;
+
+        $input->{'serverlogs'} =  $serverlogs;
+        $input->{'serverdata'} =  $serverdata;
+    } else {
+        $input->{'serverlogs'} =  'NASLOGSERVER';
+        $input->{'serverdata'} =  'NASDATASERVER';
+    }
+
+    # Create metadata entry and register using the API
+    DBOD::Api::create_entity($input, $job->config); 
+
+    # Create LDAP entry. All this needs to be migrated to use templates
+    # like we do for the metadat entries
+    $input->{entity} = 'dod_' . $job->entity;
+    $input->{ip_alias} =~ s/\_/\-/g;
+    $input->{ip_alias} = 'dbod-' . $input->{dbname};
+    $input->{ip_alias} =~ s/\_/\-/g;
+    DBOD::Templates::create_instance($input, $job->config);
+    
+    # Network registration
+    DBOD::Network::create_alias($input, $job->config);
+
+    # Job done!
+    $job->_result(0);
+}
+
+$job->run(\&body, );
