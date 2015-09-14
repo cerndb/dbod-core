@@ -52,7 +52,7 @@ sub execute_sql_file {
 sub select {
     my ($self, $statement, $bind_values) = @_;
     $self->log->debug("Running SQL statement: " . $statement);
-    try {
+    my $rows = try {
         if (defined $bind_values) {
             return $self->db_conn->dbh->selectall_arrayref($statement, @{$bind_values});
             }
@@ -64,16 +64,16 @@ sub select {
             sprintf("An error ocurred executing SQL statement:\n%s:%s", 
                 $self->db_conn->dbh->err,
                 $self->db_conn->dbh->errstr));
-        return $self->db_conn->dbh->err;
+        return undef;
     };
-    return;
+    return $rows;
 }
 
  
 sub do {
     my ($self, $statement, $bind_values) = @_;
     $self->log->debug("Running SQL statement: " . $statement);
-    try {
+    my $rows = try {
         if (defined $bind_values) {
             return $self->db_conn->dbh->do($statement, undef, @{$bind_values});
             }
@@ -85,9 +85,9 @@ sub do {
             sprintf("An error ocurred executing SQL sttatement:\n%s:%s", 
                 $self->db_conn->dbh->err,
                 $self->db_conn->dbh->errstr));
-        return $self->db_conn->dbh->err;
+        return undef;
     };
-    return;
+    return $rows;
 }
 
 1;

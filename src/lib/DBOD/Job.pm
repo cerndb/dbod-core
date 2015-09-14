@@ -70,10 +70,11 @@ sub BUILD {
                     };
             }
             if (/^pgsql$/) {
-                $dsn = "DBI:Pg:host=" . $self->metadata->{'hosts'}[0] .
+                $dsn = "DBI:Pg:dbname=postgres;host=" . $self->metadata->{'socket'}.
                  ";port=" . $self->metadata->{'port'};
                 $db_attrs = {
                     AutoCommit => 1, 
+		      RaiseError => 1,	
                     };
             }
             if (/^oracle$/) {
