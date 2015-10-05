@@ -148,17 +148,17 @@ sub set_metadata {
     my $client = _api_client($config, 1);
     $client->PUT(
         join('/', $config->{'api'}->{'entity_metadata_endpoint'}, $entity),
+        "metadata=$metadata",
         {
-            Content_Type => 'application/json',
-            Content => $metadata
+            Content_Type => 'application/x-www-form-urlencoded',
         }
     );
     my %result;
     $result{'code'} = $client->responseCode();
-    if ($result{'code'} eq '200') {
-        INFO 'Metadata succesfully set for ' . $entity;
+    if ($result{'code'} eq '201') {
+        INFO 'Entity created: ' . $entity;
     } else {
-        ERROR 'Error setting metadata for: ' . $entity; 
+        ERROR 'Error creating entity: ' . $entity; 
     }
     return \%result;
 }
