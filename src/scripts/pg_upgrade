@@ -309,7 +309,7 @@ sub body {
 
 	} else {
 		foreach (@output) {
-			if (/\*Clusters are compatible\*$/x) {
+			if (/\*Clusters\sare\scompatible\*$/x) {
 				$compatibleclusteres=1;
 				$job->log->debug("clusters are compatible. Go on.");
 				last;
