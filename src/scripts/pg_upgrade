@@ -40,7 +40,7 @@ BEGIN {
     Log::Log4perl->easy_init() ;
 }
 
-$ENV{PERL_LWP_SSL_VERIFY_HOSTNAME} = 0;
+local $ENV{PERL_LWP_SSL_VERIFY_HOSTNAME} = 0;
 my $job = DBOD::PG::upgrade->new_with_options();
 my $runtime_zapi  = DBOD::Runtime_Zapi->new;
 my $runtime = DBOD::Runtime->new;
@@ -69,7 +69,7 @@ sub body {
 	}
 	my $newbindir = $job->metadata->{'bindir'};
 	my $newversion = $job->versionto;
-	$newbindir =~ s/$current_version/$newversion/;
+	$newbindir =~ s/$current_version/$newversion/x;
 	if (! -e $newbindir) {
 		$job->log->error("Target bindir doesnt exists, likely no rpm is installed");
 		$job->_output(1);
@@ -91,7 +91,7 @@ sub body {
 	#check if instance is up
 	$rc = $runtime->RunStr("/ORA/dbs01/work/git/DBOD-core/src/scripts/pg_ping --debug --entity " . $job->entity . " 2>&1" ,\@output,$job->fake);
 	if (!$job->fake) { 
-		if (!$rc || !defined $output[-1] || !($output[-1] =~ /.*\[0\]/)) {
+		if (!$rc || !defined $output[-1] || !($output[-1] =~ /.*\[0\]/x)) {
 			$job->log->error("Instance is down. An upgrade can only go for a running instance.");
 			$job->log->error(join("",@output));
 			$job->_output(1);
@@ -127,7 +127,7 @@ sub body {
 	$job->log->debug(">>> Executing pre-upgrade snapshot");
 	$rc = $runtime->RunStr("/ORA/dbs01/work/git/DBOD-core/src/scripts/pg_snapshot --debug --entity " . $job->entity . " 2>&1" ,\@output,$job->fake);
 	if (!$job->fake) { 
-		if (!$rc || !defined $output[-1] || !($output[-1] =~ /.*\[0\]/)) {
+		if (!$rc || !defined $output[-1] || !($output[-1] =~ /.*\[0\]/x)) {
 			$job->log->error("A problem occurred while executing pre-upgrade snapshot");
 			$job->log->error(join("",@output));
 			$job->_output(1);
@@ -139,7 +139,7 @@ sub body {
 	$job->log->debug(">>> Stopping instance");
 	$rc = $runtime->RunStr("/ORA/dbs01/work/git/DBOD-core/src/scripts/pg_stop --debug --entity " . $job->entity . " 2>&1" ,\@output,$job->fake);
 	if (!$job->fake) {
-		if (!$rc || !defined $output[-1] || !($output[-1] =~ /.*\[0\]/)) {
+		if (!$rc || !defined $output[-1] || !($output[-1] =~ /.*\[0\]/x)) {
 			$job->log->error("A problem occurred while attempting to stop the instance");
 			$job->log->error(join("",@output));
 			$job->_output(1);
@@ -309,7 +309,7 @@ sub body {
 
 	} else {
 		foreach (@output) {
-			if (/\*Clusters are compatible\*$/) {
+			if (/\*Clusters are compatible\*$/x) {
 				$compatibleclusteres=1;
 				$job->log->debug("clusters are compatible. Go on.");
 				last;
@@ -344,7 +344,7 @@ sub body {
 	if (!$job->fake ) {
 		my $goodupgrade =0;
 		foreach (@output) {
-			if (/delete_old_cluster\.sh$/) {
+			if (/delete_old_cluster\.sh$/x) {
 				$job->log->debug("Successful upgrade!");
 				$goodupgrade=1;
 				last;
@@ -426,5 +426,6 @@ sub _symbolic_link_replace {
 		$job->log->debug("symbolik link <$fullpath>");
 		push @allsymlinks, $fullpath;				 
 	}
+	return 1;
 }
 $job->run(\&body); 
