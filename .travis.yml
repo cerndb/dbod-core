@@ -3,7 +3,9 @@ language: perl
 perl:
     - "5.20"
 
-before_install: pushd src/
+# Change the current directory before doing anything
+before_install: 
+    - pushd src/
 
 before_script:
     - cpanm Config::General
@@ -14,6 +16,5 @@ before_script:
 
 after_script:
     - cover -test -report coveralls
-    - popd src/
 
     
