@@ -146,19 +146,21 @@ sub remove_ip_alias {
 sub set_metadata { 
     my ($entity, $metadata, $config) = @_;
     my $client = _api_client($config, 1);
+    my $metadata_json = encode_json $metadata;
+	
     $client->PUT(
         join('/', $config->{'api'}->{'entity_metadata_endpoint'}, $entity),
+        "metadata=$metadata_json",
         {
-            Content_Type => 'application/json',
-            Content => $metadata
+            Content_Type => 'application/x-www-form-urlencoded',
         }
     );
     my %result;
     $result{'code'} = $client->responseCode();
-    if ($result{'code'} eq '200') {
-        INFO 'Metadata succesfully set for ' . $entity;
-    } else {
-        ERROR 'Error setting metadata for: ' . $entity; 
+    if ($result{'code'} eq '201') {
+        INFO 'Entity created: ' . $entity;
+    } else { 
+        ERROR 'Error creating entity: ' . $entity; 
     }
     return \%result;
 }

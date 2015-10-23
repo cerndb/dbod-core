@@ -147,6 +147,37 @@ sub scp_get {
     return scalar 1;
 }
 
+
+sub IsRunningVersionDiffMySQLPG {
+	my($self,$file,$versiontogo)=@_;
+	$self->log->info("Parameters file: <$file>, versiontogo: <$versiontogo>");
+
+	if (-e "$file") {
+		my(@arr)=$self->ReadFile("$file");
+		if (scalar(@arr) ==0 ) {
+			$self->log->error("file <$file>  is empty. Strange.");
+			return 0; #notgood
+		} else {
+			foreach (@arr) {
+				if (/(\d+)\.(\d+)\.(\d+)/) {
+					chomp $_;
+					if ($_ eq "$versiontogo") {
+						$self->log->error("You are already running <$versiontogo>");
+						return 0; #not good
+					} else {
+						$self->log->debug("actual version <$_> different of upgrade version <$versiontogo>.");
+						return 1; #ok
+					} 
+				}
+			} 
+		} 
+	} else {   
+		$self->log->error("<$file> file doesnt exist");   
+		return 0;#not good
+	}
+	return undef;
+}
+ 
 # Method to implement a timeout while checking a condition.
 # Condition should be implemented by a routine
 sub TimeoutOneparam {
