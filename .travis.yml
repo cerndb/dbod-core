@@ -3,9 +3,12 @@ language: perl
 perl:
     - "5.20"
 
-# Change the current directory before doing anything
 before_install: 
+# Change the current directory before doing anything
     - pushd src/
+# Copy configuration template to an unprivileged usable location
+#  (as defined in share/configpath.conf)
+    - cp share/dbod-core.conf-template /tmp/core.conf
 
 before_script:
     - cpanm Config::General
