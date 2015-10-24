@@ -15,12 +15,10 @@ with 'MooseX::Log::Log4perl';
 with 'MooseX::Getopt';
 
 use Data::Dumper;
-use DBD::Oracle qw(:ora_session_modes :ora_types);
 
 use DBOD::Config;
 use DBOD::Api qw( load_cache get_entity_metadata );
 use DBOD::DB;
-
 
 # Input
 has 'entity' => ( is => 'ro', isa => 'Str', required => 1);
@@ -76,15 +74,6 @@ sub BUILD {
                     AutoCommit => 1, 
 		      RaiseError => 1,	
                     };
-            }
-            if (/^oracle$/) {
-                my $sid = $self->metadata->{'sid'};
-                $dsn = "DBI:oracle:$sid";
-                $db_attrs = {
-                    AutoCommit => 1, 
-                    ora_session_mode => ORA_SYSDBA,
-                    ora_client_info => 'DBOD-core', 
-                    ora_verbose => 0 };
             }
         };
 
