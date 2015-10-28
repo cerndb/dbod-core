@@ -34,6 +34,8 @@ requires    'Try::Tiny' => 0;
 requires    'XML::Parser' => 0;
 
 test_requires 'Test::More' => 0;
+test_requires 'Test::MockModule' => 0;
+test_requires 'Test::MockObject' => 0;
 
 install_share;
 
