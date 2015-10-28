@@ -37,16 +37,28 @@ has '_result' => ( is => 'rw', isa => 'Num' );
 
 
 sub BUILD {
+    
     my $self = shift;
+    
     # Remove screen appender from logger if debug is not enabled
     unless( $self->debug ) {
         Log::Log4perl::eradicate_appender('screen');
     }
+
+    # Sets ENTITY environment variable os it can be used when loggin
+    # This is an easy hack around not being able to find the right 
+    # reference to use on the anonymous function used on the logger
+    # CSPEC
+    
+    $ENV{ENTITY} = $self->entity;
+
     # Load General Configuration from file
     $self->config(DBOD::Config::load());
+
     # Load cache file
     my %cache = load_cache($self->config);
     $self->md_cache(\%cache);
+
     # Load entity metadata
     $self->metadata(
         get_entity_metadata($self->entity, $self->md_cache, $self->config));
@@ -82,11 +94,12 @@ sub BUILD {
                       db_user => $db_user,
                       db_password => $db_password,
                       db_attrs => $db_attrs,));
-        }
-        else { 
-            $self->log->info('Skipping DB connection with instance');
-        }
-        return;
+    }
+    else { 
+        $self->log->info('Skipping DB connection with instance');
+    }
+    
+    return;
 };
 
 sub run {
