@@ -4,7 +4,7 @@ use inc::Module::Install;
 use File::ShareDir;
 
 author  'Ignacio Coterillo <ignacio.coterillo@cern.ch>';
-version '0.5';
+version '0.64';
 license 'GPLv3';
 
 name    'DBOD';
@@ -18,6 +18,7 @@ requires    'Moose' => 0;
 requires    'MooseX::Log::Log4perl' => 0;
 requires    'MooseX::Getopt' => 0;
 requires    'MooseX::Role::DBIx::Connector' => 0;
+requires    'MooseX::Getopt::Usage.pm' => 0;
 requires    'Config::General' => 0;
 requires    'DBD::mysql' => 0;
 requires    'DBD::Pg' => 0;
