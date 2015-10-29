@@ -1,0 +1,11 @@
+version: 1
+
+dn: SC-TNS-NET-SERVICE-NAME=[% tnsnetservice %],SC-CATEGORY=tnsnetservices,ou=syscontrol,dc=cern,dc=ch
+objectClass: SC-ORACLE-SERVICE
+SC-ADDRESS-REF: 0
+SC-ENTITY-REF: [% entity %]
+SC-TNS-FAILOVER: -
+SC-TNS-INSTANCE-NAME: [% dbname %]
+SC-TNS-NET-SERVICE-NAME: [% tnsnetservice %]
+SC-TNS-PINGABLE: false
+

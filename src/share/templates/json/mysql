@@ -1,0 +1,61 @@
+[%# This template requires the following variables as input:
+version: Version of the DB we want to use 
+dbname: Lowercase name of the instance
+DBNAME: (uppercase of dbname)
+port: Port where the database server will listen
+buffer: InnoDB Buffer size
+dataserver: NAS server hosting the datadir volume
+binlogserver: NAS server hosting the binary logs volume
+Optional:
+crs_ref: Name of the CRS hosting the entity (if any)
+crs_socket:
+crs_port: 
+%]
+
+{
+    "basedir": "/usr/local/mysql/mysql-[% version %]", 
+    "bindir": "/usr/local/mysql/mysql-[% version %]/bin", 
+    "binlogdir": "/ORA/dbs02/[% DBNAME %]/mysql", 
+    "datadir": "/ORA/dbs03/[% DBNAME %]/mysql", 
+    "socket": "/var/lib/mysql/mysql.sock.[% dbname %].[% port %]", 
+    "type": "[% type %]", 
+    "port": "[% port %]", 
+    "version": "[% version %]", 
+    "subcategory": "MYSQL",
+[% IF crs_ref -%]
+    "crs_ref": "[% crs_ref %]", 
+    "crs_port": "[% crs_port %]", 
+    "crs_socket": "[% crs_socket %]", 
+[% ELSE %]
+    "crs_port": null, 
+    "crs_ref": null, 
+    "crs_socket": null, 
+[% END -%]
+    "tsm_server": null, 
+    "buffer_pool_size": "[% buffer %]", 
+    "volumes": [
+        {
+            "group": "mysql", 
+            "file_mode": "0755", 
+            "server": "[% binlogserver %]", 
+            "mount_options": "rw,bg,hard,nointr,tcp,vers=3,noatime,timeo=600,rsize=65536,wsize=65636", 
+            "owner": "mysql", 
+            "mounting_path": "/ORA/dbs02/dod[% dbname %]02"
+        }, 
+        {
+            "group": "mysql", 
+            "file_mode": "0755", 
+            "server": "[% dataserver %]", 
+            "mount_options": "rw,bg,hard,nointr,tcp,vers=3,noatime,timeo=600,rsize=65536,wsize=65636", 
+            "owner": "mysql", 
+            "mounting_path": "/ORA/dbs03/dod[% dbname %]03"}
+    ],
+    "hosts": [
+[% FOREACH host IN hosts -%]
+        "[% host %]",
+    [% IF loop.count+1 == loop.size %]
+        "[% loop.next %]" [% BREAK %]
+    [% END -%]
+[% END -%]
+    ] 
+}
