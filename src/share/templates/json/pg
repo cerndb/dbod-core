@@ -1,0 +1,62 @@
+[%# This template requires the following variables as input:
+version: Version of the DB we want to use 
+dbname: Lowercase name of the instance
+DBNAME: (uppercase of dbname)
+port: Port where the database server will listen
+buffer: shared_buffer size
+dataserver: NAS server hosting the datadir volume
+binlogserver: NAS server hosting the binary logs volume
+Optional:
+crs_ref: Name of the CRS hosting the entity (if any)
+crs_socket:
+crs_port: 
+%]
+
+{
+    "basedir": "/usr/local/pgsql/pgsql-[% version %]", 
+    "bindir": "/usr/local/pgsql/pgsql-[% version %]/bin", 
+    "archivedir": "/ORA/dbs02/[% DBNAME %]/archive", 
+    "xlogdir": "/ORA/dbs02/[% DBNAME %]/pg_xlog", 
+    "datadir": "/ORA/dbs03/[% DBNAME %]/data", 
+    "socket": "/var/lib/pgsql/", 
+    "type": "[% type %]", 
+    "port": "[% port %]", 
+    "version": "[% version %]", 
+    "subcategory": "PGSQL",
+[% IF crs_ref -%]
+    "crs_ref": "[% crs_ref %]", 
+    "crs_port": "[% crs_port %]", 
+    "crs_socket": "[% crs_socket %]", 
+[% ELSE %]
+    "crs_port": null, 
+    "crs_ref": null, 
+    "crs_socket": null, 
+[% END -%]
+    "tsm_server": null, 
+    "shared_buffers": "[% buffer %]", 
+    "volumes": [
+        {
+            "group": "postgres", 
+            "file_mode": "0755", 
+            "server": "[% binlogserver %]", 
+            "mount_options": "rw,bg,hard,nointr,tcp,vers=3,noatime,timeo=600,rsize=65536,wsize=65636", 
+            "owner": "postgres", 
+            "mounting_path": "/ORA/dbs02/[% dbname %]02"
+        }, 
+        {
+            "group": "postgres", 
+            "file_mode": "0755", 
+            "server": "[% dataserver %]", 
+            "mount_options": "rw,bg,hard,nointr,tcp,vers=3,noatime,timeo=600,rsize=65536,wsize=65636", 
+            "owner": "postgres", 
+            "mounting_path": "/ORA/dbs03/[% dbname %]03"}
+    ],
+    "hosts": [
+[% FOREACH host IN hosts -%]
+        "[% host %]",
+    [% IF loop.count+1 == loop.size %]
+        "[% loop.next %]" [% BREAK %]
+    [% END -%]
+[% END -%]
+    ] 
+}
