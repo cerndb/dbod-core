@@ -148,6 +148,8 @@ subtest 'remove_ip_alias' => sub {
 # DBOD::Api::set_metadata 
 subtest 'set_metadata' => sub {
 
+    my $metadata = { host => "a", port => "1234" };
+
     $rest_client->mock('responseCode', sub { return "201" } );
     $rest_client->mock('responseContent', sub { return "{\"ipalias\":\"dbod-test\"}" } );
     ok(DBOD::Api::set_metadata($entity, $metadata, \%config), "Method call");
