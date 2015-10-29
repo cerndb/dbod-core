@@ -26,6 +26,7 @@ $api{'entity_metadata_endpoint'} = "api/v1/entity";
 $api{'entity_ipalias_endpoint'} = "api/v1/entity/alias";
 
 $config{'api'} = \%api;
+$config{'common'} = { template_folder => "${share_dir}/templates" };
 
 # DBOD::Api::load_cache
 note( "%config is " . Dumper \%config );
@@ -115,8 +116,8 @@ subtest 'set_ip_alias' => sub {
     # Test failure
     $rest_client->mock('responseCode', sub { return "404" } );
     $rest_client->mock('responseContent', sub { return "" } );
-    ok(DBOD::Api::set_ip_alias($entity, 'ip-alias',\%config), "set_ip_alias: error");
-    $result = DBOD::Api::set_ip_alias($entity, 'ip-alias',\%config);
+    ok(DBOD::Api::set_ip_alias($entity, 'ip-alias', \%config), "set_ip_alias: error");
+    $result = DBOD::Api::set_ip_alias($entity, 'ip-alias', \%config);
     note( Dumper $result );
     ok(exists $result->{code}, 'Result has code field');
     ok(exists $result->{response}, 'Result has response field');
@@ -169,10 +170,28 @@ subtest 'set_metadata' => sub {
 
 };
 
-# DBOD::Api::sub create_entity 
-#$rest_client->mock('responseCode', sub { return "200" } );
-#$rest_client->mock('responseContent', sub { return "{\"ipalias\":\"dbod-test\"}" } );
-# ok(DBOD::Api::create_entity(\%config, \%config), "create_entity");
+# DBOD::Api::create_entity 
+subtest 'create_entity' => sub {
+
+    my $input = { dbname => "test", subcategory => "MYSQL" };
+    print Dumper $input;
+
+    $rest_client->mock('responseCode', sub { return "201" } );
+    $rest_client->mock('responseContent', sub { return "" } );
+    ok(DBOD::Api::create_entity($input, \%config), "Method call");
+    my $result = DBOD::Api::create_entity($input, \%config);
+    note (Dumper $result);
+    ok(exists $result->{code}, 'Result has code field');
+    
+    # Test failure
+    $rest_client->mock('responseCode', sub { return "404" } );
+    $rest_client->mock('responseContent', sub { return "" } );
+    ok(DBOD::Api::create_entity($input, \%config), "set_metadata: error");
+    $result = DBOD::Api::create_entity($input, \%config);
+    note (Dumper $result);
+    ok(exists $result->{code}, 'Result has code field');
+
+};
 
 done_testing();
 
