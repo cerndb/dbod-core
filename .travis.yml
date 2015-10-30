@@ -3,6 +3,11 @@ language: perl
 perl:
     - "5.20"
 
+# Start databases for SQL operation testing
+services:
+    - mysql
+    - postgresql
+
 before_install: 
 # Change the current directory before doing anything
     - pushd src/
