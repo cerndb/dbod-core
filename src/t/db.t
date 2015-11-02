@@ -24,12 +24,21 @@ subtest 'mysql' => sub {
     note ref($result);
     note Dumper $result;
     isa_ok($result, 'ARRAY', 'Select result is Array');
+    # Read from file (__DATA__)
+    my $fh;
+    open $fh, '>', '/tmp/test.sql' or fail('Cannot write to test.sql');
+    while(<DATA>) {
+        print $fh $_;
+    }
+    close $fh;
+    # Negative test
+    ok(!$db->execute_sql_file('/tmp/test.sql'), "Execute SQL file");
 };
 
 done_testing();
 
 __DATA__
-use mysql;
-select * from mysql.user;
-
-
+use test;
+drop table if exists a;
+create table a (a int, b varchar(32));
+insert into a values (3, 'test3');
