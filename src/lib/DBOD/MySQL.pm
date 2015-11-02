@@ -17,8 +17,9 @@ with 'MooseX::Log::Log4perl';
 use IPC::Run qw(run timeout);
 use Net::OpenSSH;
 use Data::Dumper;
+use DBOD::Runtime;
 
-my $runtime = DBOD::Runtime->new;
+my $runtime = DBOD::Runtime->new();
 
 sub CheckMySQLState {
 	my($self, $datadir) = @_;

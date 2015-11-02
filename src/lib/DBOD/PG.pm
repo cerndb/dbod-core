@@ -14,6 +14,7 @@ use Moose;
 with 'MooseX::Log::Log4perl';
 
 use Data::Dumper;
+use DBOD::Runtime;
 
 my $runtime = DBOD::Runtime->new;
 
