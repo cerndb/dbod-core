@@ -1,3 +1,5 @@
+package DBOD;
+
 use strict;
 use warnings;
 
@@ -7,6 +9,10 @@ use Data::Dumper;
 use Data::Handle;
 
 require_ok('DBOD::DB');
+
+use DBOD::DB;
+
+BEGIN { Log::Log4perl->easy_init() };
 
 # MySQL Tests
 subtest 'mysql' => sub {
