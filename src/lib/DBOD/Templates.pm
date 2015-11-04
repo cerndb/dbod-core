@@ -15,8 +15,12 @@ use DBOD::Ldap;
 use Data::Dumper;
 use Template;
 use Try::Tiny;
+use File::Temp qw/ tempfile /;
 use Log::Log4perl qw(:easy);
+use Net::LDAP::LDIF;
 use JSON;
+
+
 
 use base qw(Exporter);
 
@@ -298,6 +302,33 @@ sub create_metadata {
     return $metadata;
 }
 
+sub create_ldap_entry {
+    # Creates a new metadata object.
+    my ($new_entity, $config) = @_;
+    DEBUG 'Creating Metadata object for entity: ' . Dumper $new_entity;
+    my $type = lc $new_entity->{subcategory};
+    my $ldap_template;
+    load_template 'ldap', $type, $new_entity, $config, \$ldap_template;
+    my ($fh, $filename) = tempfile();
+    print $fh $ldap_template;
+    close $fh;
+    my $entries = DBOD::Ldap::load_ldif($filename);
+    DEBUG 'LDAP entry: ' . Dumper $entries;
+    return $entries;
+}
+
+sub create_ldap_tnsnetservice_entry {
+    my ($new_entity, $config) = @_;
+    my $tnsnetservice;
+    load_template 'ldap', 'tnsnetservice', $new_entity, $config, \$tnsnetservice;
+    DEBUG 'Metadata: ' . Dumper $tnsnetservice;
+    my ($fh, $filename) = tempfile();
+    print $fh $tnsnetservice;
+    close $fh;
+    my $entries = DBOD::Ldap::load_ldif($filename);
+    DEBUG 'LDAP entry: ' . Dumper $entries;
+    return $entries;
+}
 
 
 sub create_tnsnetservice {

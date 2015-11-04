@@ -19,6 +19,28 @@ use Data::Dumper;
 
 use base qw(Exporter);
 
+
+sub load_ldif {
+    # Loads contents from an LDIF file and returns a reference to an array
+    # of LDAP entries
+
+    my $filename = shift;
+    my $ldif = Net::LDAP::LDIF->new( $filename, "r", onerror => 'undef' );
+    my @contents;
+    while( not $ldif->eof() ) {
+       my $entry = $ldif->read_entry();
+       if ( $ldif->error() ) {
+           ERROR "Error msg: ", $ldif->error ( ), "\n";
+           ERROR "Error lines:\n", $ldif->error_lines ( ), "\n";
+       } else {
+           print Dumper $entry;
+           push @contents, $entry;
+       }
+    }
+    $ldif->done();
+    return \@contents;
+}
+
 sub get_connection {
     # Expects a references to a configuration hash
     my $config = shift;
@@ -75,6 +97,24 @@ sub modify_attributes {
     my $result = $conn->modify($entity_base, replace => @attributes);
     $result->code && ERROR $result->error;
     return $result->code;
+}
+
+
+sub create_instance {
+    
+    my ($new_entity, $config) = @_;
+    DEBUG 'Creating LDAP entity: ' . Dumper $new_entity;
+
+    my $entry = DBOD::Templates::create_ldap_entry($new_entity, $config);
+    my $tns = DBOD::Templates::create_ldap_tnsnamesservice_entry($new_entity, $config);
+ 
+    my $conn = get_connection($config);
+
+    $conn->add($entry);
+    $conn->add($tns);
+
+    $conn->disconnect();
+
 }
 
 1;
