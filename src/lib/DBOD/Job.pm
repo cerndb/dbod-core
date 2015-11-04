@@ -36,6 +36,7 @@ has '_output' => ( is => 'rw', isa => 'Str' );
 has '_result' => ( is => 'rw', isa => 'Num' );
 
 
+# Constructor
 sub BUILD {
     
     my $self = shift;
@@ -63,6 +64,14 @@ sub BUILD {
     $self->metadata(
         get_entity_metadata($self->entity, $self->md_cache, $self->config));
     
+    return;
+};
+
+# Initializes the $job->db obect with the connection parameters of the
+# job target instance
+
+sub connect_db {
+    my ($self,) = @_;
     if (defined $self->metadata->{'subcategory'}) {
         # Set up db connector
         my $db_type = lc $self->metadata->{'subcategory'};
@@ -98,9 +107,7 @@ sub BUILD {
     else { 
         $self->log->info('Skipping DB connection with instance');
     }
-    
-    return;
-};
+}
 
 sub run {
     my ($self, $body, $params) = @_;
