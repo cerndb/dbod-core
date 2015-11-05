@@ -143,14 +143,15 @@ sub body {
 
     # Create metadata entry and register using the API
     DBOD::Api::create_entity($input, $job->config); 
-
+    
     # Create LDAP entry. All this needs to be migrated to use templates
     # like we do for the metadat entries
     $input->{entity} = 'dod_' . $job->entity;
     $input->{ip_alias} =~ s/\_/\-/g;
     $input->{ip_alias} = 'dbod-' . $input->{dbname};
     $input->{ip_alias} =~ s/\_/\-/g;
-    DBOD::Templates::create_instance($input, $job->config);
+    # Create metadata entry and register using the API
+    DBOD::LDAP::create_instance($input, $job->config); 
     
     # Network registration
     DBOD::Network::create_alias($input, $job->config);
