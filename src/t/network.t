@@ -31,7 +31,6 @@ subtest '_get_landb_connection' => sub {
     my $soap_header = Test::MockModule->new('SOAP::Lite');
     $soap_header->mock('name', sub {return Test::MockModule->new();});
     
-
     $soap_call->set_false('fault');
     $soap_call->mock('result', sub {return Test::MockObject->new();});
     my ($client, $auth) = DBOD::Network::_get_landb_connection(\%config);
@@ -92,8 +91,24 @@ subtest 'get_ip_alias' => sub {
 
 subtest 'create_ip_alias' => sub {
 
+    my $api = Test::MockModule->new('DBOD::Api');
+    my %result = ( response => ['db-dbod-000', 'dbod-test'] ); 
+    $api->mock('set_ip_alias', sub { return \%result; });
+    
+    my $rt = Test::MockObject->new();
+    my $runtime = Test::MockModule->new('DBOD::Runtime');
+    $runtime->mock('new', sub {return $rt;});
 
-    pass();
+    my %ipalias = ( change_command => '/path/to/command' );
+    $config{ipalias} = \%ipalias;
+    my %input = ( hosts => ['hostname'], ip_alias => 'dbod-test', dbname => 'test' );
+    
+    $rt->mock('run_cmd', sub { return 0 });
+    ok(DBOD::Network::create_alias(\%input, \%config), 'create_alias OK');
+    
+    $rt->mock('run_cmd', sub { return 1 });
+    ok(DBOD::Network::create_alias(\%input, \%config), 'create_alias FAIL');
+
 };
 
 done_testing();
