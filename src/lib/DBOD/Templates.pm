@@ -67,15 +67,6 @@ sub load_template {
     return scalar 0;
 }
 
-sub timestamp_entity {
-    # Adds a timestampt with the last modification time to the 
-    # SC-COMMENT attribute
-    my ($conn, $entity_name) = @_;
-    my $base = "SC-ENTITY=$entity_name,SC-CATEGORY=entities,ou=syscontrol,dc=cern,dc=ch";
-    DBOD::Ldap::modify_attributes($conn, $base, 
-        ['SC-COMMENT' => 'Entity Modified @(' . localtime(time) . ')']);
-    return;
-}
 
 sub substitute_template_dns {
     # Renames an entity

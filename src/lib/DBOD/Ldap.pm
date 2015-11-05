@@ -58,6 +58,17 @@ sub get_connection {
     return $conn;
 }
 
+sub timestamp_entity {
+    # Adds a timestamp with the last modification time to the
+    # SC-COMMENT attribute
+    my ($conn, $entity) = @_;
+    my $entity_name = "dod_" . lc $entity->{dbname};
+    my $base = "SC-ENTITY=$entity_name,SC-CATEGORY=entities,ou=syscontrol,dc=cern,dc=ch";
+    DBOD::Ldap::modify_attributes($conn, $base,
+        ['SC-COMMENT' => 'Entity Modified @(' . localtime(time) . ')']);
+    return;
+}
+
 sub get_entity {
     # Fetches full tree of a DBOD Entity
     my ($conn, $entity_base, $scope) = @_;
