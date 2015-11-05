@@ -121,9 +121,12 @@ sub create_instance {
  
     my $conn = get_connection($config);
 
-    $conn->add($entry);
-    $conn->add($tns);
+    $entry->add($conn);
+    $tns->add($conn);
 
+    timestamp_entity($conn, $new_instance);
+
+    $conn->unbind();
     $conn->disconnect();
 
 }
