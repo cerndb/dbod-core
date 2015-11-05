@@ -69,7 +69,7 @@ sub remove_ip_alias {
 sub get_ip_alias {
     my ($search, $config) = @_;
     my ($conn, $auth) = _get_landb_connection($config);
-    my $call = $conn->dnsDelegatedAliasAdd($auth, $search);
+    my $call = $conn->dnsDelegatedAliasSearch($auth, $search);
     if ($call->fault) {
         ERROR "FAILED: " . $call->faultstring;
         return;
