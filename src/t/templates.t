@@ -3,8 +3,62 @@ use warnings;
 
 use Test::More;
 use File::ShareDir;
+use File::Temp qw/ tempfile /;
 use Data::Dumper;
+use Net::LDAP::LDIF;
 
-require_ok('DBOD::Templates');
+use_ok('DBOD::Templates');
+use DBOD::Templates;
+
+use JSON;
+
+my $share_dir = File::ShareDir::dist_dir('DBOD');
+my %config = ();
+$config{'common'} = { template_folder => "${share_dir}/templates" };
+
+subtest "load_template" => sub {
+
+    my $template;
+    my %input = ();
+
+    is(DBOD::Templates::load_template('wrong', 
+            'type', \%input, \%config, \$template), 0, 'Non existent template');
+
+};
+
+subtest "create_metadata" => sub {
+
+    my %input = ();
+    $input{subcategory} = 'MYSQL';
+    my $template = DBOD::Templates::create_metadata(\%input, \%config);
+    ok(decode_json $template, 'mysql metadata template is valid JSON');
+   
+    $input{subcategory} = 'PG';
+    $template = DBOD::Templates::create_metadata(\%input, \%config);
+    ok(decode_json $template, 'pg metadata template is valid JSON');
+   
+};
+
+
+subtest "create_ldap_entry" => sub {
+    
+    my %input = ();
+    $input{subcategory} = 'mysql';
+    my $entries = DBOD::Templates::create_ldap_entry(\%input, \%config);
+    ok(scalar @{$entries} == 11, 'MYSQL ldap_entry: Array of entries');
+    print ">>>>>>> " . scalar @{$entries};
+    
+    $input{subcategory} = 'pg';
+    $entries = DBOD::Templates::create_ldap_entry(\%input, \%config);
+    ok(scalar @{$entries} == 11, 'PG ldap_entry: Array of entries');
+    
+};
+
+subtest "create_ldap_tnsnetservice_entry" => sub {
+
+    my %input = ();
+    my $entries = DBOD::Templates::create_ldap_tnsnetservice_entry(\%input, \%config);    
+    ok(scalar @{$entries} >= 1, 'tnsnetservice entry: Array of entries');
+};
 
 done_testing();

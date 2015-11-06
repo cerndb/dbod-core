@@ -4,7 +4,7 @@ use inc::Module::Install;
 use File::ShareDir;
 
 author  'Ignacio Coterillo <ignacio.coterillo@cern.ch>';
-version '0.65';
+version '0.66';
 license 'GPLv3';
 
 name    'DBOD';
@@ -37,6 +37,8 @@ requires    'XML::Parser' => 0;
 test_requires 'Test::More' => 0;
 test_requires 'Test::MockModule' => 0;
 test_requires 'Test::MockObject' => 0;
+test_requires 'Test::MockObject::Extends' => 0;
+test_requires 'Data::Handle' => 0;
 
 install_share;
 

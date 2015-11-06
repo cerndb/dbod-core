@@ -17,6 +17,7 @@ BEGIN {
     Log::Log4perl->easy_init() ;
 }
 my $job = DBOD::Job->new_with_options();
+$job->connect_db();
 
 sub body {
     my $params = shift;

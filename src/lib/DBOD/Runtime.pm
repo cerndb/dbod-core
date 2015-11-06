@@ -394,21 +394,6 @@ sub GetVersionDB {
 	return;
 }
 
-#Returns 1 if the instanc is CRS, 0 otherwise
-#sub IsInstanceCRS {
-#	my($self,$job) = @_;
-#	$self->log->info("Parameters job: not displayed");
-#
-#	if (defined $job->metadata->{'crs_ref'}) {
-#		$self->log->debug($job->entity . ' is managed by CRS' );
-#		return 1; 
-#	} else {
-#		$self->log->debug($job->entity . ' is NOT managed by CRS' );
-#		return 0; 
-#	}
-#} 
-
-
 #Returns the state of a CRS resource (if the state is undef CRS is not installed or the resource does not exist)
 sub GetCRSResourceState {
 	my($self,$resource, $oracle_crs)=@_; 
