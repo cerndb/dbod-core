@@ -15,18 +15,18 @@ use DBOD::Api;
 use DBOD::Network;
 
 sub add_alias {
-    # Registers ip alias for the entity
+    # Registers ip alias for the dbname
     # 1. Register the ip-alias to the next free dnsname using the DBOD Api
     # 2. Add the ip-alias to the dnsname on LANDB
     # 3. Performs DNS change 
     #
     # Returns false if it fails, true if it succeeds
 
-    my ($entity, $host, $config) = @_;
-    my $ipalias = "dbod-" . $entity;
+    my ($dbname, $host, $config) = @_;
+    my $ipalias = "dbod-" . $dbname;
     $ipalias =~ s/\_/\-/g; # Substitutes underscores for dashes for ip-alias
-    DBOD::Api::set_ip_alias($entity, $ipalias, $config);
-    my $result = DBOD::Api::get_ip_alias($entity, $config);
+    DBOD::Api::set_ip_alias($dbname, $ipalias, $config);
+    my $result = DBOD::Api::get_ip_alias($dbname, $config);
     my $dnsname;
     if (defined $result) {
         ($dnsname, $ipalias) = @{$result->{'response'}};
@@ -53,8 +53,7 @@ sub add_alias {
     else { 
         # An error occurred getting a free dnsname. Either the DB is down
         # or there are no more dnsnames free
-        ERROR sprintf("Error registering alias: %s to dnsname: %s, host: %s",
-            $ipalias, $dnsname, $host);
+        ERROR "Error adding alias %s to host: %s", $ipalias, $host;
         return scalar 0;
     }
 }
@@ -67,12 +66,11 @@ sub remove_alias {
     #
     # Returns false if it fails, true if it succeeds
     
-    my ($entity, $host, $config) = @_;
-    my $result = DBOD::Api::get_ip_alias($entity, $config);
-    DBOD::Api::remove_ip_alias($entity, $config);
-    my ($dnsname, $ipalias);
+    my ($dbname, $host, $config) = @_;
+    my $result = DBOD::Api::get_ip_alias($dbname, $config);
+    DBOD::Api::remove_ip_alias($dbname, $config);
     if (defined $result) {
-        ($dnsname, $ipalias) = @{$result->{'response'}};
+        my ($dnsname, $ipalias) = @{$result->{'response'}};
         # Extract dnsname and alias from JSON result of Api call
         # Register ip alias to dns name on the CERN Network service
         DBOD::Network::remove_ip_alias($dnsname, $ipalias, $config);
@@ -94,19 +92,10 @@ sub remove_alias {
         }
     }
     else { 
-        # An error occurred getting a free dnsname. Either the DB is down
-        # or there are no more dnsnames free
-        ERROR sprintf("Error registering alias: %s to dnsname: %s, host: %s",
-            $ipalias, $dnsname, $host);
+        # An error occurred removing the alias
+        ERROR "Error removing alias from host: %s", $host;
         return scalar 0;
     }
 }
     
-
-# TODO
-sub migrate_alias {
-    # Change host associated to an ip-alias
-    return;
-}
-
 1;
