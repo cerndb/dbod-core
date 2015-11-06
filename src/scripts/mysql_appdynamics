@@ -74,7 +74,7 @@ sub body {
 		}
 	} 
 
-	my $connectionstring	= "jdbc:mysql://" . $job->metadata->{'hosts'}[0] . ":" . $job->metadata->{'port'} . "/";
+
 	my $functionalalias = $runtime->GetAliasFromEntity("dod_" . $job->entity); 
 	if ( $functionalalias eq '0' ) {
 		$job->log->debug("Entity: <" . $job->entity . "> has not a valid functional alias. Please check!");
@@ -82,6 +82,7 @@ sub body {
 	} else {
 		$job->log->debug("Entity: <" . $job->entity . "> has <$functionalalias > as functional alias");
 	}
+	my $connectionstring	= "jdbc:mysql://" . $functionalalias . ":" . $job->metadata->{'port'} . "/"; 
 	if ($job->enable && !$isappmonitored) {
 		if ($runtime->EnableAppDynamics($servername,$connectionstring,$job->config->{'mysql'}->{'db_user'},$job->config->{'mysql'}->{'db_password'},'MYSQL','org.gjt.mm.mysql.Driver',$functionalalias,$job->metadata->{'port'},0,0,0,'NULL','NULL','N','LINUX',$job->metadata->{'hosts'}[0],22,$job->config->{'appdynamics'}->{'aeskey'},$job->config->{'appdynamics'}->{'appdhost'},$job->config->{'appdynamics'}->{'appdport'},$job->config->{'appdynamics'}->{'appduser'},$job->config->{'appdynamics'}->{'appdpassword'})) {
 			$job->log->debug("Entity: <" . $job->entity . "> -> servername: <$servername> has been enabled");
