@@ -19,7 +19,8 @@ my %ldap = (
     url => 'ldap_uri.server.domain',
     scheme => '',
     protocol => 'ldaps',
-    userdn => 'userdn'
+    userdn => 'userdn',
+    scope => 'subtree',
 );
 $config{ldap} = \%ldap;
 
@@ -61,10 +62,13 @@ $ldap_m->mock('new', sub {return $ldap_client} );
 
 subtest "get_connection" => sub {
 
-
     my $conn = DBOD::Ldap::get_connection(\%config);
     like($conn, qr/Test::MockObject/, 'get_connection returns object');
-
+   
+    $msg->set_true('code');
+    $conn = DBOD::Ldap::get_connection(\%config);
+    like($conn, qr/Test::MockObject/, 'get_connection binding FAILS');
+    
 };
 
 subtest "timestamp_entity" => sub {
@@ -78,13 +82,13 @@ subtest "get_entity" => sub {
 
     $msg->set_true('code');
     $msg->mock('error', sub { return 'LDAP OK'} );
-    my $entity = DBOD::Ldap::get_entity($ldap_client, @attributes);
+    my $entity = DBOD::Ldap::get_entity($ldap_client, 'entity_base', undef);
     like ($entity, qr/ARRAY/, 'get_entity OK');
     
     $msg->set_false('code');
     $msg->mock('error', sub { return 'LDAP ERROR'} );
     $msg->mock('entries', sub { return undef } );
-    $entity = DBOD::Ldap::get_entity($ldap_client, @attributes);
+    $entity = DBOD::Ldap::get_entity($ldap_client, 'entity_base', 'subtree');
     like ($entity, qr/ARRAY/, 'get_entity FAIL');
 
 };
