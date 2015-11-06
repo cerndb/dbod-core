@@ -77,7 +77,6 @@ sub body {
 	#sub EnableAppDynamics {
 	#	my($servername,$connectionstring,$username,$password,$dbtype,$drivername,$hostname,$dbport,$loggingenabled,$collectorport,$sysdba,$osusername,$ospassword,$collectos,$ostype,$oshostname,$osport,$aeskey,$appdhost,$appdport,$appduser,$appdpassword) = @_;	
 
-	my $connectionstring	= "jdbc:postgresql://" . $job->metadata->{'hosts'}[0] . ":" . $job->metadata->{'port'} . "/";
 	my $functionalalias = $runtime->GetAliasFromEntity("dod_" . $job->entity); 
 	if ( $functionalalias eq '0' ) {
 		$job->log->debug("Entity: <$job->entity> has not a valid functional alias. Please check!");
@@ -85,6 +84,8 @@ sub body {
 	} else {
 		$job->log->debug("Entity: <$job->entity> has <$functionalalias > as functional alias");
 	}
+	my $connectionstring	= "jdbc:postgresql://" . $functionalalias . ":" . $job->metadata->{'port'} . "/";
+
 	if ($job->enable && !$isappmonitored) {
 		if ($runtime->EnableAppDynamics($servername,$connectionstring,$job->config->{'pgsql'}->{'db_user'},$job->config->{'pgsql'}->{'db_password'},'POSTGRES','org.postgresql.Driver',$functionalalias,$job->metadata->{'port'},0,0,0,'NULL','NULL','N','LINUX',$job->metadata->{'hosts'}[0],22,$job->config->{'appdynamics'}->{'aeskey'},$job->config->{'appdynamics'}->{'appdhost'},$job->config->{'appdynamics'}->{'appdport'},$job->config->{'appdynamics'}->{'appduser'},$job->config->{'appdynamics'}->{'appdpassword'})) {
 			$job->log->debug("Entity: <$job->entity> -> servername: <$servername> has been enabled");
