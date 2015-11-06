@@ -78,6 +78,9 @@ sub get_ip_alias {
 }
 
 sub create_alias {
+
+    # TODO: add return values
+
     my ($input, $config) = @_;
 
     DEBUG "Registering ip aplias $input->{ip_alias} in API for entity: $input->{dbname}";
