@@ -16,37 +16,6 @@ my %network = ( username => 'USER', password => 'PASSWD' );
 my %config = ();
 $config{network} = \%network;
 
-# First we test the _get_landb_connection method mocking
-# its internal SOAP::Lite calls
-
-subtest '_get_landb_connection' => sub {
-
-    use SOAP::Lite;
-    my $soap = Test::MockObject::Extends->new(SOAP::Lite->new());
-    my $soap_client = Test::MockObject->new();
-    my $soap_call = Test::MockObject->new();
-    $soap_client->mock('getAuthToken', sub {return $soap_call;});
-    $soap->mock('new', sub { return $soap_client; });
-    
-    my $soap_header = Test::MockModule->new('SOAP::Lite');
-    $soap_header->mock('name', sub {return Test::MockModule->new();});
-    
-    $soap_call->set_false('fault');
-    $soap_call->mock('result', sub {return Test::MockObject->new();});
-    my ($client, $auth) = DBOD::Network::_get_landb_connection(\%config);
-    note Dumper $client;
-    note Dumper $auth;
-    #like($client, qr/Test::MockObject/, 'Returns object (client)');
-    #like($auth, qr/Test::MockObject/, 'Returns object (auth)');
-    
-    $soap_call->set_true('fault');
-    ($client, $auth) = DBOD::Network::_get_landb_connection(\%config);
-    note Dumper $client;
-    note Dumper $auth;
-    is(DBOD::Network::_get_landb_connection(\%config), undef, 'No SOAP connection');
-
-};
-
 # For testing the rest of the methods we mock the _get_landb_connection method
 
 my $auth = Test::MockObject->new();
