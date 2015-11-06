@@ -32,6 +32,7 @@ sub load_ldif {
        if ( $ldif->error() ) {
            ERROR "Error msg: ", $ldif->error ( ), "\n";
            ERROR "Error lines:\n", $ldif->error_lines ( ), "\n";
+           return;
        } else {
            print Dumper $entry;
            push @contents, $entry;
@@ -50,7 +51,7 @@ sub get_connection {
             $config->{'ldap'}->{'port'};
     my $conn = Net::LDAP->new($config->{'ldap'}->{'url'}, 
         port => $config->{'ldap'}->{'port'}, 
-        scheme => $config->{'ldap'}->{'protocol'}) or croak("$@");
+        scheme => $config->{'ldap'}->{'protocol'}) or ERROR "$@";
     DEBUG 'Binding connection to ' . $config->{'ldap'}->{'userdn'};
     my $msg = $conn->bind($config->{'ldap'}->{'userdn'}, 
         password => $config->{'ldap'}->{'password'});
@@ -117,12 +118,16 @@ sub create_instance {
     DEBUG 'Creating LDAP entity: ' . Dumper $new_instance;
 
     my $entry = DBOD::Templates::create_ldap_entry($new_instance, $config);
-    my $tns = DBOD::Templates::create_ldap_tnsnamesservice_entry($new_instance, $config);
+    my $tns = DBOD::Templates::create_ldap_tnsnetservice_entry($new_instance, $config);
  
     my $conn = get_connection($config);
 
-    $entry->add($conn);
-    $tns->add($conn);
+    for my $subtree (@{$entry}) {
+        $subtree->add($conn);
+    }
+    for my $subtree (@{$tns}) {
+        $subtree->add($conn);
+    }
 
     timestamp_entity($conn, $new_instance);
 
