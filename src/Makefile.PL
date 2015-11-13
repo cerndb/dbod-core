@@ -1,13 +1,17 @@
 use warnings;
 use strict;
-use inc::Module::Install;
-use File::ShareDir;
 
+use inc::Module::Install;
+
+# Package metadata
 author  'Ignacio Coterillo <ignacio.coterillo@cern.ch>';
 version '0.66';
 license 'GPLv3';
-
 name    'DBOD';
+
+configure_requires    'File::ShareDir' => 0;
+configure_requires    'inc::Module::Install' => 0;
+
 
 requires    'Log::Log4perl' => 0;
 requires    'Log::Dispatch::FileRotate' => 0;
@@ -18,7 +22,7 @@ requires    'Moose' => 0;
 requires    'MooseX::Log::Log4perl' => 0;
 requires    'MooseX::Getopt' => 0;
 requires    'MooseX::Role::DBIx::Connector' => 0;
-requires    'MooseX::Getopt::Usage.pm' => 0;
+requires    'MooseX::Getopt::Usage' => 0;
 requires    'Config::General' => 0;
 requires    'DBD::mysql' => 0;
 requires    'DBD::Pg' => 0;
@@ -40,6 +44,7 @@ test_requires 'Test::MockObject' => 0;
 test_requires 'Test::MockObject::Extends' => 0;
 test_requires 'Data::Handle' => 0;
 
+use File::ShareDir;
 install_share;
 
 WriteAll;
