@@ -9,9 +9,6 @@ services:
     - postgresql
 
 before_install: 
-# Copy configuration template to an unprivileged usable location
-#  (as defined in share/configpath.conf)
-    - cp share/dbod-core.conf-template /tmp/core.conf
 # Ensure test database
     - mysql -e "create database IF NOT EXISTS test;" -uroot
 
