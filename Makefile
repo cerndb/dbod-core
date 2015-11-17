@@ -7,27 +7,29 @@ SOURCESPATH=$(SRCPATH)/SOURCES
 RPMPATH=$(SRCPATH)/RPMS/$(ARCH)
 
 compile:
-	cd src && perl Makefile.PL && make
+	perl Makefile.PL && make
 
 tar: compile
-	cd src && make manifest && make dist
+	make dist
 
 # Installation as PERL Module
 install: compile
-	cd src && make install
+	make install
 
 # This is Koji required and must generate a suitable tarball
-
-# The tar file needs to be in the repo as the Mock environment doesn't have
-# perl-Module-Install available to build it.
-sources:
-	cp src/DBOD-*.tar.gz .
+#
+# If we have the tarball tracked on Git the tar pre-step can
+# be removed.
+#
+# Executing this steps overwrites the Makefile with the one
+# generated on the compile: target
+#
+sources: tar
 
 # This task will generate an RPM locally
 manual-rpm:  
-	cp src/DBOD-*.tar.gz $(SOURCESPATH)
+	cp DBOD-*.tar.gz $(SOURCESPATH)
 	$(RPMBUILD) $(RPMFLAGS) dbod-core.spec
 
 clean:
 	rm -f DBOD-*.tar.gz
-	cd src && make clean
