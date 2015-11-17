@@ -16,9 +16,10 @@ BEGIN { Log::Log4perl->easy_init() };
 
 SKIP: {
    
-    # If there is no database to test again we skip these tests
-    my $not_db_found = system('pgrep mysqld');
-    skip "Skipping test: No MySQL DB found", 10 if $not_db_found;
+    # If the test is not being ran on Travis we can skip this
+    my $username = `whoami`;
+    chomp $username;
+    skip "Skipping test: No MySQL DB found", 10 unless $username eq 'travis';
 
     # Create object 
     my $db = DBOD::DB->new(
