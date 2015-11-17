@@ -9,14 +9,11 @@ services:
     - postgresql
 
 before_install: 
-# Change the current directory before doing anything
-    - pushd src/
 # Copy configuration template to an unprivileged usable location
 #  (as defined in share/configpath.conf)
     - cp share/dbod-core.conf-template /tmp/core.conf
 # Ensure test database
     - mysql -e "create database IF NOT EXISTS test;" -uroot
-
 
 before_script:
     - cpanm Config::General
@@ -28,4 +25,3 @@ before_script:
 after_script:
     - cover -test -report coveralls
 
-    
