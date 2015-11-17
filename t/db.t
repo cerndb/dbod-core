@@ -14,8 +14,11 @@ use DBOD::DB;
 
 BEGIN { Log::Log4perl->easy_init() };
 
-# MySQL Tests
-subtest 'mysql' => sub {
+SKIP: {
+   
+    # If there is no database to test again we skip these tests
+    my $not_db_found = system('pgrep mysqld');
+    skip "Skipping test: No MySQL DB found", 10 if $not_db_found;
 
     # Create object 
     my $db = DBOD::DB->new(
@@ -24,6 +27,7 @@ subtest 'mysql' => sub {
         db_password => '',
         db_attrs => { AutoCommit => 1, } 
     );
+
     ok($db->do('use test',), 'Select test database');
     ok(!$db->do('use;',), 'Wrong command');
     ok($db->do('drop table if exists a'), 'Drop table');
@@ -64,7 +68,6 @@ subtest 'mysql' => sub {
     $result = $db->execute_sql_file('/tmp/test2.sql');
     note Dumper $result;
     is($result, undef);
-
 };
 
 done_testing();
