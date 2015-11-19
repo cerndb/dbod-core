@@ -6,7 +6,10 @@ SPECPATH=$(SRCPATH)/SPECS
 SOURCESPATH=$(SRCPATH)/SOURCES
 RPMPATH=$(SRCPATH)/RPMS/$(ARCH)
 
-compile:
+pre:	
+	yum install perl-Module-Install perl-File-ShareDir
+
+compile: pre
 	perl Makefile.PL && make
 
 tar: compile

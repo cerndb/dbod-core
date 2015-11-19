@@ -58,11 +58,7 @@ exit 0
 %config /usr/local/share/perl5/auto/share/dist/DBOD/configpath.conf
 %config /usr/local/share/perl5/auto/share/dist/DBOD/dbod-core.conf-template
 /usr/local/share/perl5/auto/share/dist/DBOD/test.json
-/usr/local/share/perl5/DBOD/Api.pm
-/usr/local/share/perl5/DBOD/Config.pm
-/usr/local/share/perl5/DBOD/DB.pm
-/usr/local/share/perl5/DBOD/Job.pm
-/usr/local/share/perl5/DBOD/Runtime.pm
+/usr/local/share/perl5/DBOD/
 %attr (-, dbod, dbod) /var/log/dbod
 /usr/local/lib64/perl5/auto/DBOD/.packlist
 /usr/local/lib64/perl5/perllocal.pod
