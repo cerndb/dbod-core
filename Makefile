@@ -6,18 +6,6 @@ SPECPATH=$(SRCPATH)/SPECS
 SOURCESPATH=$(SRCPATH)/SOURCES
 RPMPATH=$(SRCPATH)/RPMS/$(ARCH)
 
-pre:	
-	yum install perl-Module-Install perl-File-ShareDir
-
-compile: pre
-	perl Makefile.PL && make
-
-tar: compile
-	make dist
-
-# Installation as PERL Module
-install: compile
-	make install
 
 # This is Koji required and must generate a suitable tarball
 #
@@ -26,8 +14,13 @@ install: compile
 #
 # Executing this steps overwrites the Makefile with the one
 # generated on the compile: target
-#
-sources: tar
+
+gen-sources:
+	perl Makefile.PL 
+	make
+	make dist
+
+sources:
 
 # This task will generate an RPM locally
 manual-rpm:  
