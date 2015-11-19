@@ -5,13 +5,12 @@ use inc::Module::Install;
 
 # Package metadata
 author  'Ignacio Coterillo <ignacio.coterillo@cern.ch>';
-version '0.66';
+version '0.67';
 license 'GPLv3';
 name    'DBOD';
 
 configure_requires    'File::ShareDir' => 0;
 configure_requires    'inc::Module::Install' => 0;
-
 
 requires    'Log::Log4perl' => 0;
 requires    'Log::Dispatch::FileRotate' => 0;
