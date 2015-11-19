@@ -61,3 +61,4 @@ t/network.t
 t/pg.t
 t/runtime.t
 t/templates.t
+bin/cpanm

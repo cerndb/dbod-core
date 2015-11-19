@@ -32,12 +32,12 @@ Requires: perl-YAML-Syck
 Requires: perl-DBD-Oracle
 Requires: perl-Config-General
 
-
 %description
 DB On Demand core library
 
 %prep
 %setup -n DBOD-%{version}
+bin/cpanm  --from http://dbod-mirrors.cern.ch/CPAN --installdeps .
 exit 0
 
 %build
