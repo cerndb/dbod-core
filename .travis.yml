@@ -1,24 +1,19 @@
 language: perl
-
 perl:
-    - "5.20"
-
-# Start databases for SQL operation testing
+- '5.20'
 services:
-    - mysql
-    - postgresql
-
-before_install: 
-# Ensure test database
-    - mysql -e "create database IF NOT EXISTS test;" -uroot
-
+- mysql
+- postgresql
+before_install:
+- mysql -e "create database IF NOT EXISTS test;" -uroot
 before_script:
-    - cpanm Config::General
-    - cpanm -n Devel::Cover::Report::Coveralls
-    - cpanm -n JSON
-    - cpanm -n REST::Client
-    - cpanm -n MIME::Base64
-
+- cpanm Config::General
+- cpanm -n Devel::Cover::Report::Coveralls
+- cpanm -n JSON
+- cpanm -n REST::Client
+- cpanm -n MIME::Base64
 after_script:
-    - cover -test -report coveralls
-
+- cover -test -report coveralls
+notifications:
+  slack:
+    secure: gVb+R7ulu3knE79oZzrPeqnU9pT356IpDGqmE8Ni7cSi6XfH0zDX4Puy7KLFPkXhhEcnD2gzeB8twwYwcJh9r2qwhGJIu7/KSTI9CRhH72RdAEQQfpKjPaULIMcWTMkbNs1ihTqn1pf59SfCMlUr7eV9P7vedW9+yLJZFynVgM4=
