@@ -9,7 +9,11 @@ package DBOD::Runtime_Zapi;
 
 use strict;
 use warnings;
+
+our $VERSION = 0.67;
+
 use lib '/opt/netapp-manageability-sdk-5.3.1/lib/perl/NetApp'; 
+
 
 use Moose;
 with 'MooseX::Log::Log4perl';

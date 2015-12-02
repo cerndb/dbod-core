@@ -20,7 +20,7 @@ use DBOD::Templates;
 
 our ($VERSION, @EXPORT_OK);
 
-$VERSION     = 0.1;
+$VERSION     = 0.67;
 use base qw(Exporter);
 @EXPORT_OK   = qw( load_cache get_entity_metadata );
 

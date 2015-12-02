@@ -6,8 +6,11 @@
 # or submit itself to any jurisdiction.
 
 package DBOD::IPalias;
+
 use strict;
 use warnings;
+
+our $VERSION = 0.67;
 
 use Log::Log4perl qw(:easy);
 use DBOD::Runtime;

@@ -10,6 +10,8 @@ package DBOD::Runtime;
 use strict;
 use warnings;
 
+our $VERSION = 0.67;
+
 use Moose;
 with 'MooseX::Log::Log4perl';
 
