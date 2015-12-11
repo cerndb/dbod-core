@@ -43,7 +43,27 @@ test_requires 'Test::MockObject' => 0;
 test_requires 'Test::MockObject::Extends' => 0;
 test_requires 'Data::Handle' => 0;
 
+# Install share/ files
 use File::ShareDir;
 install_share;
+
+# Install executables
+install_script 'scripts/init_instance';
+install_script 'scripts/mysql_appdynamics';
+install_script 'scripts/mysql_ping';
+install_script 'scripts/mysql_restore';
+install_script 'scripts/mysql_snapclone';
+install_script 'scripts/mysql_snapshot';
+install_script 'scripts/mysql_start';
+install_script 'scripts/mysql_stop';
+install_script 'scripts/pg_appdynamics';
+install_script 'scripts/pg_ping';
+install_script 'scripts/pg_restore';
+install_script 'scripts/pg_snapclone';
+install_script 'scripts/pg_snapshot';
+install_script 'scripts/pg_start';
+install_script 'scripts/pg_stop';
+install_script 'scripts/pg_upgrade';
+install_script 'scripts/ping';
 
 WriteAll;
