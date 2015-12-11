@@ -7,6 +7,7 @@ inc/Module/Install/Metadata.pm
 inc/Module/Install/Share.pm
 inc/Module/Install/Win32.pm
 inc/Module/Install/WriteAll.pm
+lib/DBOD.pm
 lib/DBOD/Api.pm
 lib/DBOD/Config.pm
 lib/DBOD/DB.pm
