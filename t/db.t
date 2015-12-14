@@ -31,7 +31,9 @@ SKIP: {
 
     ok($db->do('drop table if exists a'), 'Drop table');
     ok($db->do('create table a (a int, b varchar(32))',), 'Create table');
-    my @values =  (1, 'test', 2, 'test2');
+    my @values =  (1, 'test');
+    ok($db->do('insert into a values (?, ?)', \@values), 'Insert values');
+    @values =  (2, 'test2');
     ok($db->do('insert into a values (?, ?)', \@values), 'Insert values');
     my $result = $db->select('select * from a');
     note ref($result);
