@@ -19,12 +19,12 @@ SKIP: {
     # If the test is not being ran on Travis we can skip this
     my $username = `whoami`;
     chomp $username;
-    skip "Skipping test: No DB found", 10 unless $username eq 'travis';
+    skip "Skipping test: No DB found", 9 unless $username eq 'travis';
 
     # Create object 
     my $db = DBOD::DB->new(
-        db_dsn => 'DBI:Pg:dbname=postgres:host=localhost',
-        db_user => 'postgres',
+        db_dsn => 'DBI:Pg:dbname=travis',
+        db_user => 'travis',
         db_password => '',
         db_attrs => { AutoCommit => 1, } 
     );
