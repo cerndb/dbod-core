@@ -1,19 +1,30 @@
 language: perl
+sudo: required
+dist: trusty
+
 perl:
 - '5.20'
+
+addons:
+  postgresql: "9.4"
+
 services:
-- mysql
 - postgresql
+
 before_install:
-- mysql -e "create database IF NOT EXISTS test;" -uroot
+- sudo mkdir /var/log/dbod
+- sudo chown travis /var/log/dbod
+
 before_script:
 - cpanm Config::General
 - cpanm -n Devel::Cover::Report::Coveralls
 - cpanm -n JSON
 - cpanm -n REST::Client
 - cpanm -n MIME::Base64
+
 after_script:
 - cover -test -report coveralls
+
 notifications:
   slack:
-    secure: qMXcgugcJGcwBi8VI7AmC8h74kERS8tKOX6hl699Rp1+xci6O484Q49vSPUsQwFLFOmUCNBlblYMeh1MaguSIWzaN5AZsqXkLfDf8O5RVA7DCdhcJa06ZDHUjbbSII3RPbtxNhcUGw7HyzrbveJMh7vgOgaCXfKnEovmrdhfllDBf+cN8rjmQDXZKmIbCVKIaEuCPBOolWG8duE2S8rc0A1sslvS5oEY7jjIFS22QcU2/lEMkTLD6IX1e4S2rc+iW7nmnVEkz6Rxr4F5vxLJk04dW1ZEDb2JSN9rwpIk+Hz6dH/qlo+nAtWPUOV25UN4K1YNcESb2PPZCQyJqu3kv2CK2ynV3mxRugKylWZZX8vdtjZ7TMrqN8IiutiGEBIV3wJ3GqLdBIBgTZl9vHNVgO/Fx/ALN4ttn5KyrstZt5Wead2MawKvCzSGgewNkpJ9db5I1sW6BJGy8Joz9xCi1cW4x+uxWnhnabLAdXDGs+Qdrx2yyQ1vmy+wlcV5vO4I+XjFUiqWY0QdzT5hL68pif1326jyEGbubP6P7iLt1IfxuwX3rDUDIH0lxhXMWlVZb80XPyYVeLFUgBDn+6Hxf8BXQrPtADzQO2kyl/eHExSoN3EJZJybO2Xk4UaDRlcXBPawHyqaLAnRmxNKllC1UvhptJSctAzdewv/JMGIQoc=
+    secure: WTQ9EGOQVAbjyM3Hirh42ZyYWRP7hHSTMWXFdeNTmnoWGROYP1U+g7OXTL0BnVwILgUgll/r6yyDhtMXioIXFm7gkbpjKlc1CYEOwXW0aSmyxwZ9XA9G6IwTcivx1bLzrutPgFExW6ZlovmLfi4h37qmRcCb3SUpK3eKUSOi8d0=
