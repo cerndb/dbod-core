@@ -19,18 +19,16 @@ SKIP: {
     # If the test is not being ran on Travis we can skip this
     my $username = `whoami`;
     chomp $username;
-    skip "Skipping test: No MySQL DB found", 10 unless $username eq 'travis';
+    skip "Skipping test: No DB found", 10 unless $username eq 'travis';
 
     # Create object 
     my $db = DBOD::DB->new(
-        db_dsn => 'DBI:mysql:host=localhost',
-        db_user => 'travis',
+        db_dsn => 'DBI:Pg:dbname=postgres:host=localhost',
+        db_user => 'postgres',
         db_password => '',
         db_attrs => { AutoCommit => 1, } 
     );
 
-    ok($db->do('use test',), 'Select test database');
-    ok(!$db->do('use;',), 'Wrong command');
     ok($db->do('drop table if exists a'), 'Drop table');
     ok($db->do('create table a (a int, b varchar(32))',), 'Create table');
     my @values =  (1, 'test', 2, 'test2');
@@ -74,7 +72,6 @@ SKIP: {
 done_testing();
 
 __DATA__
-use test;
 drop table if exists a;
 create table a (a int, b varchar(32));
 insert into a values (3, 'test3');
