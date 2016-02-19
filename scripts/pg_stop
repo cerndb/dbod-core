@@ -27,7 +27,7 @@ use strict;
 use warnings;
 
 use Log::Log4perl;
-use DBOD::Runtime;
+use DBOD::CRS;
 use DBOD::PG;
 
 # Initiates logger
@@ -43,7 +43,7 @@ my $pg = DBOD::PG->new;
 sub body {
 	$job->log->info('Executing posgresql stop on '. $job->entity );
 	
-       my($rc,$entity);
+	my ($rc, $entity);
 	$entity = 'dod_' . $job->entity;	
 	
 	#Check if instance is running
@@ -61,7 +61,7 @@ sub body {
 	
 	#If instance is CRS
 	if ($job->metadata->{'crs_ref'}) {
-		$rc = $runtime->StopCRSResource($entity, $job->config->{'common'}->{'crsctl'});
+		$rc = DBOD::CRS::stop_resource($entity, $job->config->{'common'}->{'crsctl'});
 	} else {
 		$rc = $pg->StopPostgreSQL($entity, $job->metadata->{'bindir'} . "/pg_ctl",$job->metadata->{'datadir'});
 	}	

@@ -16,6 +16,7 @@ inc/Module/Install/WriteAll.pm
 lib/DBOD.pm
 lib/DBOD/Api.pm
 lib/DBOD/Config.pm
+lib/DBOD/CRS.pm
 lib/DBOD/DB.pm
 lib/DBOD/IPalias.pm
 lib/DBOD/Job.pm

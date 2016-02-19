@@ -12,10 +12,8 @@ package DBOD::MySQL::restore;
 use Moose;
 
 extends 'DBOD::Job';
-
 with 'MooseX::Getopt::Usage',
      'MooseX::Getopt::Usage::Role::Man';
-
 
 has 'snapshot' => (is => 'ro', isa => 'Str', required => 1, documentation => qq{Target snapshot to be restored} );
 has 'pitr' => (is => 'ro', isa => 'Str', documentation => qq{In case of a PITR, format:  yyyy-mm-dd_H24:MM:SS } );
@@ -29,6 +27,7 @@ use warnings;
 
 use Log::Log4perl;
 use DBOD::Runtime;
+use DBOD::CRS;
 use DBOD::Runtime_Zapi;
 use DBOD::MySQL;
 use Data::Dumper;
@@ -40,7 +39,6 @@ use Time::localtime;
 BEGIN { 
     Log::Log4perl->easy_init() ;
 }
-
 
 my $job = DBOD::MySQL::restore->new_with_options();
 my $runtime_zapi  = DBOD::Runtime_Zapi->new;
@@ -223,7 +221,7 @@ sub body {
 	if (! $instance_down ) { # we need to shutdown the instance
 		#put the instance down
 		if ($job->metadata->{'crs_ref'}) {
-			$rc = $runtime->StopCRSResource($entity, $job->config->{'mysql'}->{'oracle_crs'});
+			$rc = DBOD::CRS::stop_resource($entity, $job->config->{'mysql'}->{'oracle_crs'});
 		}
 		else {
 			$rc = $mysql->StopMySQL($job->metadata->{'bindir'} . "/mysqladmin", $job->config->{'mysql'}->{'db_user'}, $job->config->{'mysql'}->{'db_password'}, $job->metadata->{'socket'});
@@ -354,7 +352,7 @@ sub body {
 	}
 
 	if ($job->metadata->{'crs_ref'}) {
-		$rc = $runtime->StartCRSResource($entity, $job->config->{'mysql'}->{'oracle_crs'});
+		$rc = DBOD::CRS::start_resource($entity, $job->config->{'mysql'}->{'oracle_crs'});
 	} else {
 		$rc = $mysql->StartMySQL($entity, $job->metadata->{'bindir'} . "/mysqladmin", $job->config->{'mysql'}->{'db_user'}, $job->config->{'mysql'}->{'db_password'}, $job->metadata->{'socket'},$job->metadata->{'datadir'} , 0);
 	}	

@@ -16,8 +16,6 @@ extends 'DBOD::Job';
 with 'MooseX::Getopt::Usage',
      'MooseX::Getopt::Usage::Role::Man';
 
-
-
 has 'help' => (is => 'ro', isa => 'Bool', documentation => qq{Print command usage} );
 
 # Main 
@@ -27,7 +25,7 @@ use strict;
 use warnings;
 
 use Log::Log4perl;
-use DBOD::Runtime;
+use DBOD::CRS;
 use DBOD::PG;
 
 # Initiates logger
@@ -37,7 +35,6 @@ BEGIN {
 
 
 my $job = DBOD::PG::start->new_with_options();
-my $runtime = DBOD::Runtime->new;
 my $pg = DBOD::PG->new;
 
 sub body {
@@ -61,7 +58,7 @@ sub body {
 	
 	#If instance is CRS
 	if ($job->metadata->{'crs_ref'}) {
-		$rc = $runtime->StartCRSResource($entity, $job->config->{'pg'}->{'oracle_crs'});
+		$rc = DBOD::CRS::start_resource($entity, $job->config->{'pg'}->{'oracle_crs'});
 	} else {
 		$rc = $pg->StartPostgreSQL($entity, $job->metadata->{'bindir'} . "/pg_ctl",$job->metadata->{'datadir'} );
 	}	
@@ -72,8 +69,6 @@ sub body {
 		$job->_output(1);
 		return 1;
 	}
-
-
 
 	# The End
 	$job->log->debug("pg_start is over.");

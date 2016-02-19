@@ -125,10 +125,9 @@ sub body {
        }
 	
 	# stop database if running
-	my $outputline =0;
 	if ($isrunning) { #running instance
 		if ($job->metadata->{'crs_ref'}) {
-			$rc = $runtime->StopCRSResource($entity, $job->config->{'common'}->{'crsctl'});
+			$rc = DBOD::CRS::stop_resource($entity, $job->config->{'common'}->{'crsctl'});
 		} else {
 			$rc = $pg->StopPostgreSQL($entity, $job->metadata->{'bindir'} . "/pg_ctl",$job->metadata->{'datadir'});
 		}	
@@ -165,7 +164,7 @@ sub body {
 	} else {
 		$arr_file[1]= "recovery_target_name = '" . $job->snapshot . "'\n";
 	}
-#$arr_file[2]= "recovery_target_timeline= 'latest'\n";
+    #$arr_file[2]= "recovery_target_timeline= 'latest'\n";
 	$job->log->debug("recovery.conf will be written: " . Data::Dumper->Dump([\@arr_file],['arr_file']));
 	$runtime->WriteFileArr($job->metadata->{'datadir'} . "/recovery.conf",\@arr_file);
 	if (! -e $job->metadata->{'datadir'}. "/recovery.conf") {
@@ -297,7 +296,7 @@ sub body {
 	#stop and restart the postgres server
 	$job->log->debug("Stopping instance");
 	if ($job->metadata->{'crs_ref'}) {
-		$rc = $runtime->StopCRSResource($entity, $job->config->{'common'}->{'crsctl'});
+		$rc = DBOD::CRS::stop_resource($entity, $job->config->{'common'}->{'crsctl'});
 	} else {
 		$rc = $pg->StopPostgreSQL($entity, $job->metadata->{'bindir'} . "/pg_ctl",$job->metadata->{'datadir'});
 	}	
@@ -319,7 +318,7 @@ sub body {
 	$job->log->debug("Starting instance with network");
 
 	if ($job->metadata->{'crs_ref'}) {
-		$rc = $runtime->StartCRSResource($entity, $job->config->{'pg'}->{'oracle_crs'});
+		$rc = DBOD::CRS::start_resource($entity, $job->config->{'pg'}->{'oracle_crs'});
 	} else {
 		$rc = $pg->StartPostgreSQL($entity, $job->metadata->{'bindir'} . "/pg_ctl",$job->metadata->{'datadir'} );
 	}	
@@ -337,9 +336,6 @@ sub body {
 	$job->log->debug("restore operation is successfully over");
 	$job->_output(0);
 	return 0;
-	
-	
- 
 
 }
 

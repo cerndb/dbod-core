@@ -16,8 +16,6 @@ extends 'DBOD::Job';
 with 'MooseX::Getopt::Usage',
      'MooseX::Getopt::Usage::Role::Man';
 
-
-
 # Main 
 package main;
 
@@ -25,7 +23,7 @@ use strict;
 use warnings;
 
 use Log::Log4perl;
-use DBOD::Runtime;
+use DBOD::CRS;
 use DBOD::MySQL;
 use Data::Dumper;
 
@@ -35,16 +33,14 @@ BEGIN {
     Log::Log4perl->easy_init() ;
 }
 
-
-my $job = DBOD::MySQL::stop->new_with_options();
-my $runtime = DBOD::Runtime->new;
+my $job = DBOD::MySQL::stop->new_with_options;
 my $mysql = DBOD::MySQL->new;
-my $version_mysql_snap;
 
 sub body {
+
 	$job->log->info('Executing mysql_stop on '. $job->entity );
 	
-       my($rc,$entity);
+	my ($rc, $entity);
 	$entity = 'dod_' . $job->entity;	
 	
 	#Check if instance is running
@@ -59,10 +55,9 @@ sub body {
 		$job->log->debug("Instance is up.");
 	}
 
-	
 	#If instance is CRS
 	if ($job->metadata->{'crs_ref'}) {
-		$rc = $runtime->StopCRSResource($entity, $job->config->{'mysql'}->{'oracle_crs'});
+		$rc = DBOD::CRS::stop_resource($entity, $job->config->{'mysql'}->{'oracle_crs'});
 	}
 	else {
 		$rc = $mysql->StopMySQL($job->metadata->{'bindir'} . "/mysqladmin", $job->config->{'mysql'}->{'db_user'}, $job->config->{'mysql'}->{'db_password'}, $job->metadata->{'socket'});
