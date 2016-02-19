@@ -47,7 +47,6 @@ scripts/pg_snapshot
 scripts/pg_start
 scripts/pg_stop
 scripts/pg_upgrade
-scripts/ping
 share/configpath.conf
 share/dbod-core.conf-template
 share/entities.json

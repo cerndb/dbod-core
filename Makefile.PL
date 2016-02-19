@@ -64,6 +64,5 @@ install_script 'scripts/pg_snapshot';
 install_script 'scripts/pg_start';
 install_script 'scripts/pg_stop';
 install_script 'scripts/pg_upgrade';
-install_script 'scripts/ping';
 
 WriteAll;
