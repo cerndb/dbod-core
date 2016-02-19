@@ -18,7 +18,7 @@ use Log::Log4perl;
 
 our ($VERSION, @EXPORT_OK);
 
-$VERSION     = 0.1;
+$VERSION     = 0.67;
 use base qw(Exporter);
 @EXPORT_OK   = qw( load );
 
@@ -29,13 +29,25 @@ BEGIN {
 }
 
 sub load {
+    # Loads configuration file and returns a reference to a configuration
+    # hash
     my $share_dir = File::ShareDir::dist_dir('DBOD');
     my $filename = LoadFile( "$share_dir/configpath.conf" );
-
-    my $config_file = Config::General->new( 
+   
+    my $config_file;
+    if ( -f $filename->{'PATH'}) {
+        # If a system configuration file exist on the expected
+        # location we load it
+        $config_file = Config::General->new( 
         -ConfigFile => $filename->{'PATH'}, 
         -ForceArray => 1); # Allows 1 element ARR
-
+    } else {
+        # Otherwise we load the example template (i.e. for testing)
+        $config_file = Config::General->new( 
+        -ConfigFile => "${share_dir}/dbod-core.conf-template", 
+        -ForceArray => 1); # Allows 1 element ARR
+    }
+    
     my %cfg = $config_file->getall();
     return \%cfg; 
 }

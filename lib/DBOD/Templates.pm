@@ -9,7 +9,8 @@ package DBOD::Templates;
 
 use warnings;
 use strict;
-use Exporter;
+
+our $VERSION = 0.67;
 
 use DBOD::Ldap;
 use Data::Dumper;
@@ -19,8 +20,6 @@ use File::Temp qw/ tempfile /;
 use Log::Log4perl qw(:easy);
 use Net::LDAP::LDIF;
 use JSON;
-
-use base qw(Exporter);
 
 sub load_template {
     my ($format, $db_type, $vars, $config, $output) = @_;

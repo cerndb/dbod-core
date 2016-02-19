@@ -9,6 +9,8 @@ package DBOD::Ldap;
 use strict;
 use warnings;
 
+our $VERSION = 0.67;
+
 use Net::LDAP;
 use Net::LDAP::Entry;
 use Net::LDAP::LDIF;

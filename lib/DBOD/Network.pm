@@ -11,6 +11,8 @@ use strict;
 use warnings;
 use Exporter;
 
+our $VERSION = 0.67;
+
 use Log::Log4perl qw(:easy);
 use SOAP::Lite;
 

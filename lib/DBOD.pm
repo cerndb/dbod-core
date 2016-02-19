@@ -1,4 +1,3 @@
-#!/usr/bin/env perl
 # Copyright (C) 2015, CERN
 # This software is distributed under the terms of the GNU General Public
 # Licence version 3 (GPL Version 3), copied verbatim in the file "LICENSE".
@@ -6,24 +5,14 @@
 # granted to it by virtue of its status as Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
+package DBOD;
+
 use strict;
 use warnings;
+use Exporter;
 
-use DBOD::Job;
-use Data::Dumper;
+our ($VERSION);
 
-# Initiates logger
-BEGIN { 
-    Log::Log4perl->easy_init() ;
-}
-my $job = DBOD::Job->new_with_options();
-$job->connect_db();
+$VERSION     = 0.67;
 
-sub body {
-    my $params = shift;
-    my $type = lc $job->metadata->{'subcategory'};
-    $job->db->execute_sql_file($job->config->{$type}->{'helper_ping'});
-    $job->_output(0);
-}
-
-$job->run(\&body);
+1;

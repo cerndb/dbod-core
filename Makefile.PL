@@ -5,13 +5,12 @@ use inc::Module::Install;
 
 # Package metadata
 author  'Ignacio Coterillo <ignacio.coterillo@cern.ch>';
-version '0.66';
+version '0.67';
 license 'GPLv3';
 name    'DBOD';
 
 configure_requires    'File::ShareDir' => 0;
 configure_requires    'inc::Module::Install' => 0;
-
 
 requires    'Log::Log4perl' => 0;
 requires    'Log::Dispatch::FileRotate' => 0;
@@ -44,7 +43,26 @@ test_requires 'Test::MockObject' => 0;
 test_requires 'Test::MockObject::Extends' => 0;
 test_requires 'Data::Handle' => 0;
 
+# Install share/ files
 use File::ShareDir;
 install_share;
+
+# Install executables
+install_script 'scripts/init_instance';
+install_script 'scripts/mysql_appdynamics';
+install_script 'scripts/mysql_ping';
+install_script 'scripts/mysql_restore';
+install_script 'scripts/mysql_snapclone';
+install_script 'scripts/mysql_snapshot';
+install_script 'scripts/mysql_start';
+install_script 'scripts/mysql_stop';
+install_script 'scripts/pg_appdynamics';
+install_script 'scripts/pg_ping';
+install_script 'scripts/pg_restore';
+install_script 'scripts/pg_snapclone';
+install_script 'scripts/pg_snapshot';
+install_script 'scripts/pg_start';
+install_script 'scripts/pg_stop';
+install_script 'scripts/pg_upgrade';
 
 WriteAll;

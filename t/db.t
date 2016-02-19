@@ -14,21 +14,26 @@ use DBOD::DB;
 
 BEGIN { Log::Log4perl->easy_init() };
 
-# MySQL Tests
-subtest 'mysql' => sub {
+SKIP: {
+   
+    # If the test is not being ran on Travis we can skip this
+    my $username = `whoami`;
+    chomp $username;
+    skip "Skipping test: No DB found", 9 unless $username eq 'travis';
 
     # Create object 
     my $db = DBOD::DB->new(
-        db_dsn => 'DBI:mysql:host=localhost',
+        db_dsn => 'DBI:Pg:dbname=travis',
         db_user => 'travis',
         db_password => '',
         db_attrs => { AutoCommit => 1, } 
     );
-    ok($db->do('use test',), 'Select test database');
-    ok(!$db->do('use;',), 'Wrong command');
+
     ok($db->do('drop table if exists a'), 'Drop table');
     ok($db->do('create table a (a int, b varchar(32))',), 'Create table');
-    my @values =  (1, 'test', 2, 'test2');
+    my @values =  (1, 'test');
+    ok($db->do('insert into a values (?, ?)', \@values), 'Insert values');
+    @values =  (2, 'test2');
     ok($db->do('insert into a values (?, ?)', \@values), 'Insert values');
     my $result = $db->select('select * from a');
     note ref($result);
@@ -64,13 +69,11 @@ subtest 'mysql' => sub {
     $result = $db->execute_sql_file('/tmp/test2.sql');
     note Dumper $result;
     is($result, undef);
-
 };
 
 done_testing();
 
 __DATA__
-use test;
 drop table if exists a;
 create table a (a int, b varchar(32));
 insert into a values (3, 'test3');

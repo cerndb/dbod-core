@@ -7,6 +7,9 @@
 
 package DBOD::DB;
 
+our ($VERSION);
+$VERSION     = 0.67;
+
 use strict;
 use warnings;
 

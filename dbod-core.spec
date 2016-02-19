@@ -2,7 +2,7 @@
 # Database On Demand (DBOD) core library SPEC file
 #
 
-%define version 0.5
+%define version 0.67
 
 # Trying to avoid Koji post-generation issues
 %define __arch_install_post %{nil} # /usr/lib/rpm/check-buildroot
@@ -11,7 +11,7 @@
 Summary: DB On Demand Core library
 Name: cerndb-sw-dbod-core
 Version: %{version}
-Release: 1 
+Release: 1%{?dist}
 License: GPL
 Group: Applications
 ExclusiveArch: x86_64
@@ -32,12 +32,12 @@ Requires: perl-YAML-Syck
 Requires: perl-DBD-Oracle
 Requires: perl-Config-General
 
-
 %description
 DB On Demand core library
 
 %prep
 %setup -n DBOD-%{version}
+bin/cpanm  --from http://dbod-mirrors.cern.ch/CPAN --installdeps .
 exit 0
 
 %build
@@ -58,15 +58,13 @@ exit 0
 %config /usr/local/share/perl5/auto/share/dist/DBOD/configpath.conf
 %config /usr/local/share/perl5/auto/share/dist/DBOD/dbod-core.conf-template
 /usr/local/share/perl5/auto/share/dist/DBOD/test.json
-/usr/local/share/perl5/DBOD/Api.pm
-/usr/local/share/perl5/DBOD/Config.pm
-/usr/local/share/perl5/DBOD/DB.pm
-/usr/local/share/perl5/DBOD/Job.pm
-/usr/local/share/perl5/DBOD/Runtime.pm
+/usr/local/share/perl5/DBOD/
 %attr (-, dbod, dbod) /var/log/dbod
 /usr/local/lib64/perl5/auto/DBOD/.packlist
 /usr/local/lib64/perl5/perllocal.pod
 
 %changelog
+* Tue Nov 19 2015 Ignacio Coterillo <icoteril@cern.ch> 0.67.1
+- Changed release format
 * Tue Jun 2 2015 Ignacio Coterillo <icoteril@cern.ch> 0.5.1
 - Initial packaging
