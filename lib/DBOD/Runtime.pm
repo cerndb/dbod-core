@@ -560,25 +560,5 @@ sub Copy {
 	return 1;
 }
 
-#@deprecated
-sub Remove {
-	my($self, $file) = @_;
-	$self->log->info("Parameter file: <$file>");
-
-	my($cmd);
-	if (-d $file) {
-		$cmd="rm -rf $file";
-	} else {
-		$cmd="rm -f $file";
-	}
-	my(@output);
-	`$cmd`;
-	if ($? > 0 || scalar(@output)>0) {
-		$self->log->("error deleting $file : $! ");
-		return 0; #bad
-	}
-	return 1; #ok
-}
-
 
 1;

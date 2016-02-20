@@ -329,10 +329,6 @@ sub body {
 		$job->_output(1);
 		return 1;
 	}
-	if (-e $tempfile) {
-		$rc = $runtime->Remove($tempfile);
-		$job->log->debug("Temp file has been removed: <$tempfile>") if ($rc); 
-	}
 	$job->log->debug("restore operation is successfully over");
 	$job->_output(0);
 	return 0;
