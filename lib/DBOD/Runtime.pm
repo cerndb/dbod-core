@@ -201,15 +201,6 @@ sub TimeoutOneparam {
 	
 }
 
-#Parses mysql error file after a certain string
-sub parse_err_file {
-    my ($self, $cad, $file) = @_;
-    my $start = int(`grep \"$cad\" $file --line-number |tail -n1 |cut -d\":\" -f1`);
-    my $total = int(`wc -l $file|cut -d\" \" -f1`);
-    my $lines = $total - $start + 1;
-    my $res = `tail $file -n $lines`;
-    return $res;
-}
 
 # perl pg_restore --entity pgtest --snapshot snapscript_24062015_125419_58_5617 --pitr 2015-06-24_13:00:00
 sub CheckTimes {
