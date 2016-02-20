@@ -507,20 +507,6 @@ sub GetTempFileName {
     return $fh->filename;
 }
 
-#@deprecated
-sub Chown { 
-	my($self,$f,$owners)=@_;
-	$self->log->info("Parameters file: <$f> owners: <$owners>");
-	my($cmd)= "chown $owners $f";
-	`$cmd`;
-	if ($? > 0) {
-		$self->log->debug("error executing <$cmd> : $! ");
-		return 0; #bad
-	}
-	return 1; #ok	
-
-}
-
 # To substitute for File::Copy?
 #@deprecated
 sub Copy {
@@ -538,7 +524,10 @@ sub Copy {
 	}
 
 	if ($owners) {
-		$self->Chown($f2,$owners);
+        my ($username, $group) = split /:/, $owners;
+        my $uid = getpwnam $username;
+        my $gid = getgrnam $group;
+		chown $uid, $gid, $f2;
 	}
 	if ($modes) { 
 		chmod $modes, $f2;
