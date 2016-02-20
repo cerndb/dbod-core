@@ -32,6 +32,7 @@ use DBOD::Runtime;
 use DBOD::Runtime_Zapi;
 use DBOD::PG;
 use Data::Dumper;
+use File::Copy 'cp';
 use Try::Tiny;
 
 
@@ -205,14 +206,14 @@ sub body {
 	}
 	$job->log->debug("tempfile is <$tempfile>");
 
-	$rc=$runtime->Copy($job->metadata->{'datadir'} . "/pg_hba.conf","$tempfile",'-p','postgres:postgres','700'); 
+	$rc= cp $job->metadata->{'datadir'} . "/pg_hba.conf", $tempfile;
 	if ($rc == 0) {
 		$job->log->debug("problem copying <" . $job->metadata->{'datadir'} . "/pg_hba.conf> into <$tempfile>");
 		$job->_output(1);
 		return 1;
 	}
 
-	$rc=$runtime->Copy($job->metadata->{'datadir'} . "/pg_hba_local.conf",$job->metadata->{'datadir'} ."/pg_hba.conf",'-p','postgres:postgres','700'); 
+	$rc = cp $job->metadata->{'datadir'} . "/pg_hba_local.conf", $job->metadata->{'datadir'} . "/pg_hba.conf";
 	if ($rc == 0) {
 		$job->log->debug("problem replacing <" . $job->metadata->{'datadir'} ."/pg_hba_local.conf> by <" . $job->metadata->{'datadir'} . "/pg_hba.conf>");
 		$job->_output(1);
@@ -308,8 +309,7 @@ sub body {
 		return 1;
 	}
 
-	
-	$rc = $runtime->Copy("$tempfile",$job->metadata->{'datadir'} ."/pg_hba.conf",'-p','postgres:postgres','700'); 
+	$rc = cp $tempfile, $job->metadata->{'datadir'} . "/pg_hba.conf";
 	if ($rc == 0) {
 		$job->log->debug("problem replacing <" . $job->metadata->{'datadir'} ."/pg_hba.conf> by <$tempfile>");
 		$job->_output(1);

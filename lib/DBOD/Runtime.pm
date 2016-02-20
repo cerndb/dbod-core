@@ -20,6 +20,7 @@ use IPC::Run qw(run timeout);
 use Net::OpenSSH;
 use Data::Dumper;
 use File::Temp;
+use File::Copy;
 use Time::Local;
 use Time::localtime;
 
@@ -506,34 +507,5 @@ sub GetTempFileName {
 	#it returns a full patch <dir>/<filename>
     return $fh->filename;
 }
-
-# To substitute for File::Copy?
-#@deprecated
-sub Copy {
-	my ($self,$f1,$f2,$options,$owners,$modes) =@_;
-	$self->log->info("Parameters file1: <$f1> file2: <$f2>");
-	$self->log->info("Parameters options: $options") if (defined $options); 
-	$self->log->info("Parameters owners: $owners") if (defined $owners);
-	$self->log->info("Parameters modes: $modes") if (defined $modes);
-	my($cmd)="cp $options $f1 $f2";
-	`$cmd`;
-	
-	if ($? > 0) {
-		$self->log->debug("error executing <$cmd> : $! ");
-		return 0; #bad
-	}
-
-	if ($owners) {
-        my ($username, $group) = split /:/, $owners;
-        my $uid = getpwnam $username;
-        my $gid = getgrnam $group;
-		chown $uid, $gid, $f2;
-	}
-	if ($modes) { 
-		chmod $modes, $f2;
-	}
-	return 1;
-}
-
 
 1;
