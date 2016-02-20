@@ -187,7 +187,7 @@ sub body {
 		$job->_output(1);
 		return 1;
 	} else {
-		$rc=$runtime->Chmod($job->metadata->{'datadir'} . "/pg_hba_local.conf",'700');
+		$rc = chmod 0700, $job->metadata->{'datadir'} . "/pg_hba_local.conf";
 		if ($rc == 0) {
 			$job->log->error("pg_hba_local.conf permissions couldnt be set. Please contact dbod admins!.");
 			$job->_output(1);

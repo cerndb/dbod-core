@@ -72,7 +72,7 @@ sub body {
 		$job->_output(1);
 		return 1;
 	} else {
-		$rc=$runtime->Chmod($tempfile,'700');
+		$rc = chmod 0700, $tempfile;
 		if ($rc == 0) {
 			$job->log->error("<$tempfile> permissions couldnt be set. Please contact dbod admins!.");
 			$job->_output(1);

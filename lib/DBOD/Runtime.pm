@@ -521,20 +521,6 @@ sub Chown {
 
 }
 
-#@deprecated
-sub Chmod {
-	my($self,$f,$owners)=@_;
-	$self->log->info("Parameters file: <$f> owners: <$owners>");
-
-	my($cmd)= "chmod $owners $f";
-	`$cmd`;
-	if ($? > 0) {
-		$self->log->debug("error executing <$cmd> : $! ");
-		return 0; #bad
-	}
-	return 1; #ok
-}
-
 # To substitute for File::Copy?
 #@deprecated
 sub Copy {
@@ -555,7 +541,7 @@ sub Copy {
 		$self->Chown($f2,$owners);
 	}
 	if ($modes) { 
-		$self->Chmod($f2,$modes);
+		chmod $modes, $f2;
 	}
 	return 1;
 }
