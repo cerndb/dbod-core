@@ -12,12 +12,8 @@ package DBOD::MySQL::ping;
 use Moose;
 
 extends 'DBOD::Job';
-
 with 'MooseX::Getopt::Usage',
      'MooseX::Getopt::Usage::Role::Man';
-
-
-
 has 'help' => (is => 'ro', isa => 'Bool', documentation => qq{Print command usage} );
 
 # Main 
@@ -43,7 +39,7 @@ my $mysql = DBOD::MySQL->new;
 sub body {
 	$job->log->info('Executing posgresql start-up on '. $job->entity );
 	
-       my($rc,$entity);
+	my ($rc, $entity);
 	$entity = 'dod_' . $job->entity;	
 	
 	#Check if instance is running
@@ -92,10 +88,6 @@ sub body {
 		$rc_ping = $runtime->RunStr($job->metadata->{'bindir'} . "/mysql --socket=" . $job->metadata->{'socket'} ." -u " . $job->config->{'mysql'}->{'db_user'} . " -p" . $job->config->{'mysql'}->{'db_password'} . " < $tempfile" , \@output);
 	}
 
-	if (-e $tempfile) {
-		$rc = $runtime->Remove($tempfile);
-		$job->log->debug("Temp file has been removed: <$tempfile>") if ($rc); 
-	}
 	if ($rc_ping)  {
 		$job->log->debug("database is up");
 		$job->_output(0);

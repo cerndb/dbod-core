@@ -490,22 +490,24 @@ sub WriteFileArr {
 #it expects three arguments, otherwise returns undef
 #it returns a full patch <dir>/<filename>
 sub GetTempFileName {
-    	my($self, $template,$directory,$suffix)=@_;
+    my($self, $template,$directory,$suffix)=@_;
     	$self->log->debug("template: <$template> directory: <$directory> suffix: <$suffix> ");
 	if (! defined $template || ! defined $directory || ! defined $suffix) {
 		$self->log->debug("some variable missing, please check ");
 		return undef;
 	}			
-    	my $fh = File::Temp->new(
-       	TEMPLATE => $template,
-        	DIR      => $directory, 
-        	SUFFIX   => $suffix, 
-    	);
+    my $fh = File::Temp->new(
+        TEMPLATE => $template,
+        DIR      => $directory,
+        SUFFIX   => $suffix,
+        UNLINK   => 1,
+    );
 
 	#it returns a full patch <dir>/<filename>
-    	return $fh->filename; 
+    return $fh->filename;
 }
 
+#@deprecated
 sub Chown { 
 	my($self,$f,$owners)=@_;
 	$self->log->info("Parameters file: <$f> owners: <$owners>");
@@ -519,6 +521,7 @@ sub Chown {
 
 }
 
+#@deprecated
 sub Chmod {
 	my($self,$f,$owners)=@_;
 	$self->log->info("Parameters file: <$f> owners: <$owners>");
@@ -532,6 +535,8 @@ sub Chmod {
 	return 1; #ok
 }
 
+# To substitute for File::Copy?
+#@deprecated
 sub Copy {
 	my ($self,$f1,$f2,$options,$owners,$modes) =@_;
 	$self->log->info("Parameters file1: <$f1> file2: <$f2>");
@@ -545,7 +550,6 @@ sub Copy {
 		$self->log->debug("error executing <$cmd> : $! ");
 		return 0; #bad
 	}
-		
 
 	if ($owners) {
 		$self->Chown($f2,$owners);
@@ -556,6 +560,7 @@ sub Copy {
 	return 1;
 }
 
+#@deprecated
 sub Remove {
 	my($self, $file) = @_;
 	$self->log->info("Parameter file: <$file>");
