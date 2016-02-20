@@ -6,16 +6,13 @@
 # granted to it by virtue of its status as Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-
 # Extension of the base DBOD::Job class to add extra required parameters
 package DBOD::MySQL::appdynamics;
 use Moose;
 
 extends 'DBOD::Job';
-
 with 'MooseX::Getopt::Usage',
      'MooseX::Getopt::Usage::Role::Man';
-
 
 has 'enable' => (is => 'ro', isa => 'Bool', documentation => qq{Enable instance monitoring in AppDynamics} );
 has 'disable' => (is => 'ro', isa => 'Bool', documentation => qq{Disable instance monitoring in AppDynamics} );
@@ -30,6 +27,7 @@ use warnings;
 
 use Log::Log4perl;
 use DBOD::Runtime;
+use DBOD::Appdynamics;
 use DBOD::MySQL;
 use Data::Dumper;
 use Try::Tiny;
@@ -39,22 +37,20 @@ BEGIN {
     Log::Log4perl->easy_init() ;
 }
 
-
 my $job = DBOD::MySQL::appdynamics->new_with_options();
 my $runtime = DBOD::Runtime->new; 
-
 
 sub body {
 
 	#the machine should have a profile generated
 	$job->log->debug('Executing appdynamics  on '. $job->entity );
 
-
-	my($rc,@output,$servername,$isappmonitored);
+	my ($rc, @output, $servername, $isappmonitored);
  
 	$servername = $job->entity;
 	$servername =~ s/dod_//g;
-	if ($runtime->IsAppDynamicsEnabled($servername,$job->config->{'appdynamics'}->{'appdhost'},$job->config->{'appdynamics'}->{'appdport'},$job->config->{'appdynamics'}->{'appduser'},$job->config->{'appdynamics'}->{'appdpassword'})) {
+
+	if ( DBOD::Appdynamics::is_enabled($servername,$job->config->{'appdynamics'}->{'appdhost'},$job->config->{'appdynamics'}->{'appdport'},$job->config->{'appdynamics'}->{'appduser'},$job->config->{'appdynamics'}->{'appdpassword'})) {
 		$job->log->debug("Either directory: <$servername> is already monitored by AppDynamics.");
 		$isappmonitored =1;
 	} else {
@@ -83,7 +79,7 @@ sub body {
 		$job->log->debug("Entity: <" . $job->entity . "> has <$functionalalias > as functional alias");
 	}
 	if ($job->enable && !$isappmonitored) {
-		if ($runtime->EnableAppDynamics($servername,$connectionstring,$job->config->{'mysql'}->{'db_user'},$job->config->{'mysql'}->{'db_password'},'MYSQL','org.gjt.mm.mysql.Driver',$functionalalias,$job->metadata->{'port'},0,0,0,'NULL','NULL','N','LINUX',$functionalalias,22,$job->config->{'appdynamics'}->{'aeskey'},$job->config->{'appdynamics'}->{'appdhost'},$job->config->{'appdynamics'}->{'appdport'},$job->config->{'appdynamics'}->{'appduser'},$job->config->{'appdynamics'}->{'appdpassword'})) {
+		if (DBOD::Appdynamics::enable($servername,$connectionstring,$job->config->{'mysql'}->{'db_user'},$job->config->{'mysql'}->{'db_password'},'MYSQL','org.gjt.mm.mysql.Driver',$functionalalias,$job->metadata->{'port'},0,0,0,'NULL','NULL','N','LINUX',$functionalalias,22,$job->config->{'appdynamics'}->{'aeskey'},$job->config->{'appdynamics'}->{'appdhost'},$job->config->{'appdynamics'}->{'appdport'},$job->config->{'appdynamics'}->{'appduser'},$job->config->{'appdynamics'}->{'appdpassword'})) {
 			$job->log->debug("Entity: <" . $job->entity . "> -> servername: <$servername> has been enabled");
 			$job->_output(0);
 			return 0;
@@ -99,7 +95,7 @@ sub body {
 	} 
 
 	if ($job->disable && $isappmonitored) {
-		if ($runtime->DisableAppDynamics($servername,$job->config->{'appdynamics'}->{'appdhost'},$job->config->{'appdynamics'}->{'appdport'},$job->config->{'appdynamics'}->{'appduser'},$job->config->{'appdynamics'}->{'appdpassword'})) {
+		if (DBOD::Appdynamics::disable($servername,$job->config->{'appdynamics'}->{'appdhost'},$job->config->{'appdynamics'}->{'appdport'},$job->config->{'appdynamics'}->{'appduser'},$job->config->{'appdynamics'}->{'appdpassword'})) {
 			$job->log->debug("Entity: <" . $job->entity . "> -> servername: <$servername> has been disabled");
 			$job->_output(0);
 			return 0;
