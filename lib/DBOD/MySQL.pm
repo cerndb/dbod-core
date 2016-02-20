@@ -15,7 +15,6 @@ our $VERSION = 0.67;
 use Moose;
 with 'MooseX::Log::Log4perl';
 
-
 use IPC::Run qw(run timeout);
 use Net::OpenSSH;
 use Data::Dumper;
@@ -23,7 +22,17 @@ use DBOD::Runtime;
 
 my $runtime = DBOD::Runtime->new();
 
-sub CheckMySQLState {
+#Parses mysql error file after a certain string
+sub parse_err_file {
+	my ($self, $cad, $file) = @_;
+	my $start = int(`grep \"$cad\" $file --line-number |tail -n1 |cut -d\":\" -f1`);
+	my $total = int(`wc -l $file|cut -d\" \" -f1`);
+	my $lines = $total - $start + 1;
+	my $res = `tail $file -n $lines`;
+	return $res;
+}
+
+sub check_state {
 	my($self, $datadir) = @_;
 	$self->log->info("Parameters: datadir: <$datadir>"); 
 
@@ -41,7 +50,7 @@ sub CheckMySQLState {
 
 #Starts a MySQL database 
 #local =1 -> skip network, local=0, it doesnt.
-sub StartMySQL {
+sub start {
 	my ($self, $entity, $mysql_admin, $user, $password_dod_mysql, $mysql_socket, $mysql_datadir, $local) = @_;
        $self->log->info("Parameters: mysql_admin <$mysql_admin>, user: <$user>, password_dod_mysql: not displayed, mysql_socket: <$mysql_socket>"); 
 
@@ -74,11 +83,11 @@ sub StartMySQL {
 		my $rc1 = $runtime->RunStr($cmd,\@output,0,$cmd);
 		if ($rc1) {
 			$self->log->debug("MySQL instance is up");
-			$self->log->debug("mysqld output:\n\n" . $runtime->parse_err_file($log_search_string, $log_error_file));
+			$self->log->debug("mysqld output:\n\n" . $self->parse_err_file($log_search_string, $log_error_file));
 			return 1; #ok
 		} else {
 			$self->log->error("Problem starting MySQL instance. Please check.");
-			$self->log->error("mysqld output:\n\n" . $runtime->parse_err_file($log_search_string, $log_error_file));
+			$self->log->error("mysqld output:\n\n" . $self->parse_err_file($log_search_string, $log_error_file));
 			return 0; #notok
 		}
 	}
@@ -89,7 +98,7 @@ sub StartMySQL {
 }
 
 #Stops a MySQL database
-sub StopMySQL {
+sub stop {
 	my ($self,$mysql_admin, $user, $password_dod_mysql, $mysql_socket) = @_;
 	$self->log->info("Parameters: mysql_admin <$mysql_admin>, user: <$user>, password_dod_mysql: not displayed, mysql_socket: <$mysql_socket>"); 
 	

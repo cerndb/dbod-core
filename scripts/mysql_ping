@@ -43,7 +43,7 @@ sub body {
 	$entity = 'dod_' . $job->entity;	
 	
 	#Check if instance is running
-	$rc=$mysql->CheckMySQLState($job->metadata->{'datadir'}) ;
+	$rc=$mysql->check_state($job->metadata->{'datadir'}) ;
 
 	if ($rc == 0) {
 		$job->log->debug("No instance running");

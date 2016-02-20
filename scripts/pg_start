@@ -44,7 +44,7 @@ sub body {
 	$entity = 'dod_' . $job->entity;	
 	
 	#Check if instance is running
-	$rc=$pg->CheckPostgreSQLState($job->metadata->{'bindir'} . "/pg_ctl", $job->metadata->{'datadir'}) ;
+	$rc=$pg->check_state($job->metadata->{'bindir'} . "/pg_ctl", $job->metadata->{'datadir'}) ;
 
 	if ($rc == 0) {
 		$job->log->debug("No instance running");
@@ -60,7 +60,7 @@ sub body {
 	if ($job->metadata->{'crs_ref'}) {
 		$rc = DBOD::CRS::start_resource($entity, $job->config->{'pg'}->{'oracle_crs'});
 	} else {
-		$rc = $pg->StartPostgreSQL($entity, $job->metadata->{'bindir'} . "/pg_ctl",$job->metadata->{'datadir'} );
+		$rc = $pg->start($entity, $job->metadata->{'bindir'} . "/pg_ctl",$job->metadata->{'datadir'} );
 	}	
 	if ($rc) {
 		$job->log->debug("Instance is up");

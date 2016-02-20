@@ -99,7 +99,7 @@ sub body {
 		$job->_output(1);
 		return 1;
 	}
-	my($isrunning) = $pg->CheckPostgreSQLState($job->metadata->{'bindir'} . "/pg_ctl", $job->metadata->{'datadir'});
+	my($isrunning) = $pg->check_state($job->metadata->{'bindir'} . "/pg_ctl", $job->metadata->{'datadir'});
 	my($cmd,@output,$user_storage,$mountpoint);
 
 	#look for mountpoints
@@ -130,7 +130,7 @@ sub body {
 		if ($job->metadata->{'crs_ref'}) {
 			$rc = DBOD::CRS::stop_resource($entity, $job->config->{'common'}->{'crsctl'});
 		} else {
-			$rc = $pg->StopPostgreSQL($entity, $job->metadata->{'bindir'} . "/pg_ctl",$job->metadata->{'datadir'});
+			$rc = $pg->stop($entity, $job->metadata->{'bindir'} . "/pg_ctl",$job->metadata->{'datadir'});
 		}	
 		if ($rc) {
 			$job->log->debug("Instance is down");
@@ -299,7 +299,7 @@ sub body {
 	if ($job->metadata->{'crs_ref'}) {
 		$rc = DBOD::CRS::stop_resource($entity, $job->config->{'common'}->{'crsctl'});
 	} else {
-		$rc = $pg->StopPostgreSQL($entity, $job->metadata->{'bindir'} . "/pg_ctl",$job->metadata->{'datadir'});
+		$rc = $pg->stop($entity, $job->metadata->{'bindir'} . "/pg_ctl",$job->metadata->{'datadir'});
 	}	
 	if ($rc) {
 		$job->log->debug("Instance is down");
@@ -320,7 +320,7 @@ sub body {
 	if ($job->metadata->{'crs_ref'}) {
 		$rc = DBOD::CRS::start_resource($entity, $job->config->{'pg'}->{'oracle_crs'});
 	} else {
-		$rc = $pg->StartPostgreSQL($entity, $job->metadata->{'bindir'} . "/pg_ctl",$job->metadata->{'datadir'} );
+		$rc = $pg->start($entity, $job->metadata->{'bindir'} . "/pg_ctl",$job->metadata->{'datadir'} );
 	}	
 	if ($rc) {
 		$job->log->debug("Instance is up");

@@ -224,7 +224,7 @@ sub body {
 			$rc = DBOD::CRS::stop_resource($entity, $job->config->{'mysql'}->{'oracle_crs'});
 		}
 		else {
-			$rc = $mysql->StopMySQL($job->metadata->{'bindir'} . "/mysqladmin", $job->config->{'mysql'}->{'db_user'}, $job->config->{'mysql'}->{'db_password'}, $job->metadata->{'socket'});
+			$rc = $mysql->stop($job->metadata->{'bindir'} . "/mysqladmin", $job->config->{'mysql'}->{'db_user'}, $job->config->{'mysql'}->{'db_password'}, $job->metadata->{'socket'});
 		}
 		if ($rc) {
 			$job->log->debug("Instance is down");
@@ -341,7 +341,7 @@ sub body {
 	} 
 	
 	# restart the instance
-	$rc = $mysql->StopMySQL($job->metadata->{'bindir'} . "/mysqladmin", $job->config->{'mysql'}->{'db_user'}, $job->config->{'mysql'}->{'db_password'}, $job->metadata->{'socket'});
+	$rc = $mysql->stop($job->metadata->{'bindir'} . "/mysqladmin", $job->config->{'mysql'}->{'db_user'}, $job->config->{'mysql'}->{'db_password'}, $job->metadata->{'socket'});
 	if ($rc) {
 		$job->log->debug("Instance is down");
 		$instance_down=1;
@@ -354,7 +354,7 @@ sub body {
 	if ($job->metadata->{'crs_ref'}) {
 		$rc = DBOD::CRS::start_resource($entity, $job->config->{'mysql'}->{'oracle_crs'});
 	} else {
-		$rc = $mysql->StartMySQL($entity, $job->metadata->{'bindir'} . "/mysqladmin", $job->config->{'mysql'}->{'db_user'}, $job->config->{'mysql'}->{'db_password'}, $job->metadata->{'socket'},$job->metadata->{'datadir'} , 0);
+		$rc = $mysql->start($entity, $job->metadata->{'bindir'} . "/mysqladmin", $job->config->{'mysql'}->{'db_user'}, $job->config->{'mysql'}->{'db_password'}, $job->metadata->{'socket'},$job->metadata->{'datadir'} , 0);
 	}	
 	if ($rc) {
 		$job->log->debug("Instance is up");

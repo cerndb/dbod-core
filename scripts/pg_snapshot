@@ -42,7 +42,7 @@ sub body {
 	$job->log->debug('Executing snapshot job on '. $job->entity );
 	my($entity);
 	$entity = 'dod_' . $job->entity;	
-	my($isrunning) = $pg->CheckPostgreSQLState($job->metadata->{'bindir'} . "/pg_ctl",$job->metadata->{'datadir'}); 
+	my($isrunning) = $pg->check_state($job->metadata->{'bindir'} . "/pg_ctl",$job->metadata->{'datadir'});
 
 	if ( $isrunning == 0 ) {
 		$job->log->error("You are not allowed to take an snapshot while database is not running.");

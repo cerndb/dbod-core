@@ -43,7 +43,7 @@ sub body {
 	$entity = 'dod_' . $job->entity;	
 	
 	#Check if instance is running
-	$rc=$pg->CheckPostgreSQLState($job->metadata->{'bindir'} . "/pg_ctl", $job->metadata->{'datadir'}) ;
+	$rc=$pg->check_state($job->metadata->{'bindir'} . "/pg_ctl", $job->metadata->{'datadir'}) ;
 
 	if ($rc == 0) {
 		$job->log->debug("No instance running");

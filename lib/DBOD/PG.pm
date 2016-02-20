@@ -21,14 +21,14 @@ use DBOD::Runtime;
 my $runtime = DBOD::Runtime->new;
 
 #Starts a PostgreSQL database
-sub StartPostgreSQL {
+sub start {
 	my ($self,$entity, $pg_ctl, $pg_datadir) = @_;
 	$self->log->info("Parameter: entity: <$entity> pg_ctl: <$pg_ctl> pg_datadir: <$pg_datadir>");
 	my ($cmd, $rc, @output);
 
 	#Check is instance is running
 	#Check if server is running
-	$rc = $self->CheckPostgreSQLState($pg_ctl,$pg_datadir) ;
+	$rc = $self->check_state($pg_ctl,$pg_datadir) ;
 	if ($rc == 0) {
 		$self->log->debug("No instance running");
 		$cmd = "/etc/init.d/pgsql_$entity start";
@@ -48,13 +48,13 @@ sub StartPostgreSQL {
 }
 
 #Stops a PostgreSQL database
-sub StopPostgreSQL {
+sub stop {
 	my ($self, $entity, $pg_ctl,$pg_datadir) = @_;
 	$self->log->info("Parameters: entity: <$entity> pg_ctl: <$pg_ctl> pg_datadir: <$pg_datadir>");
 	my ($cmd, $rc, @output);
 
 	#Check if server is running
-	$rc = $self->CheckPostgreSQLState($pg_ctl,$pg_datadir) ;
+	$rc = $self->check_state($pg_ctl,$pg_datadir) ;
 	if ($rc == 0) {
 		$self->log->debug("No instance running. Nothing to do.");
 		return 1;
@@ -75,11 +75,10 @@ sub StopPostgreSQL {
 
 
 #It's up or down
-sub CheckPostgreSQLState { 
+sub check_state {
 	my ($self, $pg_ctl, $pg_datadir) = @_;
 	$self->log->info("Parameters: pg_ctl: <$pg_ctl> pg_datadir: <$pg_datadir>");
 	my ($cmd, $rc, @output); 
-
 
 	#Check if server is running
 	$cmd = "$pg_ctl status -D $pg_datadir -s";

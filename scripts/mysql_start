@@ -49,7 +49,7 @@ sub body {
 	$entity = 'dod_' . $job->entity;	
 	
 	#Check if instance is running
-	$rc=$mysql->CheckMySQLState($job->metadata->{'datadir'});
+	$rc=$mysql->check_state($job->metadata->{'datadir'});
 	if ($rc == 0) {
 		$job->log->debug("Instance " . $job->entity . " not running");
 	} else {
@@ -63,7 +63,7 @@ sub body {
 	if ($job->metadata->{'crs_ref'}) {
 		$rc = DBOD::CRS::start_resource($entity, $job->config->{'mysql'}->{'oracle_crs'});
 	} else {
-		$rc = $mysql->StartMySQL($entity, $job->metadata->{'bindir'} . "/mysqladmin", $job->config->{'mysql'}->{'db_user'}, $job->config->{'mysql'}->{'db_password'}, $job->metadata->{'socket'},$job->metadata->{'datadir'} , 0);
+		$rc = $mysql->start($entity, $job->metadata->{'bindir'} . "/mysqladmin", $job->config->{'mysql'}->{'db_user'}, $job->config->{'mysql'}->{'db_password'}, $job->metadata->{'socket'},$job->metadata->{'datadir'} , 0);
 	}	
 	if ($rc) {
 		$job->log->debug("Instance is up");
