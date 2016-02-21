@@ -151,6 +151,8 @@ sub scp_get {
 }
 
 # TODO: If this is not needed for MySQL upgrades, move to pg_upgrade
+#@deprecated  This method should be considered redundant as the instance version
+# Can and should be read from the instance metadata.
 sub is_running_different_version {
 	my($self,$file,$versiontogo)=@_;
 	$self->log->info("Parameters file: <$file>, versiontogo: <$versiontogo>");
@@ -200,8 +202,8 @@ sub timeout_one_param {
 	}
 	
 }
-# TODO: Move to Snapshots/Storage Module or to pg_restore command definition
-# perl pg_restore --entity pgtest --snapshot snapscript_24062015_125419_58_5617 --pitr 2015-06-24_13:00:00
+# TODO: Move to Snapshots/Storage Module and divide in two methods to validate
+# both the snapshot file format and the PITR timestamp format
 sub check_times {
 	# Check times provided.
 	my($self,$snapshot,$pitr,$version_snap)=@_;
@@ -284,7 +286,7 @@ sub check_times {
 	
 }
 
-
+#@deprecated To be substutituted by run_cmd
 sub run_str {
 	my($self, $cmd,$str,$fake,$text) = @_; 
 	if (defined $text) {
@@ -386,27 +388,6 @@ sub get_instance_version {
 		$self->log->error("<$file> file doesnt exist"); 
 	}  
 	return;
-}
-
-
-# TODO: Is this method actually required if aliases follow convention?
-#it gets an alias and it validates via ping
-sub get_alias_from_entity {
-	my($self,$entity)=@_;
-	$self->log->info("Retrieving alias for <$entity>");
-
-	$entity =~ s/dod_/dbod-/;  
-	$entity =~ s/_/-/g;
-
-	$self->log->debug("Possible alias is <$entity>.");
-	my $rc = $self->get_IP_from_cname($entity);
-	if ($rc eq "0") {
-			$self->log->debug("Problem retrieving IP from <$entity>. Ping didnt work. Strange!");
-	} else {
-		return $entity;
-	}	 	
-	return 0;
-	
 }
 
 sub read_file {

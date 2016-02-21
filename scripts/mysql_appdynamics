@@ -71,7 +71,7 @@ sub body {
 	} 
 
 	my $connectionstring	= "jdbc:mysql://" . $job->metadata->{'hosts'}[0] . ":" . $job->metadata->{'port'} . "/";
-	my $functionalalias = $runtime->get_alias_from_entity("dod_" . $job->entity);
+	my $functionalalias = DBOD::Appdynamics::get_alias_from_entity("dod_" . $job->entity);
 	if ( $functionalalias eq '0' ) {
 		$job->log->debug("Entity: <" . $job->entity . "> has not a valid functional alias. Please check!");
 		$functionalalias=$job->metadata->{'hosts'}[0];
