@@ -409,24 +409,6 @@ sub GetAliasFromEntity {
 	
 }
 
-# TODO: Move to mysql_restore, as this method is only needed there
-sub Read_Directory {
-	my($self,$dir,$pattern)=@_;
-	$self->log->info("Parameters dir: <$dir> pattern: <$pattern>");
-
-	my(@files);
-
-	opendir (D,$dir) || $self->log->debug("Cannot read directory $dir : $!");
-	if (defined $pattern) {
-		@files = grep {/$pattern/} readdir(D);
-	} else {
-        @files = grep {!/^\.\.?$/} readdir(D);
-	}
-	closedir(D);
- 
-	return @files;
-} 
-
 sub ReadFile {
 	my($self,$file)=@_;
 	$self->log->info("Parameters file: <$file>");

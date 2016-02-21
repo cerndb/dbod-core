@@ -146,6 +146,24 @@ sub CheckFileExist{
 	return 0; #not ok
 
 }
+
+sub read_directory {
+    my($self,$dir,$pattern)=@_;
+    $self->log->info("Parameters dir: <$dir> pattern: <$pattern>");
+
+    my(@files);
+
+    opendir (D,$dir) || $self->log->debug("Cannot read directory $dir : $!");
+    if (defined $pattern) {
+        @files = grep {/$pattern/} readdir(D);
+    } else {
+        @files = grep {!/^\.\.?$/} readdir(D);
+    }
+    closedir(D);
+
+    return @files;
+}
+
 sub body {
 	$job->log->debug('Executing restore  on '. $job->entity . ' with snapshot ' . $job->snapshot);
 	if (defined $job->pitr) {
@@ -255,7 +273,7 @@ sub body {
 	}
 	
 	@output=();
-	@output=$runtime->Read_Directory($job->metadata->{'binlogdir'},"^binlog\\.\\d+");
+	@output = read_directory($job->metadata->{'binlogdir'},"^binlog\\.\\d+");
 		
 	@output=sort(@output); 
 
