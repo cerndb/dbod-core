@@ -437,39 +437,6 @@ sub ReadFile {
 	return @text;
 }
 
-sub CheckFile {
-	my($self,$file,$check)=@_;
-	$self->log->info("Parameters file: <$file> check: <$check>");
-	my($flag)=0;
-	if (! defined $check) {
-		$check="e";
-	}
-	if ($check eq 'e') {
-		if (-e $file) {
-			$flag=1;
-		}
-	} elsif ($check eq 'r') {
-		if (-r $file) {
-			$flag=1;
-		}
-
-	} elsif ($check eq 'w') {
-		if (-w $file) {
-			$flag=1;
-		}
-	} elsif ($check eq 'x') {
-		if (-x $file) {
-			$flag=1;
-		}
-	}
-	if ($flag) {
-		$self->log->debug("<$check> true on file <$file>");
-		return 1; #ok
-	} else {
-		return 0; 
-	}
-
-}
 sub WriteFileArr {
 	my($self,$file,$text)=@_;
 	$self->log->info("Parameters file: <$file> text: just_number_of_lines " . scalar(@$text) );
