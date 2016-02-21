@@ -32,7 +32,7 @@ sub start {
 	if ($rc == 0) {
 		$self->log->debug("No instance running");
 		$cmd = "/etc/init.d/pgsql_$entity start";
-		$rc = $runtime->RunStr($cmd,\@output);
+		$rc = $runtime->run_str($cmd,\@output);
 		if ($rc) {
 			$self->log->debug("PostgreSQL instance is up");
 			return 1; #ok
@@ -62,7 +62,7 @@ sub stop {
 	else {
 		#Put the instance down
 		$cmd = "/etc/init.d/pgsql_$entity stop";
-		$rc = $runtime->RunStr($cmd,\@output);
+		$rc = $runtime->run_str($cmd,\@output);
 		if ($rc) {
 			$self->log->debug("PostgreSQL shutdown completed");
 			return 1; #ok
@@ -82,7 +82,7 @@ sub check_state {
 
 	#Check if server is running
 	$cmd = "$pg_ctl status -D $pg_datadir -s";
-	$rc = $runtime->RunStr($cmd,\@output);
+	$rc = $runtime->run_str($cmd,\@output);
 	if ($rc == 0) {
 		$self->log->error("No instance running. Nothing to do.");
 		return 0;

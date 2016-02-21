@@ -76,7 +76,7 @@ sub body {
 	#create snapshot label
 	my($timetag)=`date +%d%m%Y_%H%M%S`; 
 	chomp $timetag;
-	my($version)=$runtime->GetVersionDB($job->metadata->{'datadir'} . "/current-version");
+	my($version)=$runtime->get_instance_version($job->metadata->{'datadir'} . "/current-version");
 	if (! defined $version) {
 		 $job->log->error("No version found strange.");
                $job->_output(1);
@@ -101,7 +101,7 @@ sub body {
 	$cmd= $job->metadata->{'bindir'} . "/psql -h " .  $job->metadata->{'socket'} . " -p " . $job->metadata->{'port'} . " -c \"SELECT pg_start_backup('$snapname')\";";
 	$job->log->debug("running command to begin backup: <$cmd> ");
 	@output=();
-	$rc=$runtime->RunStr($cmd,\@output); 
+	$rc=$runtime->run_str($cmd,\@output);
 	if ($rc == 0) {
 		$job->log->error("Setting db in backup mode didnt work!!:   <@output>");
 		$job->_output(1);
@@ -128,7 +128,7 @@ sub body {
 		my $share_dir = File::ShareDir::dist_dir('DBOD');
 		if ( -e "$share_dir/logger.conf" ) {
 			@output = ();
-			@output = $runtime->ReadFile("$share_dir/logger.conf");
+			@output = $runtime->read_file("$share_dir/logger.conf");
 			if ($rc) {
 				foreach (@output) {
 					if (/^log4perl.appender.file.filename = (.*)$/) {
@@ -148,7 +148,7 @@ sub body {
 		}
 		$job->log->debug("Running command to end backup: <$cmd> ");  
 		@output=();
-		$rc=$runtime->RunStr($cmd,\@output);
+		$rc=$runtime->run_str($cmd,\@output);
 		if ($rc == 0) {
 			$job->log->debug("Setting db in backup mode didnt work!!:   <@output>");
 			$job->_output(1);

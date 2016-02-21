@@ -36,7 +36,7 @@ sub check_state {
 	my($self, $datadir) = @_;
 	$self->log->info("Parameters: datadir: <$datadir>"); 
 
-	my $rc=$runtime->RunStr("ps -elf | grep -i datadir="  . $datadir . " | grep -v grep");
+	my $rc=$runtime->run_str("ps -elf | grep -i datadir="  . $datadir . " | grep -v grep");
 
 	if ($rc == 0) {
 		$self->log->debug("Instance not running");
@@ -65,7 +65,7 @@ sub start {
 		$cmd = "$mysql_admin -u $user -p$password_dod_mysql --socket=$mysql_socket ping";
 	}
 	$rc = 0;
-	$rc = $runtime->RunStr($cmd, \@output, 0, "$mysql_admin -u $user -pXXXXXXXX --socket=$mysql_socket ping");
+	$rc = $runtime->run_str($cmd, \@output, 0, "$mysql_admin -u $user -pXXXXXXXX --socket=$mysql_socket ping");
 
 	my $log_search_string = "mysqld_safe Starting";
 	my $hostname = `hostname`;
@@ -80,7 +80,7 @@ sub start {
 		else {
 			$cmd = "/etc/init.d/mysql_$entity start";
 		}
-		my $rc1 = $runtime->RunStr($cmd,\@output,0,$cmd);
+		my $rc1 = $runtime->run_str($cmd,\@output,0,$cmd);
 		if ($rc1) {
 			$self->log->debug("MySQL instance is up");
 			$self->log->debug("mysqld output:\n\n" . $self->parse_err_file($log_search_string, $log_error_file));
@@ -109,7 +109,7 @@ sub stop {
 		$cmd = "$mysql_admin -u $user -p$password_dod_mysql --socket=$mysql_socket ping";
 	}
 	$rc = 0;
-	$rc = $runtime->RunStr($cmd,\@output, 0, "$mysql_admin -u $user -pXXXXXXXXX --socket=$mysql_socket ping");
+	$rc = $runtime->run_str($cmd,\@output, 0, "$mysql_admin -u $user -pXXXXXXXXX --socket=$mysql_socket ping");
 	if ($rc == 0) {
 		$self->log->error("No instance running. Nothing to do.");
 		return 0;
@@ -122,7 +122,7 @@ sub stop {
 		} else {
 			$cmd = "$mysql_admin -u $user -p$password_dod_mysql --socket=$mysql_socket shutdown";
 		}
-		$rc = $runtime->RunStr($cmd,\@output,0,"$mysql_admin -u $user -pXXXXXXXXXX  --socket=$mysql_socket shutdown");
+		$rc = $runtime->run_str($cmd,\@output,0,"$mysql_admin -u $user -pXXXXXXXXXX  --socket=$mysql_socket shutdown");
 		if ($rc) {
 			$self->log->debug("MySQL shutdown completed");
 			return 1; #ok

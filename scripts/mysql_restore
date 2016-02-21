@@ -175,7 +175,7 @@ sub body {
 	$entity = 'dod_' . $job->entity;	
 	&CheckTimes;
        #check if trying to restore from a snapshot on a different major version
-	my($actual_version)=$runtime->GetVersionDB($job->metadata->{'datadir'} . "/current-version");
+	my($actual_version)=$runtime->get_instance_version($job->metadata->{'datadir'} . "/current-version");
 
 	if (defined $actual_version) {
 		if (defined $version_mysql_snap) {
@@ -229,7 +229,7 @@ sub body {
 	my ($cmd,$instance_down);
 	$rc=0;
 	$instance_down=0;
-	$rc=$runtime->RunStr("ps -elf | grep -i datadir=" . $job->metadata->{'datadir'} . " | grep -v grep");
+	$rc=$runtime->run_str("ps -elf | grep -i datadir=" . $job->metadata->{'datadir'} . " | grep -v grep");
 
 	if ($rc == 0) {
 		$job->log->debug("No instance running");
@@ -315,7 +315,7 @@ sub body {
 	my($file_name);
 	@output=();
 	$cmd="hostname";
-	$rc=$runtime->RunStr($cmd,\@output);
+	$rc=$runtime->run_str($cmd,\@output);
 	if ($rc ==0) {
 		$job->log->debug("Error executing <$cmd>!!!");
 		$job->_output(1);
@@ -334,7 +334,7 @@ sub body {
 
 	$job->log->debug("File <$file_name> to check for."); 
 	
-	$rc=$runtime->TimeoutOneparam($timeout,$poll_interval,\&CheckFileExist,$file_name);
+	$rc=$runtime->timeout_one_param($timeout,$poll_interval,\&CheckFileExist,$file_name);
 	if ($rc==0) {
 		$job->log->debug("mysqld didnt recover from crashed. Please check!!!");  
 		$job->_output(1);
@@ -350,7 +350,7 @@ sub body {
 		}
 
 		@output=();
-		$rc=$runtime->RunStr($cmd,\@output,$fake,"cd " . $job->metadata->{'binlogdir'} . "; " . $job->metadata->{'bindir'} ."/mysqlbinlog --disable-log-bin --stop-datetime=\"". $job->pitr . "\" $pitrlogs | " . $job->metadata->{'bindir'} . "/mysql -u " . $job->config->{'mysql'}->{'db_user'} . " -pXXXXXX --socket=" . $job->metadata->{'socket'});
+		$rc=$runtime->run_str($cmd,\@output,$fake,"cd " . $job->metadata->{'binlogdir'} . "; " . $job->metadata->{'bindir'} ."/mysqlbinlog --disable-log-bin --stop-datetime=\"". $job->pitr . "\" $pitrlogs | " . $job->metadata->{'bindir'} . "/mysql -u " . $job->config->{'mysql'}->{'db_user'} . " -pXXXXXX --socket=" . $job->metadata->{'socket'});
 		if ($rc==0) {
 			$job->log->error("Error replaying logs!!!");
 			$job->_output(1);

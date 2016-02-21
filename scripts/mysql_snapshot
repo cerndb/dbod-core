@@ -82,7 +82,7 @@ sub body {
 	my ($cmd,$instance_down,$rc);
 	$rc=0;
 	$instance_down=0;
-	$rc=$runtime->RunStr("ps -elf | grep -i datadir=" . $job->metadata->{'datadir'} . " | grep -v grep");
+	$rc=$runtime->run_str("ps -elf | grep -i datadir=" . $job->metadata->{'datadir'} . " | grep -v grep");
 
 	if ($rc == 0) {
 		$job->log->error("No instance running");
@@ -116,7 +116,7 @@ sub body {
 		}
 	
 		# $fake = 0
-		$rc=$runtime->RunStr($cmd,\@output,0,$job->metadata->{'bindir'}. "/mysql --socket=" . $job->metadata->{'socket'} . " < " . $job->config->{'mysql'}->{'helper_locateactualbinary'} );
+		$rc=$runtime->run_str($cmd,\@output,0,$job->metadata->{'bindir'}. "/mysql --socket=" . $job->metadata->{'socket'} . " < " . $job->config->{'mysql'}->{'helper_locateactualbinary'} );
 		if ($rc) {
 			foreach (@output) {
 				if (/^(.*?)\.(\d+)\s+\d+/) {
@@ -149,7 +149,7 @@ sub body {
 	}  else {
 		$job->log->debug("Success preparing volume: <$volume_name> for snapshot.");
 	}
- 	my($actual_version)=$runtime->GetVersionDB($job->metadata->{'datadir'} . "/current-version");
+ 	my($actual_version)=$runtime->get_instance_version($job->metadata->{'datadir'} . "/current-version");
 	if (! defined  $actual_version) {
 		$job->log->error("A version of MySQL must be defined.");
 		$job->_output(1);
@@ -164,7 +164,7 @@ sub body {
 		$cmd=$job->metadata->{'bindir'} . "/mysql -u " . $job->config->{'mysql'}->{'db_user'} . " -p" . $job->config->{'mysql'}->{'db_password'} . " --socket=" . $job->metadata->{'socket'} . " < " . $job->config->{'mysql'}->{'helper_presnap'} ;
 	}
 	
-	$rc=$runtime->RunStr($cmd,\@output,0,$job->metadata->{'bindir'} . "/mysql --socket=" . $job->metadata->{'socket'} . " < " . $job->config->{'mysql'}->{'helper_presnap'} );
+	$rc=$runtime->run_str($cmd,\@output,0,$job->metadata->{'bindir'} . "/mysql --socket=" . $job->metadata->{'socket'} . " < " . $job->config->{'mysql'}->{'helper_presnap'} );
 	if (! $rc) {
 		$job->log->error("Presnap actions failed. Please check.");
 		$job->_output(1);
@@ -203,7 +203,7 @@ sub body {
 		$cmd=$job->metadata->{'bindir'} . "/mysql -u " . $job->config->{'mysql'}->{'db_user'} . " -p" . $job->config->{'mysql'}->{'db_password'} . " --socket=" . $job->metadata->{'socket'} . " < " . $job->config->{'mysql'}->{'helper_postsnap'} ;
 	}
 	
-	$rc=$runtime->RunStr($cmd,\@output,0,$job->metadata->{'bindir'} . "/mysql --socket=" .  $job->metadata->{'socket'} . " < " . $job->config->{'mysql'}->{'helper_postsnap'} );
+	$rc=$runtime->run_str($cmd,\@output,0,$job->metadata->{'bindir'} . "/mysql --socket=" .  $job->metadata->{'socket'} . " < " . $job->config->{'mysql'}->{'helper_postsnap'} );
 	if (! $rc) {
 		$job->log->error("Postsnap actions failed. Please check.");
 		$job->_output(1);

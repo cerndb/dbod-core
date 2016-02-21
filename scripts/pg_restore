@@ -69,10 +69,10 @@ sub body {
 	my($entity,$fake,$version_pg_snap);
 	$fake=0;
 	$entity = 'dod_' . $job->entity;	
-	$runtime->CheckTimes($job->snapshot, $job->pitr,\$version_pg_snap); 
+	$runtime->check_times($job->snapshot, $job->pitr,\$version_pg_snap);
 
        #check if trying to restore from a snapshot on a different major version
-	my($actual_version)=$runtime->GetVersionDB( $job->metadata->{'datadir'} . "/current-version");
+	my($actual_version)=$runtime->get_instance_version( $job->metadata->{'datadir'} . "/current-version");
 
 	if (defined $actual_version) {
 		if (defined $version_pg_snap) {
@@ -167,7 +167,7 @@ sub body {
 	}
     #$arr_file[2]= "recovery_target_timeline= 'latest'\n";
 	$job->log->debug("recovery.conf will be written: " . Data::Dumper->Dump([\@arr_file],['arr_file']));
-	$runtime->WriteFileArr($job->metadata->{'datadir'} . "/recovery.conf",\@arr_file);
+	$runtime->write_file_arr($job->metadata->{'datadir'} . "/recovery.conf",\@arr_file);
 	if (! -e $job->metadata->{'datadir'}. "/recovery.conf") {
 		$job->log->error("recovery.conf file couldnt be written. Please contact dbod admins!.");
 		$job->_output(1);
@@ -177,12 +177,12 @@ sub body {
 	}
 	if (-e  $job->metadata->{'datadir'} . "/recovery.done") {
 		$job->log->debug("We are deleting previous <". $job->metadata->{'datadir'} . "/recovery.done>");
-		my(@arr_recodone)=$runtime->ReadFile($job->metadata->{'datadir'} . "/recovery.done");
+		my(@arr_recodone)=$runtime->read_file($job->metadata->{'datadir'} . "/recovery.done");
 		$job->log->debug("file <". $job->metadata->{'datadir'} . "/recovery.done> will be deleted. It contains: " . Data::Dumper->Dump([\@arr_recodone],['arr_recodone']));
 	}
 	
 	# Create pg_hba_local.conf
-	$runtime->WriteFileArr($job->metadata->{'datadir'} . "/pg_hba_local.conf",\@lines);
+	$runtime->write_file_arr($job->metadata->{'datadir'} . "/pg_hba_local.conf",\@lines);
 	if (! -e $job->metadata->{'datadir'}. "/pg_hba_local.conf") {
 		$job->log->error("pg_hba_local.conf file couldnt be written. Please contact dbod admins!.");
 		$job->_output(1);
@@ -224,7 +224,7 @@ sub body {
 	$cmd = $job->metadata->{'bindir'} . "/pg_ctl start -w -t 1800 -s -D ". $job->metadata->{'datadir'} ." -l " . $job->metadata->{'datadir'} . "/postgresql.log 2>&1";
 	
 	@output=();
-	$rc=$runtime->RunStr($cmd,\@output);
+	$rc=$runtime->run_str($cmd,\@output);
 	if ($rc == 0) {
 		$job->log->debug("couldnt start database. Please check:   <@output>");
 		$job->_output(1);
@@ -243,7 +243,7 @@ sub body {
 	
 	$job->log->debug("file <$file_name> to check for.");  
 	
-	$rc=$runtime->TimeoutOneparam($timeout,$poll_interval,\&CheckFileExist,$file_name);
+	$rc=$runtime->timeout_one_param($timeout,$poll_interval,\&CheckFileExist,$file_name);
 	if ($rc==0) {
 		$job->log->debug("postgress didnt recover from crashed. Please check!!!");  
 		$job->_output(1);

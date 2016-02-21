@@ -59,7 +59,7 @@ sub body {
 	}
 	my $tempfile = $runtime->get_temp_filename('pg_ping_' . $job->entity . 'XXXX','/tmp','.sql');
 
-	$runtime->WriteFileArr($tempfile,\@lines);
+	$runtime->write_file_arr($tempfile,\@lines);
 	if (! -e $tempfile) {
 		$job->log->error("<$tempfile> file couldnt be written. Please contact dbod admins!.");
 		$job->_output(1);
@@ -74,7 +74,7 @@ sub body {
 	}
 
 	my @output=();
-	my $rc_ping = $runtime->RunStr($job->metadata->{'bindir'} . "/psql -h " . $job->metadata->{'socket'} ." -p " . $job->metadata->{'port'} . " -U " . $job->config->{'pgsql'}->{'db_user'} . " -f " . $tempfile , \@output);
+	my $rc_ping = $runtime->run_str($job->metadata->{'bindir'} . "/psql -h " . $job->metadata->{'socket'} ." -p " . $job->metadata->{'port'} . " -U " . $job->config->{'pgsql'}->{'db_user'} . " -f " . $tempfile , \@output);
 
 	if ($rc_ping)  {
 		$job->log->debug("database is up");

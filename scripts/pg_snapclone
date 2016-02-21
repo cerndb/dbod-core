@@ -52,7 +52,7 @@ sub body {
 	#check if snapshot exists
 	my $cmd = "ls -1 $pg_datadir_nosuffix/.snapshot | grep " .  $job->snapshot;
 	my @output=();
-	my $rc = $runtime->RunStr($cmd,\@output);
+	my $rc = $runtime->run_str($cmd,\@output);
 	
 	if ($rc == 0) {
 	 	$job->log->error("snapshot <" . $job->snapshot . "> doesnt exist!");

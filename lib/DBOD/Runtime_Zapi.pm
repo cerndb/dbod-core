@@ -95,7 +95,7 @@ sub GetMountPointNASRegex {
 
 	my(@output,%pairsfsnas,$rc);
 	
-	$rc=$runtime->RunStr("cat /etc/mtab",\@output,0);
+	$rc=$runtime->run_str("cat /etc/mtab",\@output,0);
 	if ($rc) {
 		foreach (@output) {
 			my($line);
@@ -322,7 +322,7 @@ sub GetServerAndVolname {
 				return [undef,undef];
 			} 
 
-       		my $ipcluster = $runtime->GetIPFromCName($controller); 
+       		my $ipcluster = $runtime->get_IP_from_cname($controller);
 			$server_zapi = $self->CreateServerFromMountPoint($controller, $$mountpoint[0],0); # I connect to the data lif not the cluster-mgmt
 			if ($server_zapi == 0) {  
 				$self->log->debug("Server Zapi was not created.");
@@ -398,15 +398,15 @@ sub GetUserPassFromMountPoint {
 
 	if ($admin && $iscmode) {
 		$controller_mgmt=$runtime->GetClusterMgmtNode($controller);
-		$ipcluster = $runtime->GetIPFromCName($controller_mgmt); 
+		$ipcluster = $runtime->get_IP_from_cname($controller_mgmt);
 	} else {
-		$ipcluster = $runtime->GetIPFromCName($controller);  
+		$ipcluster = $runtime->get_IP_from_cname($controller);
 	}
 	
  	
 	if ($mount_point =~ /\/vol\/(.*)$/) { 
 		$user_storage="root";
-		$password_nas=$runtime->RetrievePasswordForUser("password_user_nastorag");
+		$password_nas=$runtime->retrieve_user_password("password_user_nastorag");
 		if (defined $password_nas) {
 			chomp $password_nas;
 		} else {
@@ -435,7 +435,7 @@ sub GetUserPassFromMountPoint {
    			$retrievepassword="password_user_${user_storage}_".$1;      
       		}	
 
-		$password_nas=$runtime->RetrievePasswordForUser("$retrievepassword");
+		$password_nas=$runtime->retrieve_user_password("$retrievepassword");
 		if (defined $password_nas) {
 			chomp $password_nas;
 		} else {

@@ -151,12 +151,12 @@ sub scp_get {
 }
 
 # TODO: If this is not needed for MySQL upgrades, move to pg_upgrade
-sub IsRunningVersionDiffMySQLPG {
+sub is_running_different_version {
 	my($self,$file,$versiontogo)=@_;
 	$self->log->info("Parameters file: <$file>, versiontogo: <$versiontogo>");
 
 	if (-e "$file") {
-		my(@arr)=$self->ReadFile("$file");
+		my(@arr)=$self->read_file("$file");
 		if (scalar(@arr) ==0 ) {
 			$self->log->error("file <$file>  is empty. Strange.");
 			return 0; #notgood
@@ -183,7 +183,7 @@ sub IsRunningVersionDiffMySQLPG {
  
 # Method to implement a timeout while checking a condition.
 # Condition should be implemented by a routine
-sub TimeoutOneparam {
+sub timeout_one_param {
 	my($self,$timeout,$poll_interval,$test_condition,$oneparam) = @_;
 	$self->log->info("Parameters timeout: <$timeout>, poll_interval: <$poll_interval>, test_condition: <$test_condition> oneparam: <$oneparam>");
 
@@ -202,7 +202,7 @@ sub TimeoutOneparam {
 }
 # TODO: Move to Snapshots/Storage Module or to pg_restore command definition
 # perl pg_restore --entity pgtest --snapshot snapscript_24062015_125419_58_5617 --pitr 2015-06-24_13:00:00
-sub CheckTimes {
+sub check_times {
 	# Check times provided.
 	my($self,$snapshot,$pitr,$version_snap)=@_;
 	my($numsecs_restore);	
@@ -285,7 +285,7 @@ sub CheckTimes {
 }
 
 
-sub RunStr {   
+sub run_str {
 	my($self, $cmd,$str,$fake,$text) = @_; 
 	if (defined $text) {
 		$self->log->info("Parameters cmd: not displayed");
@@ -321,14 +321,14 @@ sub RunStr {
 } 
 
 #
-sub GetIPFromCName {     
-	my($self, $name) = @_; 
+sub get_IP_from_cname {
+	my ($self, $name) = @_;
 	$self->log->info("Parameters name: <$name>");
 
 	my (@output,$rc);
 	my $cmd="ping -c 1 $name";
 
-	$rc=$self->RunStr($cmd,\@output);
+	$rc=$self->run_str($cmd,\@output);
 
 	if ($rc) {
 		foreach (@output) {
@@ -345,9 +345,9 @@ sub GetIPFromCName {
 	return 0; 
 }
 
-sub RetrievePasswordForUser {  
-	my($self,$user) =@_;
-	my($password);
+sub retrieve_user_password {
+	my ($self, $user) = @_;
+	my $password;
 	$self->log->info("Parameters user: <$user>");
 	my($basepathtosys)=`/etc/init.d/syscontrol sc_configuration_directory`;
 	chomp 	$basepathtosys;
@@ -366,11 +366,11 @@ sub RetrievePasswordForUser {
 }
 
 # TODO: This can be a generic operation to have as a Job Class method
-sub GetVersionDB {         
+sub get_instance_version {
 	my($self,$file)=@_;
 	$self->log->info("Parameters file: <$file>");
 	if (-e "$file") {
-		my(@arr)=$self->ReadFile("$file"); 
+		my(@arr)=$self->read_file("$file");
 		if (scalar(@arr) ==0 ) {
 			$self->log->error("File <$file>  is empty. Strange.");
 			return;
@@ -391,7 +391,7 @@ sub GetVersionDB {
 
 # TODO: Is this method actually required if aliases follow convention?
 #it gets an alias and it validates via ping
-sub GetAliasFromEntity {
+sub get_alias_from_entity {
 	my($self,$entity)=@_;
 	$self->log->info("Retrieving alias for <$entity>");
 
@@ -399,7 +399,7 @@ sub GetAliasFromEntity {
 	$entity =~ s/_/-/g;
 
 	$self->log->debug("Possible alias is <$entity>.");
-	my $rc = $self->GetIPFromCName($entity);
+	my $rc = $self->get_IP_from_cname($entity);
 	if ($rc eq "0") {
 			$self->log->debug("Problem retrieving IP from <$entity>. Ping didnt work. Strange!");
 	} else {
@@ -409,20 +409,19 @@ sub GetAliasFromEntity {
 	
 }
 
-sub ReadFile {
-	my($self,$file)=@_;
+sub read_file {
+	my ($self, $file) = @_;
 	$self->log->info("Parameters file: <$file>");
-
 	open my $F, '<', $file || $self->log->error("Cant read file $file. Error: $! ");
-	my(@text) = <$F>;
+	my (@text) = <$F>;
 	close($F);
 	return @text;
 }
 
-sub WriteFileArr {
-	my($self,$file,$text)=@_;
+sub write_file_arr {
+	my ($self, $file, $text) = @_;
 	$self->log->info("Parameters file: <$file> text: just_number_of_lines " . scalar(@$text) );
-  	open (F,">$file") || $self->log->debug("cant write <$file>");
+  	open (F, ">$file") || $self->log->debug("cant write <$file>");
 	foreach (@$text) {
   		print F $_;
 	}
