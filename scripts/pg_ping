@@ -57,7 +57,7 @@ sub body {
 		$job->_output(1);
 		return 1;
 	}
-	my $tempfile = $runtime->GetTempFileName('pg_ping_' . $job->entity . 'XXXX','/tmp','.sql');
+	my $tempfile = $runtime->get_temp_filename('pg_ping_' . $job->entity . 'XXXX','/tmp','.sql');
 
 	$runtime->WriteFileArr($tempfile,\@lines);
 	if (! -e $tempfile) {

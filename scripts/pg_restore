@@ -198,7 +198,7 @@ sub body {
 	}
 	
 	# Replace pg_hba.conf file for local one
-	my $tempfile = $runtime->GetTempFileName('pg_hbaXXXXX',$job->metadata->{'datadir'},'.conf');
+	my $tempfile = $runtime->get_temp_filename('pg_hbaXXXXX',$job->metadata->{'datadir'},'.conf');
 	if (! defined ($tempfile)) {
 		$job->log->derror("we couldnt create a tempfile name");
 		$job->_output(1);

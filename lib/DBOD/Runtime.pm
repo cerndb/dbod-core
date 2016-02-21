@@ -150,7 +150,7 @@ sub scp_get {
     return scalar 1;
 }
 
-
+# TODO: If this is not needed for MySQL upgrades, move to pg_upgrade
 sub IsRunningVersionDiffMySQLPG {
 	my($self,$file,$versiontogo)=@_;
 	$self->log->info("Parameters file: <$file>, versiontogo: <$versiontogo>");
@@ -200,8 +200,7 @@ sub TimeoutOneparam {
 	}
 	
 }
-
-
+# TODO: Move to Snapshots/Storage Module or to pg_restore command definition
 # perl pg_restore --entity pgtest --snapshot snapscript_24062015_125419_58_5617 --pitr 2015-06-24_13:00:00
 sub CheckTimes {
 	# Check times provided.
@@ -321,7 +320,7 @@ sub RunStr {
 	return 1; #ok
 } 
 
-
+#
 sub GetIPFromCName {     
 	my($self, $name) = @_; 
 	$self->log->info("Parameters name: <$name>");
@@ -366,6 +365,7 @@ sub RetrievePasswordForUser {
  
 }
 
+# TODO: This can be a generic operation to have as a Job Class method
 sub GetVersionDB {         
 	my($self,$file)=@_;
 	$self->log->info("Parameters file: <$file>");
@@ -389,6 +389,7 @@ sub GetVersionDB {
 }
 
 
+# TODO: Is this method actually required if aliases follow convention?
 #it gets an alias and it validates via ping
 sub GetAliasFromEntity {
 	my($self,$entity)=@_;
@@ -408,7 +409,7 @@ sub GetAliasFromEntity {
 	
 }
 
-
+# TODO: Move to mysql_restore, as this method is only needed there
 sub Read_Directory {
 	my($self,$dir,$pattern)=@_;
 	$self->log->info("Parameters dir: <$dir> pattern: <$pattern>");
@@ -481,7 +482,7 @@ sub WriteFileArr {
 
 #it expects three arguments, otherwise returns undef
 #it returns a full patch <dir>/<filename>
-sub GetTempFileName {
+sub get_temp_filename {
     my($self, $template,$directory,$suffix)=@_;
     	$self->log->debug("template: <$template> directory: <$directory> suffix: <$suffix> ");
 	if (! defined $template || ! defined $directory || ! defined $suffix) {
