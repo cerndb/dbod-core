@@ -33,15 +33,15 @@ has 'config' => (is => 'rw', isa => 'HashRef');
 
 # Class methods
 ## Public;
-require 'ping';
-require 'start';
-require 'stop';
-require 'snapshot';
-require 'recover';
-require 'upgrade';
+requires 'ping';
+requires 'start';
+requires 'stop';
+requires 'snapshot';
+requires 'recover';
+requires upgrade;
 
 ## Private
-require '_connect_db';
+requires '_connect_db';
 
 #Constructor
 sub BUILD {
