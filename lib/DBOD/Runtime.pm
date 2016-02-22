@@ -202,8 +202,8 @@ sub timeout_one_param {
 	}
 	
 }
-# TODO: Move to Snapshots/Storage Module and divide in two methods to validate
-# both the snapshot file format and the PITR timestamp format
+# TODO: Test refactored method and remove this implementation
+#@deprecated
 sub check_times {
 	# Check times provided.
 	my($self,$snapshot,$pitr,$version_snap)=@_;
