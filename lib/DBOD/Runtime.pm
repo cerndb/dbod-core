@@ -180,7 +180,7 @@ sub is_running_different_version {
 		$self->log->error("<$file> file doesnt exist");   
 		return 0;#not good
 	}
-	return undef;
+	return;
 }
  
 # Method to implement a timeout while checking a condition.
@@ -402,9 +402,9 @@ sub read_file {
 sub write_file_arr {
 	my ($self, $file, $text) = @_;
 	$self->log->info("Parameters file: <$file> text: just_number_of_lines " . scalar(@$text) );
-  	open (F, ">$file") || $self->log->debug("cant write <$file>");
+  	open my $F, '>', $file || $self->log->debug("cant write <$file>");
 	foreach (@$text) {
-  		print F $_;
+  		print $F $_;
 	}
   	close(F);
 }
@@ -416,7 +416,7 @@ sub get_temp_filename {
     	$self->log->debug("template: <$template> directory: <$directory> suffix: <$suffix> ");
 	if (! defined $template || ! defined $directory || ! defined $suffix) {
 		$self->log->debug("some variable missing, please check ");
-		return undef;
+		return;
 	}			
     my $fh = File::Temp->new(
         TEMPLATE => $template,
