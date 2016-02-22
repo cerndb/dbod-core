@@ -23,7 +23,7 @@ sub enable {
     #DBI->trace(4);
 
     if (! defined $dbh) {
-        ERROR "Couldn't connect to database: <$dsn>");
+        ERROR "Couldn't connect to database: <$dsn>";
         return 0;
     }
 
@@ -60,11 +60,12 @@ sub enable {
         $dbh->disconnect or ERROR "Some error closing connection: " . $DBI::errstr;
     };
     if ($@) {
-        ERROR "Error while inserting:" . $sth->errstr);
+        ERROR "Error while inserting:" . $sth->errstr;
         return 0; #some error
     } else {
         return 1; #ok
     }
+
 }
 
 sub is_enabled {
@@ -75,7 +76,6 @@ sub is_enabled {
         ERROR "some variables are missing appdhost: <$appdhost>  appdort: <$appdport> appduser: <$appduser>  appdpassword may be empty";
         return 0; # error
     }
-
 
     my $dsn = "DBI:mysql:database=dbtuna;host=$appdhost;port=$appdport";
     my $dbh = DBI->connect($dsn, $appduser, $appdpassword ) or ERROR "Couldn't connect to database: " . DBI->errstr;
@@ -114,7 +114,7 @@ sub disable {
 
 
     my $dsn = "DBI:mysql:database=dbtuna;host=$appdhost;port=$appdport";
-    my $dbh = DBI->connect($dsn, $appduser, $appdpassword ) or ERROR "Couldn't connect to database: " . DBI->errstr);
+    my $dbh = DBI->connect($dsn, $appduser, $appdpassword ) or ERROR "Couldn't connect to database: " . DBI->errstr;
 
     if (! defined $dbh) {
         ERROR "Couldn't connect to database: <$dsn>";

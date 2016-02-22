@@ -104,7 +104,7 @@ sub stop_resource {
             $rc = $self->RunStr( $cmd, \@output );
             DEBUG join( "", @output );
             if ($rc) {
-                DEBUG "MySQL instance is down" );
+                DEBUG "MySQL instance is down";
                 return 1; #ok
             } else {
                 ERROR "Problem stopping MySQL instance. Please check.";
