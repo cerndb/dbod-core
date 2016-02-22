@@ -84,13 +84,13 @@ sub connect_db {
         my $db_attrs;
         $self->log->info('Creating DB connection with instance');
         for ($db_type) {
-            if (/^mysql$/) {
+            if (m{^mysql$}x) {
                 $dsn = "DBI:mysql:mysql_socket=" . $self->metadata->{'socket'};
                 $db_attrs = {
                     AutoCommit => 1,
                 };
             }
-            if (/^pgsql$/) {
+            if (m{^pgsql$}x) {
                 $dsn = "DBI:Pg:dbname=postgres;host=" . $self->metadata->{'socket'}.
                     ";port=" . $self->metadata->{'port'};
                 $db_attrs = {

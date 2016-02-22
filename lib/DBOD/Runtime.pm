@@ -43,7 +43,7 @@ sub run_cmd {
         return scalar $?;
     } 
     catch {
-        if ($_ =~ /^IPC::Run: .*timeout/) {
+        if ($_ =~ m{^IPC::Run: .*timeout}x) {
             # Timeout exception
             $self->log->error("Timeout exception: " . $_);
             $self->log->error("CMD stderr: " . $err);
@@ -164,7 +164,7 @@ sub is_running_different_version {
             return 0; #notgood
         } else {
             foreach (@arr) {
-                if (/(\d+)\.(\d+)\.(\d+)/) {
+                if (m{(\d+)\.(\d+)\.(\d+)}x) {
                     chomp $_;
                     if ($_ eq "$versiontogo") {
                         $self->log->error("You are already running <$versiontogo>");
@@ -334,7 +334,7 @@ sub get_IP_from_cname {
 
     if ($rc) {
         foreach (@output) {
-            if (/PING .*? \((\d+\.\d+\.\d+\.\d+)\) /) {
+            if (m{PING .*? \((\d+\.\d+\.\d+\.\d+)\) }x) {
                 my($ip)=$1;
                 $self->log->debug("IP <" . $ip . "> for <$name>");
                 return $1;
@@ -378,7 +378,7 @@ sub get_instance_version {
             return;
         } else {
             foreach (@arr) {
-                if (/(\d+)\.(\d+)\.(\d+)/) {
+                if (m{(\d+)\.(\d+)\.(\d+)}x) {
                     $self->log->debug("Version <$1$2$3>.");
                     return "$1$2$3";
                 }

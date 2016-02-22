@@ -77,7 +77,7 @@ sub IsCmodeMount() {
 
     $self->log->debug("Begin <$mountpoint>");
 
-    if ($mountpoint =~ /\/vol\/(.*)$/) {
+    if ($mountpoint =~ m{\/vol\/(.*)$}x) {
         $iscmode=0;
         $self->log->debug("We are working with a 7-mode volume <$mountpoint>");
     } else {
@@ -101,7 +101,7 @@ sub GetMountPointNASRegex {
             my($line);
             $line=$_;
             chomp $line;
-            if ($line =~ /$regex/ ) {
+            if ($line =~ m{$regex}x ) {
                 $self->log->debug("match in line <$line> ");
                 my($nas,$mountpath,$filesystemmount);
                 $nas=$1;
@@ -389,7 +389,7 @@ sub GetUserPassFromMountPoint {
 
     my($controller_mgmt,$ipcluster,$user_storage,$password_nas,$server_version,$iscmode);
 
-    if ($mount_point =~ /\/vol\/(.*)$/) {
+    if ($mount_point =~ m{\/vol\/(.*)$}x) {
         $iscmode=0;
     } else {
         $iscmode=1;
@@ -404,7 +404,7 @@ sub GetUserPassFromMountPoint {
     }
 
 
-    if ($mount_point =~ /\/vol\/(.*)$/) {
+    if ($mount_point =~ m{\/vol\/(.*)$}x) {
         $user_storage="root";
         $password_nas=$runtime->retrieve_user_password("password_user_nastorag");
         if (defined $password_nas) {
@@ -424,14 +424,14 @@ sub GetUserPassFromMountPoint {
             $user_storage="vsadmin";
         }
         my($retrievepassword);
-        if ($controller =~ /^[\D]+\-([\d\w]+)/) {
+        if ($controller =~ m{^[\D]+\-([\d\w]+)}x) {
             $controller =$1;
-        } elsif ($controller =~ /([\d\w]+)\-[\D]+/) {
+        } elsif ($controller =~ m{([\d\w]+)\-[\D]+}x) {
             $controller =$1;
         }
         $self->log->debug("Controller match: <$controller>");
 
-        if ($controller=~m/(\D+)/) {
+        if ($controller=~m{(\D+)}x) {
             $retrievepassword="password_user_${user_storage}_".$1;
             }
 
@@ -469,7 +469,7 @@ sub SnapClone {
     $self->log->debug("Trying to create new volume name: <$newvol> and new junction path: <$newjunction>");
 
     my($isCmode);
-    if ($junction =~ /^\/vol\//) {
+    if ($junction =~ m{^\/vol\/}x) {
         $isCmode=0;
     } else {
         $isCmode=1;
