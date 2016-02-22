@@ -322,31 +322,6 @@ sub run_str {
     return 1; #ok
 } 
 
-#
-sub get_IP_from_cname {
-    my ($self, $name) = @_;
-    $self->log->info("Parameters name: <$name>");
-
-    my (@output,$rc);
-    my $cmd="ping -c 1 $name";
-
-    $rc=$self->run_str($cmd,\@output);
-
-    if ($rc) {
-        foreach (@output) {
-            if (m{PING .*? \((\d+\.\d+\.\d+\.\d+)\) }x) {
-                my($ip)=$1;
-                $self->log->debug("IP <" . $ip . "> for <$name>");
-                return $1;
-            }
-        }
-    } else {
-        $self->log->debug("Problem retrieving IP from <$name>: @output");
-        return 0;
-    }
-    return 0;
-}
-
 sub retrieve_user_password {
     my ($self, $user) = @_;
     my $password;

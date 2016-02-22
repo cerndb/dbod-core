@@ -24,6 +24,13 @@ use Data::Dumper;
 use NaServer;    
 use NaElement;
 
+use Socket;
+
+sub _host_ip {
+    my $servername = shift;
+    return inet_ntoa(inet_aton($servername));
+}
+
 my $runtime = DBOD::Runtime->new;
 
 sub CreateServer {
@@ -322,7 +329,7 @@ sub GetServerAndVolname {
                 return [undef,undef];
             }
 
-            my $ipcluster = $runtime->get_IP_from_cname($controller);
+            my $ipcluster = _host_ip($controller);
             $server_zapi = $self->CreateServerFromMountPoint($controller, $$mountpoint[0],0); # I connect to the data lif not the cluster-mgmt
             if ($server_zapi == 0) {
                 $self->log->debug("Server Zapi was not created.");
@@ -398,9 +405,9 @@ sub GetUserPassFromMountPoint {
 
     if ($admin && $iscmode) {
         $controller_mgmt=$runtime->GetClusterMgmtNode($controller);
-        $ipcluster = $runtime->get_IP_from_cname($controller_mgmt);
+        $ipcluster = _host_ip($controller_mgmt);
     } else {
-        $ipcluster = $runtime->get_IP_from_cname($controller);
+        $ipcluster = _host_ip($controller);
     }
 
 
