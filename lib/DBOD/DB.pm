@@ -7,9 +7,6 @@
 
 package DBOD::DB;
 
-our ($VERSION);
-$VERSION     = 0.67;
-
 use strict;
 use warnings;
 
@@ -18,6 +15,9 @@ with 'MooseX::Log::Log4perl';
 with 'MooseX::Role::DBIx::Connector' => {
     connection_name => 'db',
 };
+
+our ($VERSION);
+$VERSION     = 0.67;
 
 use Data::Dumper;
 use Try::Tiny;
@@ -67,7 +67,7 @@ sub select {
             sprintf("An error ocurred executing SQL statement:\n%s:%s", 
                 $self->db_conn->dbh->err,
                 $self->db_conn->dbh->errstr));
-        return undef;
+        return;
     };
     return $rows;
 }
@@ -88,7 +88,7 @@ sub do {
             sprintf("An error ocurred executing SQL sttatement:\n%s:%s", 
                 $self->db_conn->dbh->err,
                 $self->db_conn->dbh->errstr));
-        return undef;
+        return;
     };
     return $rows;
 }
