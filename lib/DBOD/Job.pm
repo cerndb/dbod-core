@@ -95,7 +95,7 @@ sub connect_db {
                  ";port=" . $self->metadata->{'port'};
                 $db_attrs = {
                     AutoCommit => 1, 
-		      RaiseError => 1,	
+		        RaiseError => 1,
                     };
             }
         };

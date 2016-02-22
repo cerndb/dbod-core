@@ -44,15 +44,15 @@ sub enable {
     eval {
         if ($osusername eq 'NULL') {
             $sth = $dbh->prepare("INSERT INTO monitoredservers
-		                (servername,connectionstring,username,password,dbtype,drivername,hostname,dbport,loggingenabled,collectorport,sysdba,osusername,ospassword,collectos,ostype,oshostname,osport)
-       	                 values
-              	         ('$servername','$connectionstring','$username',AES_ENCRYPT('$password','$aeskey'),'$dbtype','$drivername','$hostname','$dbport','$loggingenabled','$collectorport','$sysdba',NULL,NULL,'$collectos','$ostype','$oshostname','$osport')");
+                        (servername,connectionstring,username,password,dbtype,drivername,hostname,dbport,loggingenabled,collectorport,sysdba,osusername,ospassword,collectos,ostype,oshostname,osport)
+                         values
+                         ('$servername','$connectionstring','$username',AES_ENCRYPT('$password','$aeskey'),'$dbtype','$drivername','$hostname','$dbport','$loggingenabled','$collectorport','$sysdba',NULL,NULL,'$collectos','$ostype','$oshostname','$osport')");
 
         } else {
             $sth = $dbh->prepare("INSERT INTO monitoredservers
-		                (servername,connectionstring,username,password,dbtype,drivername,hostname,dbport,loggingenabled,collectorport,sysdba,osusername,ospassword,collectos,ostype,oshostname,osport)
-              	          values
-                     	  ('$servername','$connectionstring','$username',AES_ENCRYPT('$password','$aeskey'),'$dbtype','$drivername','$hostname','$dbport','$loggingenabled','$collectorport','$sysdba','$osusername',AES_ENCRYPT('$ospassword','$aeskey'),'$collectos','$ostype','$oshostname','$osport')");
+                        (servername,connectionstring,username,password,dbtype,drivername,hostname,dbport,loggingenabled,collectorport,sysdba,osusername,ospassword,collectos,ostype,oshostname,osport)
+                          values
+                          ('$servername','$connectionstring','$username',AES_ENCRYPT('$password','$aeskey'),'$dbtype','$drivername','$hostname','$dbport','$loggingenabled','$collectorport','$sysdba','$osusername',AES_ENCRYPT('$ospassword','$aeskey'),'$collectos','$ostype','$oshostname','$osport')");
         }
 
         $sth->execute() or ERROR "Some error while running INSERT: " . $DBI::errstr;
@@ -137,18 +137,18 @@ sub disable {
 
 # TODO: Is this method actually required if aliases follow convention?
 sub get_alias_from_entity {
-	my($self,$entity)=@_;
-	INFO "Retrieving alias for <$entity>";
-	$entity =~ s/dod_/dbod-/;
-	$entity =~ s/_/-/g;
-	DEBUG "Possible alias is <$entity>.";
-	my $rc = $self->get_IP_from_cname($entity);
-	if ($rc eq "0") {
+    my($self,$entity)=@_;
+    INFO "Retrieving alias for <$entity>";
+    $entity =~ s/dod_/dbod-/;
+    $entity =~ s/_/-/g;
+    DEBUG "Possible alias is <$entity>.";
+    my $rc = $self->get_IP_from_cname($entity);
+    if ($rc eq "0") {
         DEBUG "Problem retrieving IP from <$entity>. Ping didnt work. Strange!";
-	} else {
-		return $entity;
-	}
-	return 0;
+    } else {
+        return $entity;
+    }
+    return 0;
 }
 
 1;

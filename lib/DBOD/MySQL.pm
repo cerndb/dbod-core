@@ -130,7 +130,7 @@ sub stop {
 			$self->log->error("Problem shutting down MySQL instance. Please check.");
 			return 0; #not ok
 		}
-	}	
+	}
 }
 
 1;

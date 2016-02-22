@@ -88,7 +88,7 @@ sub check_state {
 		return 0;
 	} else { 
 		$self->log->debug("Instance running.");
-		return 1; #ok	
+		return 1; #ok
 	}
 }  
 
