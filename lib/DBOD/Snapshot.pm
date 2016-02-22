@@ -13,14 +13,15 @@ use Log::Log4perl qw(:easy);
 sub _seconds {
     my ($sec, $min, $hour, $day, $month, $year) = @_;
     try {
-            return timelocal( $sec, $min, $hour, $day, ($month - 1), $year );
-        } catch {
-                ERROR "Problem with timelocal <$!>";
-                if (defined $_[0]) {
-                    ERROR "Caught error: $_[0]";
-                }
-                return;
-            };
+        return timelocal( $sec, $min, $hour, $day, ($month - 1), $year );
+    } catch {
+        ERROR "Problem with timelocal <$!>";
+        if (defined $_[0]) {
+            ERROR "Caught error: $_[0]";
+        }
+        return;
+    };
+    return;
 }
 
 sub check_times {
@@ -28,7 +29,7 @@ sub check_times {
     my ($snapshot, $pitr, $version_snap)=@_;
     my $numsecs_restore = validate($snapshot, $version_snap);
     my $numsecs_pitr = validate_PITR($pitr);
-    if (($numsecs_pitr) && $numsecs_restore)){
+    if ($numsecs_pitr && $numsecs_restore){
         if ($numsecs_pitr < $numsecs_restore) {
             ERROR "Time to pitr <".$pitr."> makes no sense for a restore: <".$snapshot.">";
             return 0;

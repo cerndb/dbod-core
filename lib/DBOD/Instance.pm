@@ -109,6 +109,8 @@ sub connect_db {
     else {
         $self->log->info('Skipping DB connection with instance');
     }
+
+    return;
 }
 
 1;

@@ -205,8 +205,7 @@ sub timeout_one_param {
 # TODO: Test refactored method and remove this implementation
 #@deprecated
 sub check_times {
-	# Check times provided.
-	my($self,$snapshot,$pitr,$version_snap)=@_;
+	my ($self, $snapshot, $pitr, $version_snap) = @_;
 	my($numsecs_restore);	
 	if ( $snapshot =~ /snapscript_(\d\d)(\d\d)(\d\d\d\d)_(\d\d)(\d\d)(\d\d)_(\d+)/x ) {
 		my($year_snap,$month_snap,$day_snap,$hour_snap,$min_snap,$sec_snap);
@@ -407,6 +406,7 @@ sub write_file_arr {
   		print $F $_;
 	}
   	close(F);
+    return;
 }
 
 #it expects three arguments, otherwise returns undef

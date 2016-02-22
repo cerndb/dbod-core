@@ -474,7 +474,7 @@ sub SnapClone {
 	} else {
 		$isCmode=1;
 	}
-	my $api = new NaElement('volume-clone-create');
+	my $api = NaElement->new('volume-clone-create');
 	if ($isCmode) {
 		$api->child_add_string('junction-active','true');
 		$api->child_add_string('junction-path',$newjunction);

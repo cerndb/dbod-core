@@ -136,6 +136,8 @@ sub create_instance {
     $conn->unbind();
     $conn->disconnect();
 
+    return;
+
 }
 
 1;

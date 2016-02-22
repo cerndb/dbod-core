@@ -100,6 +100,9 @@ sub create_alias {
     }
     DEBUG "Adding ipalias $input->{ip_alias} to dnsname: $dnsname";
     add_ip_alias($dnsname, $input->{ip_alias}, $config);
+
+    return;
+
 }
 
 1;
