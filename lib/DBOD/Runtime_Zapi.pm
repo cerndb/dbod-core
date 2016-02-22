@@ -491,7 +491,7 @@ sub SnapClone {
 	if (defined ($self->CheckErrInAPIInvoke($output))) {
                 my $r = $output->results_reason();
                 $self->log->error("volume-clone-create failed: $r");
-                return undef; #error
+                return; #error
         } else {
                 $self->log->debug("Cloned successfully new volume name: <$newvol> and new junction path: <$newjunction>!!");
                 return "$newvol:$newjunction"; #ok
