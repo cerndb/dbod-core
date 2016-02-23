@@ -20,9 +20,6 @@ subtest 'check_time' => sub {
         ok(!DBOD::Snapshot::check_times($snapshot . '_cold', $pitr), 'Cold snapshot');
         ok(!DBOD::Snapshot::check_times($snapshot . '_cold', $pitr_close), 'Cold snapshot, PITR too close');
         ok(!DBOD::Snapshot::check_times($snapshot, $pitr_past), 'Invalid date pair');
-        ok(!DBOD::Snapshot::check_times('Invalid Snapshot', $pitr_past), 'Invalid snapshot');
-        ok(!DBOD::Snapshot::check_times('Invalid Snapshot', $pitr_invalid), 'PITR Invalid date');
-        ok(!DBOD::Snapshot::check_times('Invalid Snapshot', 'Invalid PITR'), 'Both dates invalid');
 };
 
 done_testing();
