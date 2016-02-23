@@ -10,24 +10,14 @@ use strict;
 use warnings FATAL => 'all';
 use Log::Log4perl qw(:easy);
 
-sub _seconds {
-    my ($sec, $min, $hour, $day, $month, $year) = @_;
-    try {
-        return timelocal( $sec, $min, $hour, $day, ($month - 1), $year );
-    } catch {
-        ERROR "Problem with timelocal <$!>";
-        if (defined $_[0]) {
-            ERROR "Caught error: $_[0]";
-        }
-        return;
-    };
-    return;
-}
+use Time::Local;
+
+# TODO: Substitute the Regexp validations for actual Date types checks.
 
 sub check_times {
     # Check snapshot format and PITR provided
-    my ($snapshot, $pitr, $version_snap)=@_;
-    my $numsecs_restore = validate($snapshot, $version_snap);
+    my ($snapshot, $pitr)=@_;
+    my $numsecs_restore = validate($snapshot);
     my $numsecs_pitr = validate_PITR($pitr);
     if ($numsecs_pitr && $numsecs_restore){
         if ($numsecs_pitr < $numsecs_restore) {
@@ -38,20 +28,18 @@ sub check_times {
         if ($snapshot =~ /_cold$/x) {
             if ($numsecs_pitr < ($numsecs_restore + 15)) {
                 ERROR "Using a cold snapshot <".$snapshot.">, PITR should at least 15 seconds later than snapshot!.";
-                return 0;
-            } else {
-                ERROR "No PITR given and cold snapshot selected!.";
-                return 0;
-            }
+                }
+            ERROR "Cold snapshot selected!.";
+            return 0;
         }
     }
     return 1;
 }
 
 sub validate {
-    my ($snapshot, $version, $version_snap) = @_;
+    my $snapshot = shift;
     if ( $snapshot =~ /snapscript_(\d\d)(\d\d)(\d\d\d\d)_(\d\d)(\d\d)(\d\d)_(\d+)/x ) {
-        my ($year_snap, $month_snap, $day_snap, $hour_snap, $min_snap, $sec_snap);
+        my ($year_snap, $month_snap, $day_snap, $hour_snap, $min_snap, $sec_snap, $version);
         $year_snap=$3;
         $month_snap=$2;
         $day_snap=$1;
@@ -59,11 +47,11 @@ sub validate {
         $min_snap=$5;
         $sec_snap=$6;
         $version=$7;
-        DEBUG "snap restore: year: <$year_snap> month: <$month_snap> day: <$day_snap> hour: <$hour_snap> min: <$min_snap> sec: <$sec_snap> version_snap: <$version_snap>";
-        return _seconds($sec_snap,$min_snap,$hour_snap,$day_snap,($month_snap -1),$year_snap);
+        DEBUG "snapshot year: <$year_snap> month: <$month_snap> day: <$day_snap> hour: <$hour_snap> min: <$min_snap> sec: <$sec_snap> version: <$version>";
+        return timelocal($sec_snap,$min_snap,$hour_snap,$day_snap,($month_snap -1),$year_snap);
     } else {
         ERROR "Problem parsing <" . $snapshot . ">";
-        return 0;
+        return;
     }
 }
 
@@ -80,12 +68,12 @@ sub validate_PITR {
         DEBUG "year: <$year_pitr> month: <$month_pitr> day: <$day_pitr> hour: <$hour_pitr> min: <$min_pitr> sec: <$sec_pitr>";
         if ($month_pitr > 12 ) {
             ERROR "PITR: not right time format <" . $pitr . ">";
-            return 0;
+            return;
         }
-        return _seconds($sec_pitr, $min_pitr, $hour_pitr, $day_pitr, ($month_pitr -1), $year_pitr);
+        return timelocal($sec_pitr, $min_pitr, $hour_pitr, $day_pitr, ($month_pitr -1), $year_pitr);
     } else {
         ERROR "Problem parsing <" . $pitr . ">";
-        return 0;
+        return;
     }
 }
 
