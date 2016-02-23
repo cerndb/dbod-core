@@ -124,19 +124,22 @@ sub create_instance {
  
     my $conn = get_connection($config);
 
-    for my $subtree (@{$entry}) {
-        $subtree->add($conn);
+    if (defined $conn) {
+        for my $subtree (@{$entry}) {
+            $subtree->add($conn);
+        }
+        for my $subtree (@{$tns}) {
+            $subtree->add($conn);
+        }
+        timestamp_entity($conn, $new_instance);
+        $conn->unbind();
+        $conn->disconnect();
+    } else {
+        ERROR "Couldn\'t connect to LDAP server. Aborting instance registration";
+        return scalar 1;
     }
-    for my $subtree (@{$tns}) {
-        $subtree->add($conn);
-    }
 
-    timestamp_entity($conn, $new_instance);
-
-    $conn->unbind();
-    $conn->disconnect();
-
-    return;
+    return scalar 0;
 
 }
 
