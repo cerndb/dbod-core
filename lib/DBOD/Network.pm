@@ -81,8 +81,6 @@ sub get_ip_alias {
 
 sub create_alias {
 
-    # TODO: add return values
-
     my ($input, $config) = @_;
 
     DEBUG "Registering ip aplias $input->{ip_alias} in API for entity: $input->{dbname}";
@@ -97,12 +95,14 @@ sub create_alias {
     if ($return_code) {
         # An error ocurred executing external command
         ERROR 'An error occurred creating DNS entry for ip-alias';
+        return scalar 0;
     }
     DEBUG "Adding ipalias $input->{ip_alias} to dnsname: $dnsname";
-    add_ip_alias($dnsname, $input->{ip_alias}, $config);
-
-    return;
-
+    $return_code = add_ip_alias($dnsname, $input->{ip_alias}, $config);
+    if ($return_code) {
+        ERROR 'Error adding IP alias to dnsname';
+    }
+    return scalar $return_code;
 }
 
 1;

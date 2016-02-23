@@ -76,7 +76,7 @@ subtest 'create_ip_alias' => sub {
     ok(DBOD::Network::create_alias(\%input, \%config), 'create_alias OK');
     
     $rt->mock('run_cmd', sub { return 1 });
-    ok(DBOD::Network::create_alias(\%input, \%config), 'create_alias FAIL');
+    ok(!DBOD::Network::create_alias(\%input, \%config), 'create_alias FAIL');
 
 };
 
