@@ -49,7 +49,7 @@ sub check_times {
 }
 
 sub validate {
-    my ($snapshot, $version) = @_;
+    my ($snapshot, $version, $version_snap) = @_;
     if ( $snapshot =~ /snapscript_(\d\d)(\d\d)(\d\d\d\d)_(\d\d)(\d\d)(\d\d)_(\d+)/x ) {
         my ($year_snap, $month_snap, $day_snap, $hour_snap, $min_snap, $sec_snap);
         $year_snap=$3;
@@ -59,7 +59,7 @@ sub validate {
         $min_snap=$5;
         $sec_snap=$6;
         $version=$7;
-        DEBUG "snap restore: year: <$year_snap> month: <$month_snap> day: <$day_snap> hour: <$hour_snap> min: <$min_snap> sec: <$sec_snap> version_snap: <$$version_snap>";
+        DEBUG "snap restore: year: <$year_snap> month: <$month_snap> day: <$day_snap> hour: <$hour_snap> min: <$min_snap> sec: <$sec_snap> version_snap: <$version_snap>";
         return _seconds($sec_snap,$min_snap,$hour_snap,$day_snap,($month_snap -1),$year_snap);
     } else {
         ERROR "Problem parsing <" . $snapshot . ">";
