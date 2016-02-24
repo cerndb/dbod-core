@@ -15,7 +15,7 @@ subtest 'run_cmd' => sub {
         my $rt = DBOD::Runtime->new();
         my $exit_code = $rt->run_cmd('hostname');
         is($exit_code, 0, 'Executing hostname');
-        my $exit_code = $rt->run_cmd('non-existing-command');
+        $exit_code = $rt->run_cmd('non-existing-command');
         is($exit_code, undef, 'Missing executable');
         $exit_code = $rt->run_cmd('ping localhost', 1);
         is($exit_code, undef, 'Timeout command');
@@ -36,5 +36,36 @@ subtest 'result_code' => sub {
         is($result_code, 1, 'Input missing result code');
     };
 
+subtest 'my_wait' => sub {
+        sub dummy {
+            my @params = @_;
+            return scalar @params;
+        };
+        my $rt = DBOD::Runtime->new();
+        my @params = (1, 2, 3);
+        my $result_code = $rt->mywait(\&dummy, @params);
+        is($result_code, 3, 'mywait')
+    };
+
+subtest 'file_ops' => sub {
+
+        # First we create a temporal file
+        my $rt = DBOD::Runtime->new();
+        my $tempfile = $rt->get_temp_filename('TEST_XXXX', '/tmp', '_test');
+
+        # Write to File
+        my @contents = ("Line1\n", "Line2\n");
+        $rt->write_file_arr($tempfile, \@contents);
+
+        # Read from file
+        my @text = $rt->read_file($tempfile);
+        ok(@text == @contents, 'Sucessfull Create-Write-Read Cycle');
+
+        # Exercise error paths
+        is($rt->read_file('/tmp/non-existing-file'), undef, 'Non existing file read');
+        is($rt->write_file_arr('/sbin/kk', \@contents), undef, 'Non existing file write');
+        is($rt->get_temp_filename(undef,undef,undef), undef, 'get_temp_file missing parameters');
+
+    };
 
 done_testing();
