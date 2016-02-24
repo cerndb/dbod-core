@@ -10,17 +10,29 @@ BEGIN { Log::Log4perl->easy_init() };
 
 use_ok('DBOD::Runtime');
 
-
 subtest 'run_cmd' => sub {
         my $rt = DBOD::Runtime->new();
-        my $exit_code = $rt->run_cmd('hostname');
+        my $output;
+        my $exit_code = $rt->run_cmd(cmd => 'hostname', output => \$output);
         is($exit_code, 0, 'Executing hostname');
-        $exit_code = $rt->run_cmd('non-existing-command');
+        undef $output; my $output;
+        $exit_code = $rt->run_cmd(cmd => 'non-existing-command', output => \$output);
         is($exit_code, undef, 'Missing executable');
-        $exit_code = $rt->run_cmd('ping localhost', 1);
+        undef $output; my $output;
+        $exit_code = $rt->run_cmd(cmd => 'ping localhost', timeout => 1, output => $output);
         is($exit_code, undef, 'Timeout command');
-        $exit_code = $rt->run_cmd('ls kk');
+        undef $output; my $output;
+        $exit_code = $rt->run_cmd(cmd => 'ls kk', output => \$output);
         is($exit_code, 512, 'ls non existing file');
+    };
+
+subtest 'run_str' => sub {
+        my $rt = DBOD::Runtime->new();
+        my $output;
+        my $exit_code = $rt->run_str('hostname', \$output, undef, undef);
+        is($exit_code, 1, 'Executing command');
+        $exit_code = $rt->run_str('ls /usr/sbin/kk', \$output, undef, undef);
+        is($exit_code, 0, 'Executing erroring command');
     };
 
 subtest 'result_code' => sub {
@@ -45,6 +57,13 @@ subtest 'my_wait' => sub {
         my @params = (1, 2, 3);
         my $result_code = $rt->mywait(\&dummy, @params);
         is($result_code, 3, 'mywait')
+    };
+
+subtest 'get_instance_version' => sub {
+        my $version = '5.6.17';
+        my $target = '5617';
+        my $rt = DBOD::Runtime->new();
+        is($rt->get_instance_version($version), $target, 'Version format coversion validation');
     };
 
 subtest 'file_ops' => sub {

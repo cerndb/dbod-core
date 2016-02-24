@@ -26,20 +26,25 @@ use Time::localtime;
 use autodie qw(:io);
 
 sub run_cmd {
-    my ($self, $cmd_str, $timeout) = @_;
+    my $self = shift;
+    my %args = @_;
+    # Using named parameters, but unpacking for clarity and usability
+    my $cmd_str = $args{cmd};
+    my $timeout = $args{timeout};
+    my $output_ref = $args{output};
     my @cmd = split ' ', $cmd_str ;
-    my ($out, $err, $return_code);
+    my ($err, $return_code);
     try {
         if (defined $timeout) {
             $self->log->debug("Executing ${cmd_str} with timeout: ${timeout}");
-            run \@cmd, ,'>', \$out, '2>', \$err, (my $t = timeout $timeout);
+            run \@cmd, ,'>', $output_ref, '2>', \$err, (my $t = timeout $timeout);
         }
         else {
             $self->log->debug("Executing ${cmd_str}");
-            run \@cmd, ,'>', \$out, '2>', \$err;
+            run \@cmd, ,'>', $output_ref, '2>', \$err;
         }
         # If the command executed succesfully we return its exit code
-        $self->log->debug("${cmd_str} stdout: " . $out);
+        $self->log->debug("${cmd_str} stdout: " . $$output_ref);
         $self->log->debug("${cmd_str} return code: " . $?);
         $return_code = $?;
     } 
@@ -54,7 +59,7 @@ sub run_cmd {
             # Other type of exception ocurred
             $self->log->error("Exception found: " . $_);
             if (defined $err) {
-                $self->log->error( "CMD stderr: ".$err );
+                $self->log->error( "CMD stderr: " . $err );
             }
             return;
         }
@@ -165,40 +170,18 @@ sub wait_until_file_exist {
 }
 
 #@deprecated To be substutituted by run_cmd
+# Using it as interface to maintain the inverted logic for error handling
+# until the required changes are made in the action scripts
 sub run_str {
-    my($self, $cmd,$str,$fake,$text) = @_;
-    if (defined $text) {
-        $self->log->info("Parameters cmd: not displayed");
-           $self->log->info("Parameters text: <$text>");
+    my($self, $cmd, $output_ref, $fake, $text) = @_;
+    my $rc = $self->run_cmd(cmd => $cmd, output => $output_ref);
+    if ($rc != 0) {
+        $self->log->error(" $cmd failed with return code: <$rc>");
+        return 0; #error
     } else {
-        $self->log->info("Parameters cmd: $cmd");
+        return 1; #ok
     }
-       $self->log->info("Parameters fake: <$fake>") if defined $fake;
-
-
-    my($rc);
-       if ($fake) {
-        if (defined $text) {
-            $self->log->debug("Would do $text");
-        } else {
-            $self->log->debug("Would do $cmd");
-        }
-    } else {
-        if (defined $text) {
-            $self->log->debug("Running $text");
-        } else {
-            $self->log->debug("Running $cmd");
-        }
-
-        @$str=`$cmd`;
-        $rc=$?;
-        if ($rc != 0) {
-            $self->log->error(" failed $! and return code: <$rc>");
-            return 0; #error
-        }
-    }
-    return 1; #ok
-} 
+}
 
 #@deprecated TODO: fetch password from confi file
 sub retrieve_user_password {
@@ -264,11 +247,11 @@ sub write_file_arr {
 #it returns a full patch <dir>/<filename>
 sub get_temp_filename {
     my($self, $template,$directory,$suffix)=@_;
-        $self->log->debug("template: <$template> directory: <$directory> suffix: <$suffix> ");
     if (! defined $template || ! defined $directory || ! defined $suffix) {
         $self->log->debug("some variable missing, please check ");
         return;
     }
+    $self->log->debug("template: <$template> directory: <$directory> suffix: <$suffix> ");
     my $fh = File::Temp->new(
         TEMPLATE => $template,
         DIR      => $directory,

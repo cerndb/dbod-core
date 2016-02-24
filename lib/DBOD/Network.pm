@@ -91,7 +91,7 @@ sub create_alias {
     my $command = $cmd . " --dnsname=" . $dnsname . " --add_ip=" . $host;
     DEBUG 'Adding entry to DNS by executing: ' . $command;
     my $runtime = DBOD::Runtime->new();
-    my $return_code = $runtime->run_cmd($command);
+    my $return_code = $runtime->run_cmd(cmd => $command);
     if ($return_code) {
         # An error ocurred executing external command
         ERROR 'An error occurred creating DNS entry for ip-alias';

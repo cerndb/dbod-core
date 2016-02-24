@@ -41,7 +41,7 @@ sub add_alias {
         my $command = $cmd . " --dnsname=" . $dnsname . " --add_ip=" . $host;
         DEBUG 'Executing ' . $command;
         my $runtime = DBOD::Runtime->new();
-        my $return_code = $runtime->run_cmd($command);
+        my $return_code = $runtime->run_cmd(cmd => $command);
         if ($return_code) {
             # An error ocurred executing external command
             ERROR 'An error occurred creating DNS entry for ip-alias';
@@ -82,7 +82,7 @@ sub remove_alias {
         my $command = $cmd . " --dnsname=" . $dnsname . " --rm_ip=" . $host;
         DEBUG 'Executing ' . $command;
         my $runtime = DBOD::Runtime->new();
-        my $return_code = $runtime->run_cmd($command);
+        my $return_code = $runtime->run_cmd(cmd => $command);
         if ($return_code) {
             # An error ocurred executing external command
             ERROR 'An error occurred creating DNS entry for ip-alias';
