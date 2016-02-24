@@ -152,26 +152,18 @@ sub scp_get {
     return scalar 1;
 }
 
-# Method to implement a timeout while checking a condition.
-# Condition should be implemented by a routine
-#@deprecated by mywait. TODO: Substitute occurrences
-sub timeout_one_param {
-    my($self,$timeout,$poll_interval,$test_condition,$oneparam) = @_;
-    $self->log->info("Parameters timeout: <$timeout>, poll_interval: <$poll_interval>, test_condition: <$test_condition> oneparam: <$oneparam>");
-
-    until ($test_condition->($oneparam) || $timeout <= 0)
+sub wait_until_file_exist {
+    my t($self, $timeout, $filename) = @_;
+    my $poll_interval = 1; # seconds
+    $self->log->debug('Waiting for creation of ' . $filename);
+    until ((-e $filename) || ($timeout <= 0))
     {
         $timeout -= $poll_interval;
         sleep $poll_interval;
     }
-
-    if ($timeout > 0) {
-        return 1; #ok
-    } else {
-        return 0; # not ok
-    }
-
+    return scalar ( -e $filename );
 }
+
 # TODO: Test refactored method and remove this implementation
 #@deprecated
 sub check_times {

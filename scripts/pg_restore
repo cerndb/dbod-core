@@ -47,19 +47,6 @@ my $runtime_zapi  = DBOD::Runtime_Zapi->new;
 my $runtime = DBOD::Runtime->new;
 my $pg = DBOD::PG->new;
 
-
-
-# perl pg_restore --entity pgtest --snapshot snapscript_24062015_125419_58_5617 --pitr 2015-06-24_13:00:00
-sub CheckFileExist{
-	my($file)=@_;
-	
-	if (-e $file) {
-		$job->log->debug(" <$file> has been created!");
-		return 1; #ok
-	} 
-	return 0; #not ok
-
-}
 sub body {
 	$job->log->debug('Executing restore  on '. $job->entity . ' with snapshot ' . $job->snapshot);
 	if (defined $job->pitr) {
@@ -233,19 +220,10 @@ sub body {
 		$job->log->debug("Database has been started.");
 	}
 	
-	my($file_name)=$job->metadata->{'datadir'} . "/recovery.done";
-
-	#Timeout interval
-	my($timeout,$poll_interval);
-	$timeout=900; #15 minutes	
-	$poll_interval=1; #every second   
-
-	
-	$job->log->debug("file <$file_name> to check for.");  
-	
-	$rc=$runtime->timeout_one_param($timeout,$poll_interval,\&CheckFileExist,$file_name);
+	my $file_name = $job->metadata->{'datadir'} . "/recovery.done";
+	$rc = $runtime->wait_until_file_exist(900, $file_name); # Wait up to 900 seconds
 	if ($rc==0) {
-		$job->log->debug("postgress didnt recover from crashed. Please check!!!");  
+		$job->log->debug("postgress didn't recover. Please check");
 		$job->_output(1);
 		return 1;
 	} 

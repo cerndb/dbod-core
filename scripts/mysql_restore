@@ -46,8 +46,6 @@ my $runtime = DBOD::Runtime->new;
 my $mysql = DBOD::MySQL->new;
 my $version_mysql_snap;
 
-
-
 # perl mysql_restore --entity pinocho --snapshot snapscript_24062015_125419_58_5617 --pitr 2015-06-24_13:00:00
 sub CheckTimes {
 	# Check times provided.
@@ -326,17 +324,9 @@ sub body {
 	$file_name .= ".pid"; 
 	$file_name = $job->metadata->{'datadir'} . "/$file_name";
 
-	#Timeout interval
-	my($timeout,$poll_interval);
-	$timeout=900; #15 minutes	 
-	$poll_interval=1; #every second  
-
-
-	$job->log->debug("File <$file_name> to check for."); 
-	
-	$rc=$runtime->timeout_one_param($timeout,$poll_interval,\&CheckFileExist,$file_name);
+	$rc=$runtime->wait_until_file_exist(900, $file_name); # Waits up to 900 seconds
 	if ($rc==0) {
-		$job->log->debug("mysqld didnt recover from crashed. Please check!!!");  
+		$job->log->error("mysqld didnt recover. Please check.");
 		$job->_output(1);
 		return 1;
 	} 
