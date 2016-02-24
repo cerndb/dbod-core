@@ -46,105 +46,6 @@ my $runtime = DBOD::Runtime->new;
 my $mysql = DBOD::MySQL->new;
 my $version_mysql_snap;
 
-# perl mysql_restore --entity pinocho --snapshot snapscript_24062015_125419_58_5617 --pitr 2015-06-24_13:00:00
-sub CheckTimes {
-	# Check times provided.
-	my($numsecs_restore);	
-	if ($job->snapshot =~ /snapscript_(\d\d)(\d\d)(\d\d\d\d)_(\d\d)(\d\d)(\d\d)_(\d+)_(\d+)/ || $job->snapshot =~ /snapscript_(\d\d)(\d\d)(\d\d\d\d)_(\d\d)(\d\d)(\d\d)_cold/ || $job->snapshot =~ /snapscript_(\d\d)(\d\d)(\d\d\d\d)_(\d\d)(\d\d)(\d\d)/) {
-		my($year_snap,$month_snap,$day_snap,$hour_snap,$min_snap,$sec_snap);
-			$year_snap=$3;
-			$month_snap=$2;
-			$day_snap=$1;
-			$hour_snap=$4;
-			$min_snap=$5;
-			$sec_snap=$6;
-			$version_mysql_snap=$8;
-			if (defined $version_mysql_snap) {
-				$job->log->debug("snap restore: year: <$year_snap> month: <$month_snap> day: <$day_snap> hour: <$hour_snap> min: <$min_snap> sec: <$sec_snap> version_mysql: <$version_mysql_snap>");
-			} else {
-				$job->log->debug("snap restore: year: <$year_snap> month: <$month_snap> day: <$day_snap> hour: <$hour_snap> min: <$min_snap> sec: <$sec_snap> version_mysql: <not available>");
-			}
-			try {
-				$numsecs_restore=timelocal($sec_snap,$min_snap,$hour_snap,$day_snap,($month_snap -1),$year_snap);
-
-			} catch {
-				$job->log->error("Problem with timelocal <$!>  numsecs: <$numsecs_restore>");	
-				if (defined $_[0]) {
-					$job->log->error("Cought error: $_[0]");	
-				}
-				$job->_output(1);
-				return 1;
-			};
-	} else {
-			$job->log->error("problem parsing <" . $job->snapshot . ">");	
-			$job->_output(1);
-			return 1;
-	}
-	
- 	my($numsecs_pitr);
-	if (defined $job->pitr) {
-			if ($job->pitr =~ /(\d\d\d\d)-(\d\d)-(\d\d)_(\d+):(\d+):(\d+)/) {
-			my($year_pitr,$month_pitr,$day_pitr,$hour_pitr,$min_pitr,$sec_pitr);
-			$year_pitr=$1;
-			$month_pitr=$2;
-			$day_pitr=$3;
-			$hour_pitr=$4;
-			$min_pitr=$5;
-			$sec_pitr=$6;
-			
-			$job->log->debug("year: <$year_pitr> month: <$month_pitr> day: <$day_pitr> hour: <$hour_pitr> min: <$min_pitr> sec: <$sec_pitr>");
-			if ($month_pitr > 12 ) {
-				$job->log->error("PITR: not right time format <" . $job->pitr . ">");
-				$job->pitr(undef);
-			}
-			try {
-				$numsecs_pitr=timelocal($sec_pitr,$min_pitr,$hour_pitr,$day_pitr,($month_pitr -1),$year_pitr);
-
-			} catch {
-				$job->log->error("Problem with timelocal <$!> . numsecs: <$numsecs_pitr>");
-				if (defined $_[0]) {
-					$job->log->error("Cought error: $_[0]");	
-				}
-				$job->_output(1);
-				return 1;
-			};
-			if ($numsecs_pitr < $numsecs_restore) {
-				$job->log->error("Time to pitr <" . $job->pitr . "> makes no sense for a restore: <" . $job->snapshot . ">");
-				$job->_output(1);
-				return 1;
-
-			}
-			if ($job->snapshot =~ /_cold$/) {
-				if ($numsecs_pitr < ($numsecs_restore + 15)) {
-					$job->log->error("Using a cold snapshot <" . $job->snapshot . ">, PITR should at least 15 seconds later than snapshot!.");
-					$job->_output(1);
-					return 1;
-				}
-			} 		
-		} else {
-			$job->log->error("Problem parsing <" . $job->pitr . ">");
-			$job->_output(1);
-			return 1;
-		}
-    } elsif ( $job->snapshot =~ /_cold$/ ) {
-		$job->log->error("No PITR given and cold snapshot selected!.");
-		$job->_output(1);
-		return 1;
-	}
-	
-}
-
-sub CheckFileExist{
-	my($file)=@_;
-	
-	if (-e $file) {
-		$job->log->debug(" <$file> has been created!");
-		return 1; #ok
-	} 
-	return 0; #not ok
-
-}
-
 sub read_directory {
     my($self,$dir,$pattern)=@_;
     $self->log->info("Parameters dir: <$dir> pattern: <$pattern>");
@@ -170,10 +71,13 @@ sub body {
 
 	my($rc,@output,$localmycnf,$entity,$fake);
 	$fake=0;
-	$entity = 'dod_' . $job->entity;	
-	&CheckTimes;
-       #check if trying to restore from a snapshot on a different major version
-	my $actual_version = $runtime->get_instance_version($job->metadata->{'version'});
+	$entity = 'dod_' . $job->entity;
+    my $actual_version = $runtime->get_instance_version($job->metadata->{'version'});
+	if (DBOD::Snapshot::check_times($job->snapshot, $job->pitr, $actual_version )){
+        $job->debug->error('Error validating snapshot file and/or PITR time');
+        $job->_output(1);
+        return 1;
+    }
 
 	if (defined $actual_version) {
 		if (defined $version_mysql_snap) {

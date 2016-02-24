@@ -56,11 +56,13 @@ sub body {
 	my($entity,$fake,$version_pg_snap);
 	$fake=0;
 	$entity = 'dod_' . $job->entity;	
-	$runtime->check_times($job->snapshot, $job->pitr,\$version_pg_snap);
 
-       #check if trying to restore from a snapshot on a different major version
-	my $actual_version = $runtime->get_instance_version( $job->metadata->{version});
-
+	my $actual_version = $runtime->get_instance_version($job->metadata->{'version'});
+	if (DBOD::Snapshot::check_times($job->snapshot, $job->pitr, $actual_version )){
+		$job->debug->error('Error validating snapshot file and/or PITR time');
+		$job->_output(1);
+		return 1;
+	}
 	if (defined $actual_version) {
 		if (defined $version_pg_snap) {
 			$job->log->debug("actual PG version: $actual_version");

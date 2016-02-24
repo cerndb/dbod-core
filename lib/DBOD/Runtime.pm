@@ -153,7 +153,7 @@ sub scp_get {
 }
 
 sub wait_until_file_exist {
-    my t($self, $timeout, $filename) = @_;
+    my ($self, $timeout, $filename) = @_;
     my $poll_interval = 1; # seconds
     $self->log->debug('Waiting for creation of ' . $filename);
     until ((-e $filename) || ($timeout <= 0))
@@ -162,90 +162,6 @@ sub wait_until_file_exist {
         sleep $poll_interval;
     }
     return scalar ( -e $filename );
-}
-
-# TODO: Test refactored method and remove this implementation
-#@deprecated
-sub check_times {
-    my ($self, $snapshot, $pitr, $version_snap) = @_;
-    my($numsecs_restore);
-    if ( $snapshot =~ /snapscript_(\d\d)(\d\d)(\d\d\d\d)_(\d\d)(\d\d)(\d\d)_(\d+)/x ) {
-        my($year_snap,$month_snap,$day_snap,$hour_snap,$min_snap,$sec_snap);
-            $year_snap=$3;
-            $month_snap=$2;
-            $day_snap=$1;
-            $hour_snap=$4;
-            $min_snap=$5;
-            $sec_snap=$6;
-            $$version_snap=$7;
-            if (defined $$version_snap) {
-                $self->log->debug("snap restore: year: <$year_snap> month: <$month_snap> day: <$day_snap> hour: <$hour_snap> min: <$min_snap> sec: <$sec_snap> version_snap: <$$version_snap>");
-            } else {
-                $self->log->debug("snap restore: year: <$year_snap> month: <$month_snap> day: <$day_snap> hour: <$hour_snap> min: <$min_snap> sec: <$sec_snap> version_snap: <not available>");
-            }
-            try {
-                $numsecs_restore=timelocal($sec_snap,$min_snap,$hour_snap,$day_snap,($month_snap -1),$year_snap);
-
-            } catch {
-                $self->log->error("Problem with timelocal <$!>  numsecs: <$numsecs_restore>");
-                if (defined $_[0]) {
-                    $self->log->error("Cought error: $_[0]");
-                }
-                return 0;
-            };
-    } else {
-            $self->log->error("problem parsing <" . $snapshot . ">");
-            return 0;
-    }
-
-    my($numsecs_pitr);
-    if (defined $pitr) {
-            if ($pitr =~ /(\d\d\d\d)-(\d\d)-(\d\d)_(\d+):(\d+):(\d+)/x) {
-            my($year_pitr,$month_pitr,$day_pitr,$hour_pitr,$min_pitr,$sec_pitr);
-            $year_pitr=$1;
-            $month_pitr=$2;
-            $day_pitr=$3;
-            $hour_pitr=$4;
-            $min_pitr=$5;
-            $sec_pitr=$6;
-
-            $self->log->debug("year: <$year_pitr> month: <$month_pitr> day: <$day_pitr> hour: <$hour_pitr> min: <$min_pitr> sec: <$sec_pitr>");
-            if ($month_pitr > 12 ) {
-                $self->log->error("PITR: not right time format <" . $pitr . ">");
-                $self->pitr(undef);
-            }
-            try {
-                $numsecs_pitr=timelocal($sec_pitr,$min_pitr,$hour_pitr,$day_pitr,($month_pitr -1),$year_pitr);
-
-            } catch {
-                $self->log->error("Problem with timelocal <$!> . numsecs: <$numsecs_pitr>");
-                if (defined $_[0]) {
-                    $self->log->error("Cought error: $_[0]");
-                }
-                return 0;
-            };
-            if ($numsecs_pitr < $numsecs_restore) {
-                $self->log->error("Time to pitr <" . $pitr . "> makes no sense for a restore: <" . $snapshot . ">");
-                return 0;
-
-            }
-            if ($snapshot =~ /_cold$/x) {
-                if ($numsecs_pitr < ($numsecs_restore + 15)) {
-                    $self->log->error("Using a cold snapshot <" . $snapshot . ">, PITR should at least 15 seconds later than snapshot!.");
-                    return 0;
-                }
-            }
-        } else {
-            $self->log->error("Problem parsing <" . $pitr . ">");
-            return 0;
-        }
-    } elsif ( $snapshot =~ /_cold$/x ) {
-        $self->log->error("No PITR given and cold snapshot selected!.");
-        return 0;
-    }
-
-    return 1;
-
 }
 
 #@deprecated To be substutituted by run_cmd
