@@ -152,39 +152,6 @@ sub scp_get {
     return scalar 1;
 }
 
-# TODO: If this is not needed for MySQL upgrades, move to pg_upgrade
-#@deprecated  This method should be considered redundant as the instance version
-# Can and should be read from the instance metadata.
-sub is_running_different_version {
-    my($self,$file,$versiontogo)=@_;
-    $self->log->info("Parameters file: <$file>, versiontogo: <$versiontogo>");
-
-    if (-e "$file") {
-        my(@arr)=$self->read_file("$file");
-        if (scalar(@arr) ==0 ) {
-            $self->log->error("file <$file>  is empty. Strange.");
-            return 0; #notgood
-        } else {
-            foreach (@arr) {
-                if (m{(\d+)\.(\d+)\.(\d+)}x) {
-                    chomp $_;
-                    if ($_ eq "$versiontogo") {
-                        $self->log->error("You are already running <$versiontogo>");
-                        return 0; #not good
-                    } else {
-                        $self->log->debug("actual version <$_> different of upgrade version <$versiontogo>.");
-                        return 1; #ok
-                    }
-                }
-            }
-        }
-    } else {
-        $self->log->error("<$file> file doesnt exist");
-        return 0;#not good
-    }
-    return;
-}
- 
 # Method to implement a timeout while checking a condition.
 # Condition should be implemented by a routine
 #@deprecated by mywait. TODO: Substitute occurrences
@@ -346,7 +313,7 @@ sub retrieve_user_password {
  
 }
 
-# TODO: This can be a generic operation to have as a Job Class method
+#@deprecated This needs to be fetched from the instance metadata
 sub get_instance_version {
     my($self,$file)=@_;
     $self->log->info("Parameters file: <$file>");

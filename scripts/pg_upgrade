@@ -54,17 +54,8 @@ sub body {
 	my($entity);
 	$entity = 'dod_' . $job->entity;
 	my ($rc,@output);	
-	$rc = $runtime->run_str("cat " . $job->metadata->{'datadir'} . "/current-version",\@output);
-	my $current_version = $output[0];
-	if (!$rc || !defined $current_version) {
-		$job->log->error("A problem occurred while fetching current version");
-		$job->_output(1);
-		return 1;
-	}
-	chomp $current_version;
-	$job->log->debug(">>> Pre-upgrade checks");
-
-	if (! $runtime->is_running_different_version($job->metadata->{'datadir'}."/current-version",$job->versionto)) {
+	my $current_version = $job->metadata->{version};
+	if ($current_version eq $job->versionto) {
 		$job->log->error("You are running already the right version, likely!!");
 		$job->_output(1);
 		return 1;
