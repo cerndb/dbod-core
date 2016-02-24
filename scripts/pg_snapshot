@@ -76,7 +76,7 @@ sub body {
 	#create snapshot label
 	my($timetag)=`date +%d%m%Y_%H%M%S`; 
 	chomp $timetag;
-	my($version)=$runtime->get_instance_version($job->metadata->{'datadir'} . "/current-version");
+	my $version = $runtime->get_instance_version($job->metadata->{version});
 	if (! defined $version) {
 		 $job->log->error("No version found strange.");
                $job->_output(1);

@@ -313,27 +313,12 @@ sub retrieve_user_password {
  
 }
 
-#@deprecated This needs to be fetched from the instance metadata
+# We maintain the method to keep compatibility with current calls
 sub get_instance_version {
-    my($self,$file)=@_;
-    $self->log->info("Parameters file: <$file>");
-    if (-e "$file") {
-        my(@arr)=$self->read_file("$file");
-        if (scalar(@arr) ==0 ) {
-            $self->log->error("File <$file>  is empty. Strange.");
-            return;
-        } else {
-            foreach (@arr) {
-                if (m{(\d+)\.(\d+)\.(\d+)}x) {
-                    $self->log->debug("Version <$1$2$3>.");
-                    return "$1$2$3";
-                }
-            }
-        }
-    } else {
-        $self->log->error("<$file> file doesnt exist");
-    }
-    return;
+    my($self, $version) = @_;
+    $version =~ tr/\.//d;
+    $self->log->debug('Processed version' . $version);
+    return $version;
 }
 
 

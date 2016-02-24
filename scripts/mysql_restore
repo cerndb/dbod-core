@@ -175,7 +175,7 @@ sub body {
 	$entity = 'dod_' . $job->entity;	
 	&CheckTimes;
        #check if trying to restore from a snapshot on a different major version
-	my($actual_version)=$runtime->get_instance_version($job->metadata->{'datadir'} . "/current-version");
+	my $actual_version = $runtime->get_instance_version($job->metadata->{'version'});
 
 	if (defined $actual_version) {
 		if (defined $version_mysql_snap) {

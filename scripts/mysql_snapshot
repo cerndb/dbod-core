@@ -149,7 +149,8 @@ sub body {
 	}  else {
 		$job->log->debug("Success preparing volume: <$volume_name> for snapshot.");
 	}
- 	my($actual_version)=$runtime->get_instance_version($job->metadata->{'datadir'} . "/current-version");
+ 	my $actual_version = $runtime->get_instance_version($job->metadata->{version});
+
 	if (! defined  $actual_version) {
 		$job->log->error("A version of MySQL must be defined.");
 		$job->_output(1);

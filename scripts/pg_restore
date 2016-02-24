@@ -72,7 +72,7 @@ sub body {
 	$runtime->check_times($job->snapshot, $job->pitr,\$version_pg_snap);
 
        #check if trying to restore from a snapshot on a different major version
-	my($actual_version)=$runtime->get_instance_version( $job->metadata->{'datadir'} . "/current-version");
+	my $actual_version = $runtime->get_instance_version( $job->metadata->{version});
 
 	if (defined $actual_version) {
 		if (defined $version_pg_snap) {
