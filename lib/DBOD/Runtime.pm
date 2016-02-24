@@ -23,6 +23,7 @@ use File::Temp;
 use File::Copy;
 use Time::Local;
 use Time::localtime;
+use autodie qw(:io);
 
 sub run_cmd {
     my ($self, $cmd_str, $timeout) = @_;
@@ -186,6 +187,7 @@ sub is_running_different_version {
  
 # Method to implement a timeout while checking a condition.
 # Condition should be implemented by a routine
+#@deprecated by mywait. TODO: Substitute occurrences
 sub timeout_one_param {
     my($self,$timeout,$poll_interval,$test_condition,$oneparam) = @_;
     $self->log->info("Parameters timeout: <$timeout>, poll_interval: <$poll_interval>, test_condition: <$test_condition> oneparam: <$oneparam>");
@@ -323,6 +325,7 @@ sub run_str {
     return 1; #ok
 } 
 
+#@deprecated TODO: fetch password from confi file
 sub retrieve_user_password {
     my ($self, $user) = @_;
     my $password;
@@ -366,24 +369,35 @@ sub get_instance_version {
     return;
 }
 
+
 sub read_file {
     my ($self, $file) = @_;
-    $self->log->info("Parameters file: <$file>");
-    open my $F, '<', $file || $self->log->error("Cant read file $file. Error: $! ");
-    my (@text) = <$F>;
-    close($F);
-    return @text;
+    $self->log->info("Reading file: <$file>");
+    try {
+        open my $F, '<', $file;
+        my (@text) = <$F>;
+        close($F);
+        return @text;
+    } catch {
+        $self->log->error( "Error: $_" );
+        return;
+    };
 }
 
 sub write_file_arr {
     my ($self, $file, $text) = @_;
-    $self->log->info("Parameters file: <$file> text: just_number_of_lines " . scalar(@$text) );
-    open my $F, '>', $file || $self->log->debug("cant write <$file>");
-    foreach (@$text) {
-        print $F $_;
-    }
-    close(F);
-    return;
+    $self->log->info("Writing file: <$file> # of lines: " . scalar(@$text) );
+    try {
+        open my $F, '>', $file;
+        foreach (@$text) {
+            print $F $_;
+        }
+        close($F);
+        return;
+    } catch {
+        $self->log->error( "Error: $_" );
+        return;
+    };
 }
 
 #it expects three arguments, otherwise returns undef
