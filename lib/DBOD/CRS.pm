@@ -6,21 +6,21 @@ use Log::Log4perl qw(:easy);
 
 #Returns the state of a CRS resource (if the state is undef CRS is not installed or the resource does not exist)
 sub get_resource_state {
-    my ($self, $resource, $oracle_crs) = @_;
-    my ($rc, @output, $state);
+    my ($resource, $oracle_crs) = @_;
+    my ($rc, $output, $state);
 
-    INFO "Parameters resource: <$resource> oracle_crs: <$oracle_crs>";
-
-    $rc = $self->RunStr(
+    INFO "Resource: <$resource> oracle_crs: <$oracle_crs>";
+    my $rt = DBOD::Runtime->new();
+    $rc = $rt->run_str(
         "$oracle_crs status resource $resource | grep STATE | awk -F\"=\" '{print \$2}' | awk '{print \$1}'",
-        \@output );
-
+        \$output );
     if ($rc) {
-        $state = $output[0];
+        $state = $$output;
+        DEBUG $output;
         if (defined $state) {
             chomp $state;
         }
-        DEBUG "Resource is in <$state>";
+        DEBUG "Resource <$resource> in <$state> state";
         return $state;
     }
     else {
@@ -29,14 +29,15 @@ sub get_resource_state {
     }
 }
 
+
+#TODO: The following two methods are mostly the same logic. This can be refactored
+# into a single method with a command parameter (start, stop)
+
 sub start_resource {
-    my ($self, $resource, $oracle_crs) = @_;
+    my ($resource, $oracle_crs) = @_;
     my ($cmd, $rc, @output);
-
-    INFO "Parameters resource: <$resource> oracle_crs: <$oracle_crs>";
-
-    DEBUG "Checking CRS resource state.";
-    my ($state) = $self->get_CRS_resource_state( $resource, $oracle_crs );
+    INFO "Resource: <$resource> oracle_crs: <$oracle_crs>";
+    my $state = get_resource_state( $resource, $oracle_crs );
     if (defined $state) {
         #If instance is CRS and UNKNOWN
         if ($state eq "UNKNOWN") {
@@ -56,8 +57,8 @@ sub start_resource {
         #If instance is CRS adn OFFLINE
         if ($state eq "OFFLINE") {
             $cmd = "$oracle_crs start resource $resource";
-            $rc = $self->RunStr( $cmd, \@output );
-            DEBUG join( "", @output );
+            my $rt = DBOD::Runtime->new();
+            $rc = $rt->run_str( $cmd, \@output );
             if ($rc) {
                 DEBUG "CRS resource is up";
                 return 1; #ok
@@ -70,18 +71,16 @@ sub start_resource {
         return 0; #not ok
     }
     else {
-        ERROR "StartCRSResource: Given CRS resource was not found. Please check.";
+        ERROR "CRS resource was not found. Please check.";
         return 0; #not ok
     }
 }
 
 sub stop_resource {
-    my ($self, $resource, $oracle_crs) = @_;
-    INFO "Parameters resource: <$resource> oracle_crs: <$oracle_crs>";
-
+    my ($resource, $oracle_crs) = @_;
+    INFO "Resource: <$resource> oracle_crs: <$oracle_crs>";
     my ($cmd, $rc, @output);
-    ERROR "Checking CRS resource state.";
-    my ($state) = &get_CRS_resource_state( $resource, $oracle_crs );
+    my $state = get_resource_state( $resource, $oracle_crs );
     if (defined $state) {
         #If instance is CRS and UNKNOWN
         if ($state eq "UNKNOWN") {
@@ -100,14 +99,14 @@ sub stop_resource {
         }
         #If instance is CRS adn ONLINE
         if ($state eq "ONLINE") {
+            my $rt = DBOD::Runtime->new();
             $cmd = "$oracle_crs stop resource $resource";
-            $rc = $self->RunStr( $cmd, \@output );
-            DEBUG join( "", @output );
+            $rc = $rt->run_str( $cmd, \@output );
             if ($rc) {
-                DEBUG "MySQL instance is down";
+                DEBUG "Resource is down";
                 return 1; #ok
             } else {
-                ERROR "Problem stopping MySQL instance. Please check.";
+                ERROR "Problem stopping Resource. Please check.";
                 return 0; #notok
             }
         }
@@ -115,7 +114,7 @@ sub stop_resource {
         return 0; #not ok
     }
     else {
-        ERROR "Given CRS resource was not found. Please check.";
+        ERROR "CRS resource was not found. Please check.";
         return 0; #not ok
     }
 }
