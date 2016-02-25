@@ -50,7 +50,7 @@ sub body {
 	$servername = $job->entity;
 	$servername =~ s/dod_//g;
 
-	if ( DBOD::Appdynamics::is_enabled($servername,$job->config->{'appdynamics'}->{'appdhost'},$job->config->{'appdynamics'}->{'appdport'},$job->config->{'appdynamics'}->{'appduser'},$job->config->{'appdynamics'}->{'appdpassword'})) {
+	if (DBOD::Appdynamics::is_enabled($servername, $job->config->{'appdynamics'})) {
 		$job->log->debug("Either directory: <$servername> is already monitored by AppDynamics.");
 		$isappmonitored =1;
 	} else {

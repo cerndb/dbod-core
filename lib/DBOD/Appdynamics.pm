@@ -4,131 +4,132 @@ use warnings FATAL => 'all';
 
 use Log::Log4perl qw(:easy);
 
+use Socket;
+
+use DBOD::DB;
+
 sub enable {
 
-    my($self,$servername,$connectionstring,$username,$password,$dbtype,$drivername,$hostname,$dbport,$loggingenabled,$collectorport,$sysdba,$osusername,$ospassword,$collectos,$ostype,$oshostname,$osport,$aeskey,$appdhost,$appdport,$appduser,$appdpassword) = @_;
-    my $this=(caller(0))[3];
+    my ($servername, $connectionstring, $username, $password,
+        $dbtype, $drivername, $hostname, $dbport, $loggingenabled,
+        $collectorport, $sysdba, $osusername, $ospassword, $collectos,
+        $ostype, $oshostname, $osport, $aeskey,
+        $appdhost, $appdport, $appduser, $appdpassword) = @_;
 
     #build $dsn
     if (! defined $appdhost || ! defined $appdport || ! defined $appduser || ! defined $appdpassword) {
-        ERROR "Some variables are missing appdhost: <$appdhost>  appdort: <$appdport> appduser: <$appduser>  appdpassword may be empty";
+        ERROR "Appdynamic related argument missing ";
         return 0; # error
     }
-    INFO "Parameters servername: <$servername> connectionstring: <$connectionstring> username: <$username> password: <not displayed> dbtype: <$dbtype> drivername: <$drivername> hostname: <$hostname> dbport: <$dbport> collectorport: <$collectorport>";
-    #dbtuna is the appsdyamics database
+    if (! defined $servername || ! defined $connectionstring || ! defined $username
+        || ! defined $password || ! defined $dbtype || ! defined $drivername
+        || ! defined $hostname || ! defined $dbport || ! defined $loggingenabled
+        || ! defined $collectorport || ! defined $sysdba) {
+        ERROR "Instance related argument missing ";
+        return 0; # error
+    }
+
+    if (! defined $osusername || ! defined $ospassword || ! defined $collectos
+        || ! defined $ostype || ! defined $oshostname || ! defined $osport || ! defined $aeskey) {
+        ERROR "OS related argument missing";
+        return 0; # error
+    }
+
+    # DB Connection Object
     my $dsn = "DBI:mysql:database=dbtuna;host=$appdhost;port=$appdport";
-    my $dbh = DBI->connect($dsn, $appduser, $appdpassword,  {RaiseError => 0, AutoCommit => 1} ) or ERROR "$this: Couldn't connect to database: " . DBI->errstr;
 
-    #For extra debugging enable this
-    #DBI->trace(4);
+    my $db = DBOD::DB->new(
+        db_dsn  => $dsn,
+        db_user => $appduser,
+        db_password => $appdpassword,
+        db_attrs => {RaiseError => 0, Autocommit => 1},
+    );
 
-    if (! defined $dbh) {
-        ERROR "Couldn't connect to database: <$dsn>";
-        return 0;
-    }
-
-    if (! defined $servername || ! defined $connectionstring || ! defined $username || ! defined $password || ! defined $dbtype || ! defined $drivername || ! defined $hostname || ! defined $dbport || ! defined $loggingenabled || ! defined $collectorport || ! defined $sysdba) {
-        ERROR "Some variable not defined: servername <$servername>, connectionstring <$connectionstring>, username <$username>, password: XXX dbtype <$dbtype> drivername <$drivername> hostname <$hostname> dbport <$dbport> loggingenabled <$loggingenabled> collectorport <$collectorport> sysdba <$sysdba>";
-        return 0; # error
-    }
-
-    if (! defined $osusername || ! defined $ospassword || ! defined $collectos || ! defined $ostype || ! defined $oshostname || ! defined $osport || ! defined $aeskey) {
-        ERROR "Some variable not defined: osusername <$osusername> ospassword <$ospassword> collectos <$collectos> ostype <$ostype> oshotsname <$oshostname> osport <$osport> aeskey <aeskey> ";
-        return 0; # error
-    }
-
-    $servername=lc $servername;
+    $servername = lc $servername;
     $dbtype = uc $dbtype;
     $ostype = uc $ostype;
-    my $sth;
-    eval {
-        if ($osusername eq 'NULL') {
-            $sth = $dbh->prepare("INSERT INTO monitoredservers
-                        (servername,connectionstring,username,password,dbtype,drivername,hostname,dbport,loggingenabled,collectorport,sysdba,osusername,ospassword,collectos,ostype,oshostname,osport)
-                         values
-                         ('$servername','$connectionstring','$username',AES_ENCRYPT('$password','$aeskey'),'$dbtype','$drivername','$hostname','$dbport','$loggingenabled','$collectorport','$sysdba',NULL,NULL,'$collectos','$ostype','$oshostname','$osport')");
 
-        } else {
-            $sth = $dbh->prepare("INSERT INTO monitoredservers
-                        (servername,connectionstring,username,password,dbtype,drivername,hostname,dbport,loggingenabled,collectorport,sysdba,osusername,ospassword,collectos,ostype,oshostname,osport)
-                          values
-                          ('$servername','$connectionstring','$username',AES_ENCRYPT('$password','$aeskey'),'$dbtype','$drivername','$hostname','$dbport','$loggingenabled','$collectorport','$sysdba','$osusername',AES_ENCRYPT('$ospassword','$aeskey'),'$collectos','$ostype','$oshostname','$osport')");
-        }
+    my $affected_rows;
+    if ($osusername eq 'NULL') {
+        my @bind_values = ($servername, $connectionstring,
+            $username, $password, $aeskey,
+            $dbtype, $drivername,$hostname, $dbport,
+            $loggingenabled, $collectorport, $sysdba,
+            undef, undef, $collectos, $ostype, $oshostname, $osport);
+        $affected_rows = $db->do("INSERT INTO monitoredservers
+            (servername,connectionstring,username,password,dbtype,
+            drivername,hostname,dbport,loggingenabled,collectorport,
+            sysdba,osusername,ospassword,collectos,ostype,oshostname,osport)
+             values (?,?,?,AES_ENCRYPT(?,?),?,?,?,?,?,?,?,?,?,?,?,?,?)", \@bind_values);
 
-        $sth->execute() or ERROR "Some error while running INSERT: " . $DBI::errstr;
-        $sth->finish();
-        $dbh->disconnect or ERROR "Some error closing connection: " . $DBI::errstr;
-    };
-    if ($@) {
-        ERROR "Error while inserting:" . $sth->errstr;
+    } else {
+        my @bind_values = ($servername, $connectionstring,
+            $username, $password, $aeskey, $dbtype, $drivername,
+            $hostname, $dbport, $loggingenabled, $collectorport,
+            $sysdba, $osusername, $ospassword, $aeskey, $collectos,
+            $ostype, $oshostname, $osport);
+        $affected_rows = $db->do("INSERT INTO monitoredservers
+            (servername,connectionstring,username,password,dbtype,
+            drivername,hostname,dbport,loggingenabled,collectorport,
+            sysdba,osusername,ospassword,collectos,ostype,oshostname,osport)
+              values
+              (?,?,?,AES_ENCRYPT(?,?),?,?,?,?,?,?,?,?,AES_ENCRYPT(?, ?),?,?,?,?)", \@bind_values);
+    }
+
+    if ($affected_rows != 1) {
         return 0; #some error
     } else {
         return 1; #ok
     }
-
 }
 
 sub is_enabled {
-    my($self,$servername,$appdhost,$appdport,$appduser,$appdpassword) = @_;
-    INFO "Parameters servername: <$servername> appdhost: <$appdhost> appduser: <$appduser> appdpassword: <not displayed> appdort: <$appdport>";
+    my ($servername, $config) = @_;
+    my $host = $config->{host};
+    my $port = $config->{port};
+    my $user = $config->{user};
+    my $password = $config->{password};
 
-    if (! defined $appdhost || ! defined $appdport || ! defined $appduser || ! defined $appdpassword) {
-        ERROR "some variables are missing appdhost: <$appdhost>  appdort: <$appdport> appduser: <$appduser>  appdpassword may be empty";
-        return 0; # error
-    }
-
-    my $dsn = "DBI:mysql:database=dbtuna;host=$appdhost;port=$appdport";
-    my $dbh = DBI->connect($dsn, $appduser, $appdpassword ) or ERROR "Couldn't connect to database: " . DBI->errstr;
-
-    if (! defined $dbh) {
-        ERROR "Couldn't connect to database: <$dsn>";
-        return 0;
-    }
+    my $dsn = "DBI:mysql:database=dbtuna;host=$host;port=$port";
+    my $db = DBOD::DB->new(
+        db_dsn  => $dsn,
+        db_user => $user,
+        db_password => $password,
+        db_attrs => {RaiseError => 0, Autocommit => 1},
+    );
 
     $servername = lc $servername;
-    my $sth = $dbh->prepare("select 1 from monitoredservers where servername=?");
-    $sth->execute( $servername ) or ERROR "Error running query: " . $DBI::errstr;
-    my $rows= $sth->rows;
+    my @bind_params = ($servername);
+    my $rows = $db->do("select 1 from monitoredservers where servername=?", \@bind_params);
     if ($rows == 1) {
-        DEBUG "<$servername> is already defined";
-        $sth->finish();
-        $dbh->disconnect;
+        INFO "<$servername> is already defined";
         return 1; #ok
     } else {
-        ERROR "<$servername> is found <$rows> not equal to 1";
-        $sth->finish();
-        $dbh->disconnect;
+        ERROR "<$servername> is found <$rows> not enabled";
         return 0; #error
     }
 
 }
 
 sub disable {
-    my($self,$servername,$appdhost,$appdport,$appduser,$appdpassword) = @_;
-    INFO "Parameters servername: <$servername> appdhost: <$appdhost> appduser: <$appduser> appdpassword: <not displayed> appdort: <$appdport>";
+    my ($servername, $config) = @_;
+    my $host = $config->{host};
+    my $port = $config->{port};
+    my $user = $config->{user};
+    my $password = $config->{password};
 
-    if (! defined $appdhost || ! defined $appdport || ! defined $appduser || ! defined $appdpassword) {
-        DEBUG "some variables are missing appdhost: <$appdhost>  appdort: <$appdport> appduser: <$appduser>  appdpassword may be empty";
-        return 0; # error
-    }
-
-
-    my $dsn = "DBI:mysql:database=dbtuna;host=$appdhost;port=$appdport";
-    my $dbh = DBI->connect($dsn, $appduser, $appdpassword ) or ERROR "Couldn't connect to database: " . DBI->errstr;
-
-    if (! defined $dbh) {
-        ERROR "Couldn't connect to database: <$dsn>";
-        return 0;
-    }
+    my $dsn = "DBI:mysql:database=dbtuna;host=$host;port=$port";
+    my $db = DBOD::DB->new(
+        db_dsn  => $dsn,
+        db_user => $user,
+        db_password => $password,
+        db_attrs => {RaiseError => 0, Autocommit => 1},
+    );
 
     $servername = lc $servername;
-    eval {
-        my $sth = $dbh->prepare("DELETE FROM monitoredservers WHERE servername=?");
-        $sth->execute( $servername ) or ERROR "Couldn't delete from database <$servername> : " . DBI->errstr;
-        $sth->finish();
-    };
-
-    if ($@) {
+    my @bind_params = ($servername);
+    my $rows = $db->do("DELETE FROM monitoredservers WHERE servername=?", \@bind_params);
+    if ($rows != 1) {
         ERROR "Couldnt delete <$servername>";
         return 0; # error
     }
@@ -137,12 +138,12 @@ sub disable {
 
 # TODO: Is this method actually required if aliases follow convention?
 sub get_alias_from_entity {
-    my($self,$entity)=@_;
+    my $entity = shift;
     INFO "Retrieving alias for <$entity>";
     $entity =~ s/dod_/dbod-/;
     $entity =~ s/_/-/g;
     DEBUG "Possible alias is <$entity>.";
-    my $rc = $self->get_IP_from_cname($entity);
+    my $rc = inet_ntoa(inet_aton($entity));
     if ($rc eq "0") {
         DEBUG "Problem retrieving IP from <$entity>. Ping didnt work. Strange!";
     } else {
