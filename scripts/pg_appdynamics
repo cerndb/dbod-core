@@ -50,7 +50,7 @@ sub body {
 
 	$servername = $job->entity;
 	$servername =~ s/dod_//g;
-	if (DBOD::Appdynamics::is_enabled($servername,$job->config->{'appdynamics'}->{'appdhost'},$job->config->{'appdynamics'}->{'appdport'},$job->config->{'appdynamics'}->{'appduser'},$job->config->{'appdynamics'}->{'appdpassword'})) {
+	if (DBOD::Appdynamics::is_enabled($servername, $job->config->{'appdynamics'})) {
 		$job->log->debug("servername: <$servername> is already monitored by AppDynamics.");
 		$isappmonitored =1;
 	} else {
@@ -101,7 +101,7 @@ sub body {
 	#	my($servername,$appdhost,$appdport,$appduser,$appdpassword) = @_;
 
 	if ($job->disable && $isappmonitored) {
-		if (DBOD::Appdynamics::disable($servername,$job->config->{'appdynamics'}->{'appdhost'},$job->config->{'appdynamics'}->{'appdport'},$job->config->{'appdynamics'}->{'appduser'},$job->config->{'appdynamics'}->{'appdpassword'})) {
+		if (DBOD::Appdynamics::disable($servername,$job->config->{'appdynamics'})) {
 			$job->log->debug("Entity: <$job->entity> -> servername: <$servername> has been disabled");
 			$job->_output(0);
 			return 0; #ok

@@ -95,7 +95,7 @@ sub body {
 	} 
 
 	if ($job->disable && $isappmonitored) {
-		if (DBOD::Appdynamics::disable($servername,$job->config->{'appdynamics'}->{'appdhost'},$job->config->{'appdynamics'}->{'appdport'},$job->config->{'appdynamics'}->{'appduser'},$job->config->{'appdynamics'}->{'appdpassword'})) {
+		if (DBOD::Appdynamics::disable($servername, $job->config->{'appdynamics'})) {
 			$job->log->debug("Entity: <" . $job->entity . "> -> servername: <$servername> has been disabled");
 			$job->_output(0);
 			return 0;
