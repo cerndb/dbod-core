@@ -10,30 +10,44 @@ use DBOD::DB;
 
 sub enable {
 
-    my ($servername, $connectionstring, $username, $password,
-        $dbtype, $drivername, $hostname, $dbport, $loggingenabled,
-        $collectorport, $sysdba, $osusername, $ospassword, $collectos,
-        $ostype, $oshostname, $osport, $aeskey,
-        $appdhost, $appdport, $appduser, $appdpassword) = @_;
+    my ($servername, $config, $metadata) = @_;
 
-    #build $dsn
-    if (! defined $appdhost || ! defined $appdport || ! defined $appduser || ! defined $appdpassword) {
-        ERROR "Appdynamic related argument missing ";
-        return 0; # error
-    }
-    if (! defined $servername || ! defined $connectionstring || ! defined $username
-        || ! defined $password || ! defined $dbtype || ! defined $drivername
-        || ! defined $hostname || ! defined $dbport || ! defined $loggingenabled
-        || ! defined $collectorport || ! defined $sysdba) {
-        ERROR "Instance related argument missing ";
-        return 0; # error
-    }
+    my $connectionstring; # depends on type
+    my $username;
+    my $password;
+    my $drivername;
 
-    if (! defined $osusername || ! defined $ospassword || ! defined $collectos
-        || ! defined $ostype || ! defined $oshostname || ! defined $osport || ! defined $aeskey) {
-        ERROR "OS related argument missing";
-        return 0; # error
+    # Argument unpacking
+    my $hostname = $metadata->{host}[0]; # Functional alias
+    my $dbport = $metadata->{port};
+    my $dbtype = lc $metadata->{subcategory};
+    $username = $config->{$dbtype}->{db_user};
+    $password = $config->{$dbtype}->{db_password};
+
+    # TODO: Set drivername in config file
+    if ($dbtype eq 'mysql'){
+        $connectionstring = "jdbc:mysql://${hostname}:${dbport}/";
+        $drivername = "org.gjt.mm.mysql.Driver";
     }
+    else {
+        $connectionstring = "jdbc:postgresql://${hostname}:${dbport}/";
+        $drivername = "org.postgresql.Driver";
+    }
+    # TODO: Do something with this magic constants?;
+    my $loggingenabled = 0;
+    my $collectorport = 0;
+    my $sysdba = 0;
+    my $osusername = 'NULL';
+    my $ospassword = 'NULL';
+    my $collectos = 'N';
+    my $ostype = 'LINUX';
+    my $oshostname = $metadata->{host}[0]; # Functional_alias
+    my $osport = 22;
+    my $aeskey = $config->{appdynamics}->{aeskey};
+    my $appdhost = $config->{appdynamics}->{host};
+    my $appdport = $config->{appdynamics}->{port};
+    my $appduser = $config->{appdynamics}->{user};
+    my $appdpassword = $config->{appdynamics}->{password};
 
     # DB Connection Object
     my $dsn = "DBI:mysql:database=dbtuna;host=$appdhost;port=$appdport";
@@ -62,7 +76,7 @@ sub enable {
             sysdba,osusername,ospassword,collectos,ostype,oshostname,osport)
              values (?,?,?,AES_ENCRYPT(?,?),?,?,?,?,?,?,?,?,?,?,?,?,?)", \@bind_values);
 
-    } else {
+    } else { # TODO: Is this use case still needed?
         my @bind_values = ($servername, $connectionstring,
             $username, $password, $aeskey, $dbtype, $drivername,
             $hostname, $dbport, $loggingenabled, $collectorport,
@@ -137,7 +151,7 @@ sub disable {
 }
 
 # TODO: Is this method actually required if aliases follow convention?
-sub get_alias_from_entity {
+sub get_active_alias {
     my $entity = shift;
     INFO "Retrieving alias for <$entity>";
     $entity =~ s/dod_/dbod-/;
