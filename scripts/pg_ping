@@ -33,9 +33,13 @@ BEGIN {
 
 my $job = DBOD::PG::ping->new_with_options();
 my $runtime = DBOD::Runtime->new;
-my $pg = DBOD::PG->new;
 
 sub body {
+
+	my $pg = DBOD::PG->new(
+		instance => $self->entity,
+		metadata => $metadata,
+	);
 
 	$job->log->info('Executing posgresql start-up on '. $job->entity );
 	
@@ -43,13 +47,12 @@ sub body {
 	$entity = 'dod_' . $job->entity;	
 	
 	#Check if instance is running
-	$rc=$pg->check_state($job->metadata->{'bindir'} . "/pg_ctl", $job->metadata->{'datadir'}) ;
-
-	if ($rc == 0) {
+	unless($pg->is_running()) {
 		$job->log->debug("No instance running");
 		$job->_output(1);
 		return 1;
-	} 
+	}
+
 	#build ping file
 	my(@lines)=<DATA>;
 	if (scalar(@lines) != 3) {	#we didnt read properly the data

@@ -36,15 +36,20 @@ BEGIN {
 my $job = DBOD::PG::snapshot->new_with_options();
 my $runtime_zapi  = DBOD::Storage::NetApp::ZAPI->new;
 my $runtime = DBOD::Runtime->new;
-my $pg = DBOD::PG->new;
 
 sub body {
-	$job->log->debug('Executing snapshot job on '. $job->entity );
-	my($entity);
-	$entity = 'dod_' . $job->entity;	
-	my($isrunning) = $pg->check_state($job->metadata->{'bindir'} . "/pg_ctl",$job->metadata->{'datadir'});
 
-	if ( $isrunning == 0 ) {
+    my $pg = DBOD::PG->new(
+        instance => $self->entity,
+        metadata => $metadata,
+    );
+
+	$job->log->debug('Executing snapshot job on '. $job->entity );
+
+    my($entity);
+	$entity = 'dod_' . $job->entity;	
+
+	unless ( $pg->is_running() ) {
 		$job->log->error("You are not allowed to take an snapshot while database is not running.");
 		$job->_output(1);
 		return 1;
@@ -120,7 +125,7 @@ sub body {
 		$job->log->error("Success creating snapshot: <$snapname> on volume: <$volume_name>.!");
 	}		
 	
-	if ($isrunning) { #running instance
+	if ($pg->is_running()) { #running instance
 		#begin backup
 		#my $appender = Log::Log4perl->appender_by_name("file");
 		#print $appender->filename($);

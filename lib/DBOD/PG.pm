@@ -10,7 +10,7 @@ package DBOD::PG;
 use strict;
 use warnings;
 
-our $VERSION = 0.67;
+our $VERSION = 0.68;
 
 use Moose;
 with 'MooseX::Log::Log4perl';
@@ -20,19 +20,39 @@ use DBOD::Runtime;
 
 my $runtime = DBOD::Runtime->new;
 
+# input parameters
+has 'instance' => ( is => 'ro', isa => 'Str', required => 1);
+has 'metadata' => (is => 'rw', isa => 'HashRef', required => 1);
+has 'config' => (is => 'ro', isa => 'HashRef');
+
+has 'pg_ctl' => ( is => 'rw', isa => 'Str', required => 0);
+has 'datadir' => ( is => 'rw', isa => 'Str', required => 0);
+
+sub BUILD {
+
+    my $self = shift;
+    $self->datadir($self->metadata->{datadir});
+    $self->pg_ctl($self->metadata->{bindir} . '/pg_ctl');
+
+    $self->logger->debug('Instance: '. $self->instance .
+        ' datadir: ' . $self->datadir . ' pg_ctl: '. $self->pg_ctl);
+    return;
+};
+
+
 #Starts a PostgreSQL database
 sub start {
-	my ($self,$entity, $pg_ctl, $pg_datadir) = @_;
-	$self->log->info("Parameter: entity: <$entity> pg_ctl: <$pg_ctl> pg_datadir: <$pg_datadir>");
-	my ($cmd, $rc, @output);
+	my ($self) = @_;
+	my ($cmd, $rc);
+    my $entity = 'dod_' . $self->instance;
 
 	#Check is instance is running
 	#Check if server is running
-	$rc = $self->check_state($pg_ctl,$pg_datadir) ;
+	$rc = $self->is_running() ;
 	if ($rc == 0) {
 		$self->log->debug("No instance running");
 		$cmd = "/etc/init.d/pgsql_$entity start";
-		$rc = $runtime->run_str($cmd,\@output);
+		$rc = $runtime->run_cmd(cmd => $cmd);
 		if ($rc) {
 			$self->log->debug("PostgreSQL instance is up");
 			return 1; #ok
@@ -49,20 +69,19 @@ sub start {
 
 #Stops a PostgreSQL database
 sub stop {
-	my ($self, $entity, $pg_ctl,$pg_datadir) = @_;
-	$self->log->info("Parameters: entity: <$entity> pg_ctl: <$pg_ctl> pg_datadir: <$pg_datadir>");
-	my ($cmd, $rc, @output);
-
+	my $self = shift;
+	my ($cmd, $rc);
+    my $entity = 'dod_' . $self->instance;
 	#Check if server is running
-	$rc = $self->check_state($pg_ctl,$pg_datadir) ;
+	$rc = $self->is_running() ;
 	if ($rc == 0) {
 		$self->log->debug("No instance running. Nothing to do.");
 		return 1;
 	}
 	else {
-		#Put the instance down
+		# Stops instance
 		$cmd = "/etc/init.d/pgsql_$entity stop";
-		$rc = $runtime->run_str($cmd,\@output);
+		$rc = $runtime->run_cmd(cmd => $cmd);
 		if ($rc) {
 			$self->log->debug("PostgreSQL shutdown completed");
 			return 1; #ok
@@ -73,22 +92,18 @@ sub stop {
 	}
 }
 
-
-#It's up or down
-sub check_state {
-	my ($self, $pg_ctl, $pg_datadir) = @_;
-	$self->log->info("Parameters: pg_ctl: <$pg_ctl> pg_datadir: <$pg_datadir>");
-	my ($cmd, $rc, @output); 
-
-	#Check if server is running
-	$cmd = "$pg_ctl status -D $pg_datadir -s";
-	$rc = $runtime->run_str($cmd,\@output);
+sub is_running {
+	my ($self) = @_;
+	my ($cmd, $rc);
+	#Check if database server is running
+	$cmd = $self->pg_ctl() . ' status -D ' . $self->datadir() . ' -s';
+	$rc = $runtime->run_cmd(cmd => $cmd);
 	if ($rc == 0) {
-		$self->log->error("No instance running. Nothing to do.");
+		$self->log->info("Instance is not running");
 		return 0;
 	} else { 
-		$self->log->debug("Instance running.");
-		return 1; #ok
+		$self->log->info("Instance running.");
+		return 1;
 	}
 }  
 

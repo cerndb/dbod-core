@@ -35,32 +35,34 @@ BEGIN {
 
 
 my $job = DBOD::PG::start->new_with_options();
-my $pg = DBOD::PG->new;
 
 sub body {
+
+    # Initialize a new PG instance object with the entity details
+	my $pg = DBOD::PG->new(
+        instance => $self->entity,
+        metadata => $self->metadata,
+    );
+
 	$job->log->info('Executing posgresql start-up on '. $job->entity );
 	
-       my($rc,$entity);
-	$entity = 'dod_' . $job->entity;	
-	
-	#Check if instance is running
-	$rc=$pg->check_state($job->metadata->{'bindir'} . "/pg_ctl", $job->metadata->{'datadir'}) ;
+    my($rc,$entity);
 
-	if ($rc == 0) {
-		$job->log->debug("No instance running");
+	#Check if instance is running
+	if ($pg->is_running()) {
+        $job->log->debug("Instance is already up. Nothing to be done.");
+        $job->log->debug("pg_start is over.");
+        $job->_output(0);
+        return 0;
 	} else {
-		$job->log->debug("Instance is already up. Nothing to be done.");
-		$job->log->debug("pg_start is over.");
-		$job->_output(0);
-		return 0;
+        $job->log->debug("No instance running");
 	}
 
-	
 	#If instance is CRS
 	if ($job->metadata->{'crs_ref'}) {
 		$rc = DBOD::CRS::start_resource($entity, $job->config->{'pg'}->{'oracle_crs'});
 	} else {
-		$rc = $pg->start($entity, $job->metadata->{'bindir'} . "/pg_ctl",$job->metadata->{'datadir'} );
+		$rc = $pg->start();
 	}	
 	if ($rc) {
 		$job->log->debug("Instance is up");
