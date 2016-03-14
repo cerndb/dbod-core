@@ -18,6 +18,8 @@ use lib '/opt/netapp-manageability-sdk-5.3.1/lib/perl/NetApp';
 use Moose;
 with 'MooseX::Log::Log4perl';
 
+has 'config' => (is => 'rw', isa => 'HashRef');
+
 use Try::Tiny;
 use DBOD::Runtime;
 use Data::Dumper;
@@ -413,7 +415,7 @@ sub get_user_pass_from_mount_point {
 
     if ($mount_point =~ m{\/vol\/(.*)$}x) {
         $user_storage="root";
-        $password_nas=$runtime->retrieve_user_password("password_user_nastorag");
+        $password_nas = $self->config->{filers}->{password};
         if (defined $password_nas) {
             chomp $password_nas;
         } else {
@@ -442,7 +444,7 @@ sub get_user_pass_from_mount_point {
             $retrievepassword="password_user_${user_storage}_".$1;
             }
 
-        $password_nas=$runtime->retrieve_user_password("$retrievepassword");
+        $password_nas = $self->config->{filers}->{password};
         if (defined $password_nas) {
             chomp $password_nas;
         } else {

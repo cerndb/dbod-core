@@ -184,27 +184,6 @@ sub run_str {
     }
 }
 
-#@deprecated TODO: fetch password from confi file
-sub retrieve_user_password {
-    my ($self, $user) = @_;
-    my $password;
-    $self->log->info("Parameters user: <$user>");
-    my($basepathtosys)=`/etc/init.d/syscontrol sc_configuration_directory`;
-    chomp $basepathtosys;
-
-    if (-e "$basepathtosys/projects/systools/bin/get_passwd" ) {
-        $password=`$basepathtosys/projects/systools/bin/get_passwd $user`;
-        if (defined $password && length($password) > 0) {
-            $self->log->debug("Password found for <$user>");
-            return $password;
-        }
-    }
-
-    $self->log->debug("Password not found for <$user>");
-    return;
- 
-}
-
 # We maintain the method to keep compatibility with current calls
 sub get_instance_version {
     my($self, $version) = @_;
@@ -212,7 +191,6 @@ sub get_instance_version {
     $self->log->debug('Processed version' . $version);
     return $version;
 }
-
 
 sub read_file {
     my ($self, $file) = @_;
