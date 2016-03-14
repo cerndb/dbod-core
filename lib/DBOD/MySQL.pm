@@ -13,7 +13,7 @@ use warnings;
 our $VERSION = 0.68;
 
 use Moose;
-with 'MooseX::Log::Log4perl';
+extends 'DBOD::Instance';
 
 use IPC::Run qw(run timeout);
 use Net::OpenSSH;
@@ -45,6 +45,32 @@ sub BUILD {
             ' socket: ' . $self->socket);
 	return;
 };
+
+sub _connect_db {
+    my $self = shift;
+    if (defined $self->metadata->{'subcategory'}) {
+        # Set up db connector
+        my $db_type = lc $self->metadata->{'subcategory'};
+        my $db_user = $self->config->{$db_type}->{'db_user'};
+        my $db_password = $self->config->{$db_type}->{'db_password'};
+        my $dsn;
+        my $db_attrs;
+        $self->log->info('Creating DB connection with instance');
+        $dsn = "DBI:mysql:mysql_socket=" . $self->metadata->{'socket'};
+        $db_attrs = {
+            AutoCommit => 1,
+        };
+        $self->db(DBOD::DB->new(
+                db_dsn  => $dsn,
+                db_user => $db_user,
+                db_password => $db_password,
+                db_attrs => $db_attrs,));
+    }
+    else {
+        $self->log->info('Skipping DB connection with instance');
+    }
+    return;
+}
 
 #Parses mysql error file after a certain string
 sub parse_err_file {

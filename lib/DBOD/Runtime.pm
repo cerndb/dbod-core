@@ -104,7 +104,8 @@ sub result_code{
 }
 
 sub ssh {
-    my ($self, $arg_ref) = @_; 
+    # uncoverable subroutine
+    my ($self, $arg_ref) = @_;
     # Using named parameters, but unpacking for clarity and usability
     my $user = $arg_ref->{user};
     my $host = $arg_ref->{host};
@@ -131,7 +132,8 @@ sub ssh {
 }
 
 sub scp_get {
-    my ($self, $arg_ref) = @_; 
+    # uncoverable subroutine
+    my ($self, $arg_ref) = @_;
     # Using named parameters, but unpacking for clarity and usability
     my $user = $arg_ref->{user};
     my $host = $arg_ref->{host};
