@@ -25,7 +25,6 @@ lib/DBOD/MySQL.pm
 lib/DBOD/Network.pm
 lib/DBOD/PG.pm
 lib/DBOD/Runtime.pm
-lib/DBOD/Runtime_Zapi.pm
 lib/DBOD/Storage/NetApp/ZAPI.pm
 lib/DBOD/Templates.pm
 LICENSE
