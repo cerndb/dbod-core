@@ -41,7 +41,7 @@ BEGIN {
 }
 
 my $job = DBOD::MySQL::restore->new_with_options();
-my $runtime_zapi  = DBOD::Runtime_Zapi->new;
+my $runtime_zapi  = DBOD::Storage::NetApp::ZAPI->new;
 my $runtime = DBOD::Runtime->new;
 my $mysql = DBOD::MySQL->new;
 my $version_mysql_snap;

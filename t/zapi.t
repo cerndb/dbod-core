@@ -4,7 +4,11 @@ use warnings;
 use Test::More;
 use Data::Dumper;
 
-use_ok('DBOD::Runtime_Zapi');
+SKIP: {
+    require_ok 'DBOD::Storage::NetApp::ZAPI';
+}
+
+use DBOD::Storage::NetApp::ZAPI;
 
 done_testing();
 

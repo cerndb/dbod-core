@@ -35,7 +35,7 @@ BEGIN {
 
 
 my $job = DBOD::PG::snapclone->new_with_options();
-my $runtime_zapi  = DBOD::Runtime_Zapi->new;
+my $runtime_zapi  = DBOD::Storage::NetApp::ZAPI->new;
 my $runtime = DBOD::Runtime->new;
 
 

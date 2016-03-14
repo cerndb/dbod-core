@@ -2,7 +2,6 @@
 bin/cpanm
 COPYRIGHT
 dbod-core.spec
-debug.pm
 inc/Module/Install.pm
 inc/Module/Install/Base.pm
 inc/Module/Install/Can.pm
@@ -27,6 +26,7 @@ lib/DBOD/Network.pm
 lib/DBOD/PG.pm
 lib/DBOD/Runtime.pm
 lib/DBOD/Runtime_Zapi.pm
+lib/DBOD/Storage/NetApp/ZAPI.pm
 lib/DBOD/Templates.pm
 LICENSE
 Makefile.PL
