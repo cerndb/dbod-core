@@ -14,7 +14,6 @@ our $VERSION = 0.67;
 
 use lib '/opt/netapp-manageability-sdk-5.3.1/lib/perl/NetApp'; 
 
-
 use Moose;
 with 'MooseX::Log::Log4perl';
 
@@ -41,13 +40,12 @@ sub create_server {
 
     if (! defined $version) {
         $version="21"; # default C-mode
-#		$version="17"; # default C-mode 
     }
     my $server = NaServer->new($ipaddr, 1, $version);
     my $resp= $server->set_style("LOGIN");
     if (ref ($resp) eq "NaElement" && $resp->results_errno != 0) {
                 my $r = $resp->results_reason();
-              $self->log->error("RunTime_Zapi.CreateServer: setting LOGIN gives an error: $r");
+              $self->log->error("Setting LOGIN returns error: $r");
              return 0;
        } 
     $server->set_port(443);
@@ -56,20 +54,20 @@ sub create_server {
 
     if (ref ($resp) eq "NaElement" && $resp->results_errno != 0) {
              my $r = $resp->results_reason();
-              $self->log->error("RunTime_Zapi.CreateServer: setting username and password gives an error: $r");
+              $self->log->error("Setting username and password returns error: $r");
              return 0;
        }
     $resp = $server->set_transport_type("HTTPS");
     if (ref ($resp) eq "NaElement" && $resp->results_errno != 0) {
                 my $r = $resp->results_reason();
-              $self->log->error("RunTime_Zapi.CreateServer: unable to set HTTPS: $r");
+              $self->log->error("Unable to set HTTPS: $r");
                 return 0;
        }
     if (defined $vserver) {
         $resp=$server->set_vserver($vserver);
         if (ref ($resp) eq "NaElement" && $resp->results_errno != 0) {
             my $r = $resp->results_reason();
-            $self->log->error("RunTime_Zapi.CreateServer: setting vserver gives an error: $r");
+            $self->log->error("Setting vserver returns error: $r");
                   return 0;
         }
     }
@@ -139,7 +137,8 @@ sub get_volinfo_Cmode {
     $self->log->info("Parameters volname: <$volname>, aggrinfo: <$aggrinfo>");
     #build query
     my($nelem,$query,$volpath,$volpath_parent);
-    my($autosize, $autosizemax, $autoincrement, $total_size, $used_size,$aggregate,$isOnautosize,$name,$vservername,$volstate);
+    my($autosize, $autosizemax, $autoincrement, $total_size,
+        $used_size,$aggregate,$isOnautosize,$name,$vservername,$volstate);
     $autoincrement=0; #not enabled
     if (! defined $aggrinfo) {
         $aggrinfo=1; #get aggregate information
@@ -194,16 +193,14 @@ sub get_volinfo_Cmode {
         my @volList = $out->child_get("attributes-list")->children_get();
 
         foreach my $volInfo (@volList) {
-            #$volInfo = $volList[0]; # should be only one volume
 
             my $volIdAttrs = $volInfo->child_get("volume-id-attributes");
             if ($volIdAttrs) {
                 $name = $volIdAttrs->child_get_string("name");
-                    $aggregate = $volIdAttrs->child_get_string("containing-aggregate-name");
+                $aggregate = $volIdAttrs->child_get_string("containing-aggregate-name");
                 $vservername = $volIdAttrs->child_get_string("owning-vserver-name");
 
             }
-
 
             my $volSizeAttrs = $volInfo->child_get("volume-space-attributes");
             if ($volSizeAttrs) {
@@ -220,7 +217,7 @@ sub get_volinfo_Cmode {
                     $autoincrement = $volAutoSizeAttrs->child_get_string("increment-size"); # in bytes
                 } else {
                     $autosize =0;
-                    &LoggerActions::Log("RunTime.GetVolInfoCmode : no autosize enabled for vol: <$name>");
+                    $self->log->debug("RunTime.GetVolInfoCmode : no autosize enabled for vol: <$name>");
                 }
                 }
             my $volStateAttrs = $volInfo->child_get("volume-state-attributes");
@@ -228,10 +225,10 @@ sub get_volinfo_Cmode {
                 $volstate = $volStateAttrs->child_get_string("state");
             }
 
-
-
         }#foreach
-        $tag=undef; # we are just interested in the first iteration, there should be just one volume with that name, junction-path. There is a changed in behaviour in Ontap 8.2.2P1. This was not needed before.
+        $tag=undef;
+        # we are just interested in the first iteration, there should be just one volume with that name, junction-path.
+        #There is a changed in behaviour in Ontap 8.2.2P1. This was not needed before.
     }#while
 
     #Get attributes of the aggregate
@@ -264,7 +261,8 @@ sub get_volinfo_Cmode {
 
             my $out = $server->invoke_elem($nelem);
             if (ref ($out) eq "NaElement" && $out->results_status() eq "failed") {
-                $self->log->debug("Reason: " . $out->results_reason() . ", err number: " . $out->results_errno() . ", status: " . $out->results_status() );
+                $self->log->debug("Reason: " . $out->results_reason() . ", err number: " .
+                        $out->results_errno() . ", status: " . $out->results_status() );
                 return();
             }
             if (ref ($out) eq "NaElement" && $out->child_get_int("num-records") == 0) {
