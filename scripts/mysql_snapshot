@@ -60,7 +60,7 @@ sub body {
 	$mntpoint = join '/',@arrpath[0..$index];
 	
 	my($server_zapi,$volume_name);
-	my($arref)= $runtime_zapi->GetServerAndVolname($mntpoint);
+	my($arref)= $runtime_zapi->get_server_and_volname($mntpoint);
 
 	if (defined($$arref[0])) {
 		$server_zapi=$$arref[0];
@@ -143,7 +143,7 @@ sub body {
 	} 
 
 	#Ensure we can take an snapshot
-	$rc=$runtime_zapi->SnapPrepare($server_zapi,$volume_name,2); # last number indicate the maximum allowed. It can be configured 
+	$rc=$runtime_zapi->snap_prepare($server_zapi,$volume_name,2); # last number indicate the maximum allowed. It can be configured
 	if ($rc == 0 ) {
 		$job->log->debug("Error preparing <$volume_name> for snapshot !");
 	}  else {
@@ -185,7 +185,7 @@ sub body {
 	$snapname = "snapscript_" . $timetag . "_" . $logsequence . "_" . $actual_version;	
 	@output=();  
 
-	$rc=$runtime_zapi->SnapCreate($server_zapi,$volume_name,$snapname); 
+	$rc=$runtime_zapi->snap_create($server_zapi,$volume_name,$snapname);
 	my($errorflag)=0;
 	if ($rc == 0 ) {
 		$errorflag=1;

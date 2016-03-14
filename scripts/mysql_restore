@@ -110,7 +110,7 @@ sub body {
 	
 	#Get information about the volume to work with. Following handles both 7-mode and C-mode use case
 	my($server_zapi,$volume_name);
-	my($arref)= $runtime_zapi->GetServerAndVolname($mntpoint);
+	my($arref)= $runtime_zapi->get_server_and_volname($mntpoint);
 
 	if (defined($$arref[0])) {
 		$server_zapi=$$arref[0];
@@ -194,7 +194,7 @@ sub body {
 
 	#snapshot restore
 	
-	$rc=$runtime_zapi->SnapRestore($server_zapi,$volume_name,$job->snapshot); 
+	$rc=$runtime_zapi->snap_restore($server_zapi,$volume_name,$job->snapshot);
 	my($errorflag)=0;
 	if ($rc == 0 ) {
 		$job->log->error("Error restoring snapshot: <" .$job->snapshot . "> on volume: <$volume_name> !");

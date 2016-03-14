@@ -56,7 +56,7 @@ sub body {
 	$pg_datadir_nosuffix =~ s/\/data\/?$//g;  
 	
 	my($server_zapi,$volume_name);
-	my($arref)= $runtime_zapi->GetServerAndVolname($pg_datadir_nosuffix);
+	my($arref)= $runtime_zapi->get_server_and_volname($pg_datadir_nosuffix);
 
 	if (defined($$arref[0])) {
 		$server_zapi=$$arref[0];
@@ -88,7 +88,7 @@ sub body {
 	my($snapname) = "snapscript_" . $timetag . "_" . $version;
 	
 	#Ensure that you can create an snapshot
-	$rc=$runtime_zapi->SnapPrepare($server_zapi,$volume_name,254); # last number indicate the maximum allowed. It can be configured 
+	$rc=$runtime_zapi->snap_prepare($server_zapi,$volume_name,254); # last number indicate the maximum allowed. It can be configured
 	if ($rc == 0 ) {
 		$job->log->debug("Error preparing <$volume_name> for snapshot !");
 	}  else {
@@ -111,7 +111,7 @@ sub body {
 	}
 	
 	#create snapshot
-	$rc=$runtime_zapi->SnapCreate($server_zapi,$volume_name,$snapname); 
+	$rc=$runtime_zapi->snap_create($server_zapi,$volume_name,$snapname);
 	my($errorflag)=0;
 	if ($rc == 0 ) {
 		$errorflag=1;

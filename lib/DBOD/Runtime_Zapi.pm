@@ -33,7 +33,7 @@ sub _host_ip {
 
 my $runtime = DBOD::Runtime->new;
 
-sub CreateServer {
+sub create_server {
     my ($self, $ipaddr, ,$username, $password, $vserver, $version) = @_;
     $self->log->info("Parameters ipaddr: <$ipaddr> username: $username password: not displayed");
     $self->log->info("Parameters vserver: <$vserver>") if defined $vserver;
@@ -77,7 +77,7 @@ sub CreateServer {
 
 }    
 
-sub IsCmodeMount() {
+sub is_Cmode_mount() {
     my($self,$mountpoint)=@_;
     $self->log->info("Parameters mountpoint: <$mountpoint>");
        my($iscmode)=0;
@@ -95,7 +95,7 @@ sub IsCmodeMount() {
 } 
 
 #Get Mount points following a regex C-mode, hash: controler -> (mountpoint1, mountpoint2,...) 
-sub GetMountPointNASRegex {
+sub get_mount_point_NAS_regex {
     my($self,$regex,$exclusion_list)=@_;
     $self->log->info("Parameters regex: <$regex>");
     $self->log->info("Parameters: exclusion_list: <$exclusion_list>") if defined $exclusion_list;
@@ -134,7 +134,7 @@ sub GetMountPointNASRegex {
 }
 
 # server object, array of mount points to look for. $aggrinfo if set it will also retrieve aggregate values
-sub GetVolInfoCmode { 
+sub get_volinfo_Cmode {
     my($self, $server,$volname,$aggrinfo)=@_;
     $self->log->info("Parameters volname: <$volname>, aggrinfo: <$aggrinfo>");
     #build query
@@ -308,11 +308,11 @@ sub GetVolInfoCmode {
 
 
 #it returns an array of vserver + volname. It's used for snapshots operations. If there is a problem an undef will be return.
-sub GetServerAndVolname {
+sub get_server_and_volname {
     my($self, $mntpoint)=@_;
     $self->log->info("Parameters mntpoint: <$mntpoint>");
 
-    my $nasmounts = $self->GetMountPointNASRegex("^(.*?dbnas[\\w-]+):(.*?)\\s+($mntpoint)\\s+nfs");
+    my $nasmounts = $self->get_mount_point_NAS_regex("^(.*?dbnas[\\w-]+):(.*?)\\s+($mntpoint)\\s+nfs");
     if (! scalar keys %$nasmounts) { #we should get 1 entry
         $self->log->debug("No mount points return. This makes no sense. We cant proceed.");
         return [undef,undef];
@@ -330,12 +330,12 @@ sub GetServerAndVolname {
             }
 
             my $ipcluster = _host_ip($controller);
-            $server_zapi = $self->CreateServerFromMountPoint($controller, $$mountpoint[0],0); # I connect to the data lif not the cluster-mgmt
+            $server_zapi = $self->create_server_from_mount_point($controller, $$mountpoint[0],0); # I connect to the data lif not the cluster-mgmt
             if ($server_zapi == 0) {
                 $self->log->debug("Server Zapi was not created.");
                 return [undef,undef];
             }
-            if ( $self->IsCmodeMount( $$mountpoint[0]) == 0) {
+            if ( $self->is_Cmode_mount( $$mountpoint[0]) == 0) {
                 $volume_name=$self->GetVolumeName7modeFromMount($$mountpoint[0]);
                 $iscmode=0;
                 chomp $volume_name;
@@ -352,7 +352,7 @@ sub GetServerAndVolname {
     }
 
     if ($iscmode) {
-        $rc = $self->GetVolInfoCmode($server_zapi,$volume_name,0);  # last parameter is 0 as we cant get access to aggregate information
+        $rc = $self->get_volinfo_Cmode($server_zapi,$volume_name,0);  # last parameter is 0 as we cant get access to aggregate information
         if ($rc==0) {
             $self->log->debug("Error retrieving info.!");
             return [undef,undef];
@@ -369,10 +369,10 @@ sub GetServerAndVolname {
     return [$server_zapi ,$volume_name];
 }
 
-sub CreateServerFromMountPoint { 
+sub create_server_from_mount_point {
     my($self, $controller,$mount_point,$admin) = @_;
     $self->log->info("Parameters controller: <$controller>, mount_point: <$mount_point>, admin: <$admin>");
-    my $arref = $self->GetUserPassFromMountPoint($controller,$mount_point,$admin);
+    my $arref = $self->get_user_pass_from_mount_point($controller,$mount_point,$admin);
     my($controller_mgmt,$ipcluster,$user_storage,$password_nas,$server_version,$server);
 
     if (defined $arref) {
@@ -385,12 +385,12 @@ sub CreateServerFromMountPoint {
         return; #not ok
     }
 
-    $server = $self->CreateServer($ipcluster,$user_storage,$password_nas,undef,$server_version);
+    $server = $self->create_server($ipcluster,$user_storage,$password_nas,undef,$server_version);
     return $server;
 }
 
 #it returns an array with [user, password, server_version, ipcluster] credentials
-sub GetUserPassFromMountPoint {
+sub get_user_pass_from_mount_point {
     my($self, $controller, $mount_point, $admin) = @_;
     $self->log->info("Parameters controller: <$controller>, mount_point: <$mount_point>, admin: <$admin>");
 
@@ -461,7 +461,7 @@ sub GetUserPassFromMountPoint {
     return [$user_storage, $password_nas, $server_version, $ipcluster];
 } 
 
-sub SnapClone {
+sub snap_clone {
     my($self,$server_zapi,$volume_name,$snapshot,$junction)=@_;
     $self->log->info("Parameters server_zapi: not displayed, volume_name: <$volume_name>");
     $self->log->info("Parameters snapshot: <$snapshot>") if defined $snapshot;
@@ -495,7 +495,7 @@ sub SnapClone {
     $api->child_add_string('volume',$newvol);
 
     my $output = $server_zapi->invoke_elem($api);
-    if (defined ($self->CheckErrInAPIInvoke($output))) {
+    if (defined ($self->check_error_in_API_invoke($output))) {
                 my $r = $output->results_reason();
                 $self->log->error("volume-clone-create failed: $r");
                 return; #error
@@ -505,7 +505,7 @@ sub SnapClone {
         }
 }
 
-sub SnapCreate {
+sub snap_create {
     my($self,$server_zapi,$volume_name,$create)=@_;
     $self->log->info("Parameters server_zapi: not displayed, volume_name: <$volume_name>, create: <$create>");
 
@@ -513,7 +513,7 @@ sub SnapCreate {
             "volume", $volume_name,
             "snapshot", $create);
 
-    if (defined ($self->CheckErrInAPIInvoke($output))) {
+    if (defined ($self->check_error_in_API_invoke($output))) {
         my $r = $output->results_reason();
         $self->log->debug("snapshot-create failed: $r");
         return 0; #error
@@ -523,7 +523,7 @@ sub SnapCreate {
     }
 }
 
-sub SnapRestore {
+sub snap_restore {
     my($self,$server_zapi,$volume_name,$restore)=@_;
     $self->log->info("Parameters server_zapi: not displayed, volume_name: <$volume_name>, restore: <$restore>");
 
@@ -531,7 +531,7 @@ sub SnapRestore {
             "volume", $volume_name,
             "snapshot", $restore);
 
-    if (defined ($self->CheckErrInAPIInvoke($output))) {
+    if (defined ($self->check_error_in_API_invoke($output))) {
         my $r = $output->results_reason();
         $self->log->debug("snapshot-restore-volume failed: $r");
         return 0; #error
@@ -542,13 +542,13 @@ sub SnapRestore {
 }
 
 
-sub SnapList {  
+sub snap_list {
     my($self,$server_zapi,$volume_name)=@_;
     $self->log->info("Parameters server_zapi: not displayed, volume_name: <$volume_name>");
 
     my $output = $server_zapi->invoke("snapshot-list-info", "volume", $volume_name);
     my @arr_snaps=();
-    if (defined ($self->CheckErrInAPIInvoke($output))) {
+    if (defined ($self->check_error_in_API_invoke($output))) {
         $self->log->debug("Error retrieving list info.!");
         return @arr_snaps;
     }
@@ -581,13 +581,13 @@ sub SnapList {
     return @arr_snaps;
 }
 
-sub SnapPrepare { 
+sub snap_prepare {
     my($self,$server_zapi,$volume_name,$num)=@_;
     $self->log->info("Parameters server_zapi: not displayed, volume_name: <$volume_name>, num: <$num>");
 
     my ($rc);
     $self->log->debug("Getting snapshots for <$volume_name>");
-    my(@arr_snaps) = $self->SnapList($server_zapi,$volume_name);
+    my(@arr_snaps) = $self->snap_list($server_zapi,$volume_name);
     if (@arr_snaps == 0) {
         $self->log->debug("Error retrieving number of snapshots for <$volume_name> or no snapshots at ll.!");
         return 1; #ok
@@ -601,7 +601,7 @@ sub SnapPrepare {
             my($snapinfoscalar)= shift @arr_snaps; #get the first one. it's the oldest
             my(@snapinfo) = @$snapinfoscalar;
             $self->log->debug("Trying to delete: < $snapinfo[0] > on volume: <$volume_name>.!");
-            $rc=$self->SnapDelete($server_zapi,$volume_name ,$snapinfo[0]);
+            $rc=$self->snap_delete($server_zapi,$volume_name ,$snapinfo[0]);
             if ($rc == 0 ) {
                 $self->log->debug("Error deleting snapshot: <" . $snapinfo[0] . "> on volume: <$volume_name>.!");
                 return 0; #not ok
@@ -613,7 +613,7 @@ sub SnapPrepare {
     return 1; #ok
 }
 
-sub SnapDelete {
+sub snap_delete {
     my($self,$server_zapi,$volume_name,$delete)=@_;
     $self->log->info("Parameters server_zapi: not displayed, volume_name: <$volume_name>, delete: <$delete>");
 
@@ -621,7 +621,7 @@ sub SnapDelete {
             "volume", $volume_name,
             "snapshot", $delete);
 
-    if (defined ($self->CheckErrInAPIInvoke($output))) {
+    if (defined ($self->check_error_in_API_invoke($output))) {
         my $r = $output->results_reason();
         $self->log->error("snapshot-delete failed: $r");
         return 0; #error
@@ -632,7 +632,7 @@ sub SnapDelete {
     }
 }
  
-sub CheckErrInAPIInvoke(){
+sub check_error_in_API_invoke(){
         my ($self,$o)=@_;
     $self->log->info("Parameters o: not displayed");
  

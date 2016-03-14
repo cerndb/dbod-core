@@ -62,7 +62,7 @@ sub body {
 
 		
 	my($server_zapi,$volume_name);
-	my($arref)= $runtime_zapi->GetServerAndVolname($pg_datadir_nosuffix);
+	my($arref)= $runtime_zapi->get_server_and_volname($pg_datadir_nosuffix);
 
 	if (defined($$arref[0])) {
 		$server_zapi=$$arref[0];
@@ -84,7 +84,7 @@ sub body {
 	chomp $tag;
 	my $junction = $pg_datadir_nosuffix . "_" . $job->snapshot . "_" . $tag;
 		
-	$rc=$runtime_zapi->SnapClone($server_zapi,$volume_name,$job->snapshot,$junction); 
+	$rc=$runtime_zapi->snap_clone($server_zapi,$volume_name,$job->snapshot,$junction);
 	if (!defined $rc) {
 		$job->log->error("Error creating clone: <" . $job->snapshot . "> on volume: <$volume_name> !");
      		$job->_output(1);	
@@ -100,7 +100,7 @@ sub body {
 		$mntpoint_cmd = $pg_datadir_nosuffix; # copy the mount point for data.
 		$mntpoint_cmd =~ s/dbs03/$_/g;
 		$job->log->debug("Getting information from <$mntpoint_cmd>");
-		$rc=$runtime_zapi->GetVolInfoCmode($server_zapi,$mntpoint_cmd,0);
+		$rc=$runtime_zapi->get_volinfo_Cmode($server_zapi,$mntpoint_cmd,0);
 		if (!%$rc) {
 			$job->log->error("no information could be retrieved from <$mntpoint_cmd>");
      			$job->_output(1);	
@@ -115,7 +115,7 @@ sub body {
 		$junction_cmd  =~ s/dbs03/$_/g;
 		$job->log->debug("New junction path is <$junction_cmd>");
 
-		$rc=$runtime_zapi->SnapClone($server_zapi,$volume_name,undef,$junction_cmd); 
+		$rc=$runtime_zapi->snap_clone($server_zapi,$volume_name,undef,$junction_cmd);
 		if (!defined $rc) {
 			$job->log->debug("Error creating clone on volume: <$volume_name> !");
      			$job->_output(1);	
