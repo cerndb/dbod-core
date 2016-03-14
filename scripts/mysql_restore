@@ -43,7 +43,6 @@ BEGIN {
 my $job = DBOD::MySQL::restore->new_with_options();
 my $runtime_zapi  = DBOD::Storage::NetApp::ZAPI->new;
 my $runtime = DBOD::Runtime->new;
-my $mysql = DBOD::MySQL->new;
 my $version_mysql_snap;
 
 sub read_directory {
@@ -64,6 +63,11 @@ sub read_directory {
 }
 
 sub body {
+
+	my $mysql = DBOD::MySQL->new(
+		instance => $self->entity,
+		metadata => $self->metadata,
+	);
 	$job->log->debug('Executing restore  on '. $job->entity . ' with snapshot ' . $job->snapshot);
 	if (defined $job->pitr) {
 		$job->log->debug('Pitr is ' . $job->pitr);
@@ -144,7 +148,7 @@ sub body {
 			$rc = DBOD::CRS::stop_resource($entity, $job->config->{'mysql'}->{'oracle_crs'});
 		}
 		else {
-			$rc = $mysql->stop($job->metadata->{'bindir'} . "/mysqladmin", $job->config->{'mysql'}->{'db_user'}, $job->config->{'mysql'}->{'db_password'}, $job->metadata->{'socket'});
+			$rc = $mysql->stop();
 		}
 		if ($rc) {
 			$job->log->debug("Instance is down");
@@ -253,10 +257,10 @@ sub body {
 	} 
 	
 	# restart the instance
-	$rc = $mysql->stop($job->metadata->{'bindir'} . "/mysqladmin", $job->config->{'mysql'}->{'db_user'}, $job->config->{'mysql'}->{'db_password'}, $job->metadata->{'socket'});
+	$rc = $mysql->stop();
 	if ($rc) {
 		$job->log->debug("Instance is down");
-		$instance_down=1;
+		$instance_down = 1;
 	} else	{
 		$job->log->error("Problem shutting down instance. Please check.");
 		$job->_output(1);
@@ -266,7 +270,7 @@ sub body {
 	if ($job->metadata->{'crs_ref'}) {
 		$rc = DBOD::CRS::start_resource($entity, $job->config->{'mysql'}->{'oracle_crs'});
 	} else {
-		$rc = $mysql->start($entity, $job->metadata->{'bindir'} . "/mysqladmin", $job->config->{'mysql'}->{'db_user'}, $job->config->{'mysql'}->{'db_password'}, $job->metadata->{'socket'},$job->metadata->{'datadir'} , 0);
+		$rc = $mysql->start();
 	}	
 	if ($rc) {
 		$job->log->debug("Instance is up");

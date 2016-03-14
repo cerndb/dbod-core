@@ -34,9 +34,13 @@ BEGIN {
 }
 
 my $job = DBOD::MySQL::stop->new_with_options;
-my $mysql = DBOD::MySQL->new;
 
 sub body {
+
+	my $mysql = DBOD::MySQL->new(
+		instance => $self->entity,
+		metadata => $self->metadata,
+	);
 
 	$job->log->info('Executing mysql_stop on '. $job->entity );
 	
@@ -44,7 +48,7 @@ sub body {
 	$entity = 'dod_' . $job->entity;	
 	
 	#Check if instance is running
-	$rc=$mysql->check_state($job->metadata->{'datadir'});
+	$rc=$mysql->is_running();
 	if ($rc == 0) {
 		$job->log->debug("Instance " . $job->entity . " not running");
 		$job->log->debug("mysql_stop is over.");
@@ -60,7 +64,7 @@ sub body {
 		$rc = DBOD::CRS::stop_resource($entity, $job->config->{'mysql'}->{'oracle_crs'});
 	}
 	else {
-		$rc = $mysql->stop($job->metadata->{'bindir'} . "/mysqladmin", $job->config->{'mysql'}->{'db_user'}, $job->config->{'mysql'}->{'db_password'}, $job->metadata->{'socket'});
+		$rc = $mysql->stop();
 	}
 	if ($rc) {
 		$job->log->debug("Instance is down");

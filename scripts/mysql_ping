@@ -34,16 +34,21 @@ BEGIN {
 
 my $job = DBOD::MySQL::ping->new_with_options();
 my $runtime = DBOD::Runtime->new;
-my $mysql = DBOD::MySQL->new;
 
 sub body {
+
+	my $mysql = DBOD::MySQL->new(
+		instance => $self->entity,
+		metadata => $self->metadata,
+	);
+
 	$job->log->info('Executing posgresql start-up on '. $job->entity );
 	
 	my ($rc, $entity);
 	$entity = 'dod_' . $job->entity;	
 	
 	#Check if instance is running
-	$rc=$mysql->check_state($job->metadata->{'datadir'}) ;
+	$rc = $mysql->is_running() ;
 
 	if ($rc == 0) {
 		$job->log->debug("No instance running");
