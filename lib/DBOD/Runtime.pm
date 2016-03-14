@@ -31,7 +31,8 @@ sub run_cmd {
     # Using named parameters, but unpacking for clarity and usability
     my $cmd_str = $args{cmd};
     my $timeout = $args{timeout};
-    my $output_ref = $args{output};
+    my $devnull = '/dev/null';
+    my $output_ref = ( defined ($args{output}) ? $args{output}: \$devnull );
     my @cmd = split ' ', $cmd_str ;
     my ($err, $return_code);
     try {
