@@ -18,6 +18,7 @@ requires    'Log::Dispatch::Syslog' => 0;
 requires    'YAML::Syck' => 0;
 requires    'File::ShareDir' => 0;
 requires    'Moose' => 0;
+requires    'MooseX::ABC' => 0;
 requires    'MooseX::Log::Log4perl' => 0;
 requires    'MooseX::Getopt' => 0;
 requires    'MooseX::Role::DBIx::Connector' => 0;

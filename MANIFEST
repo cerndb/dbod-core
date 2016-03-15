@@ -19,6 +19,7 @@ lib/DBOD/Config.pm
 lib/DBOD/CRS.pm
 lib/DBOD/DB.pm
 lib/DBOD/IPalias.pm
+lib/DBOD/Instance.pm
 lib/DBOD/Job.pm
 lib/DBOD/Ldap.pm
 lib/DBOD/MySQL.pm
