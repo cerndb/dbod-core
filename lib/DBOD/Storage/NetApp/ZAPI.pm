@@ -324,7 +324,6 @@ sub get_server_and_volname {
                 return [undef,undef];
             }
 
-            my $ipcluster = _host_ip($controller);
             $server_zapi = $self->create_server_from_mount_point($controller, $$mountpoint[0],0); # I connect to the data lif not the cluster-mgmt
             if ($server_zapi == 0) {
                 $self->log->debug("Server Zapi was not created.");
