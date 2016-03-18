@@ -114,11 +114,17 @@ subtest 'snap_restore' => sub {
 
 subtest 'snap_prepare_snap_list' => sub {
         # This calls exercise also the snap_list method
+        $na_server_object->mock(invoke => sub {return $na_element_object;});
         $na_element_object->mock( results_errno => sub {return 0;});
+        my $snaplist = Test::MockObject->new();
+        my $snapshot = Test::MockObject->new();
+        $na_element_object->mock( child_get => sub {return $snaplist;});
+        $snaplist->mock(children_get => sub {return ($snapshot);});
+        $snapshot->mock(child_get_int => sub {return 1;});
+        $snapshot->mock(child_get_string => sub {return "TEST";});
         ok($zapi->snap_prepare($na_server_object, 'Volume', 2), 'snap_prepare OK');
         $na_element_object->mock( results_errno => sub {return 1;});
         ok(!$zapi->snap_delete($na_server_object, 'Volume', 'delete'), 'snap_prepare FAIL');
     };
 
 done_testing();
-
