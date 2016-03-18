@@ -125,18 +125,19 @@ subtest 'snap_prepare_snap_list' => sub {
     };
 
 subtest 'snap_clone' => sub {
-        $na_element->mock( results_errno => sub {return 0;});
-        #ok($zapi->snap_clone($na_server, 'Volume', 'snapshot', 'junction'), 'snap_clone OK');
+        $na_server->mock(invoke_elem => sub {return $na_element;});
+        $na_element->mock( 'child_add_string' );
+        ok($zapi->snap_clone($na_server, 'Volume', 'snapshot', 'junction'), 'snap_clone OK');
         $na_element->mock( results_errno => sub {return 1;});
-        #ok(!$zapi->snap_clone($na_server, 'Volume', 'snapshot', 'junction'), 'snap_clone FAIL');
+        ok(!$zapi->snap_clone($na_server, 'Volume', 'snapshot', 'junction'), 'snap_clone FAIL');
     };
 
-
-subtest 'get_auth_details' => sub {
-        my $arr = $zapi->get_auth_details('localhost', 'mount_point');
-        diag Dumper $arr;
-        isa_ok($arr, 'ARRAY', 'get_auth_details');
+subtest 'create_server_from_mount_point' => sub {
+        $na_element->mock( results_errno => sub {return 0;});
+        ok($zapi->create_server_from_mount_point('localhost', 'mount_point'),
+            'create_server_from_mount_point OK');
     };
+
 
 
 done_testing();
