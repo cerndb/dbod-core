@@ -610,8 +610,8 @@ sub snap_prepare {
 }
 
 sub snap_delete {
-    my($self,$server_zapi,$volume_name,$delete)=@_;
-    $self->log->info("Parameters server_zapi: not displayed, volume_name: <$volume_name>, delete: <$delete>");
+    my ($self, $server_zapi, $volume_name, $delete) = @_;
+    $self->log->info("Deleting volume_name: <$volume_name>, delete: <$delete>");
 
     my $output = $server_zapi->invoke("snapshot-delete",
             "volume", $volume_name,
