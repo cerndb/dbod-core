@@ -10,7 +10,7 @@ package DBOD::Storage::NetApp::ZAPI;
 use strict;
 use warnings;
 
-our $VERSION = 0.67;
+our $VERSION = 0.68;
 
 # uncoverable statement
 use lib '/opt/netapp-manageability-sdk-5.3.1/lib/perl/NetApp'; 
@@ -47,32 +47,31 @@ sub create_server {
     }
     my $server = NaServer->new($ipaddr, 1, $version);
     my $resp= $server->set_style("LOGIN");
-    if (ref ($resp) eq "NaElement" && $resp->results_errno != 0) {
-                my $r = $resp->results_reason();
-              $self->log->error("Setting LOGIN returns error: $r");
-             return 0;
+    if ($resp->isa("NaElement") && $resp->results_errno != 0) {
+        my $r = $resp->results_reason();
+        $self->log->error("Setting LOGIN returns error: $r");
+        return 0;
        } 
     $server->set_port(443);
     $resp= $server->set_admin_user($username, $password);
 
-
-    if (ref ($resp) eq "NaElement" && $resp->results_errno != 0) {
-             my $r = $resp->results_reason();
-              $self->log->error("Setting username and password returns error: $r");
-             return 0;
-       }
+    if ($resp->isa("NaElement") && $resp->results_errno != 0) {
+         my $r = $resp->results_reason();
+         $self->log->error("Setting username and password returns error: $r");
+        return 0;
+    }
     $resp = $server->set_transport_type("HTTPS");
-    if (ref ($resp) eq "NaElement" && $resp->results_errno != 0) {
-                my $r = $resp->results_reason();
-              $self->log->error("Unable to set HTTPS: $r");
-                return 0;
-       }
+    if ($resp->isa("NaElement") && $resp->results_errno != 0) {
+        my $r = $resp->results_reason();
+        $self->log->error("Unable to set HTTPS: $r");
+        return 0;
+    }
     if (defined $vserver) {
-        $resp=$server->set_vserver($vserver);
-        if (ref ($resp) eq "NaElement" && $resp->results_errno != 0) {
+        $resp = $server->set_vserver($vserver);
+        if ($resp->isa("NaElement") && $resp->results_errno != 0) {
             my $r = $resp->results_reason();
             $self->log->error("Setting vserver returns error: $r");
-                  return 0;
+            return 0;
         }
     }
     return $server;
@@ -80,46 +79,42 @@ sub create_server {
 }    
 
 sub is_Cmode_mount() {
-    my($self,$mountpoint)=@_;
-    $self->log->info("Parameters mountpoint: <$mountpoint>");
-       my($iscmode)=0;
-
-    $self->log->debug("Begin <$mountpoint>");
-
+    my ($self, $mountpoint) = @_;
+    $self->log->info("Checking mountpoint: <$mountpoint>");
+    my($iscmode)=0;
     if ($mountpoint =~ m{\/vol\/(.*)$}x) {
-        $iscmode=0;
+        $iscmode = 0;
         $self->log->debug("We are working with a 7-mode volume <$mountpoint>");
     } else {
         $self->log->debug("We are working with a C-mode volume <$mountpoint>");
-        $iscmode=1;
+        $iscmode = 1;
     }
     return $iscmode;
 } 
 
-#Get Mount points following a regex C-mode, hash: controler -> (mountpoint1, mountpoint2,...) 
+
+#Get Mount points following a regex C-mode, hash: controler -> (mountpoint2, mountpoint2,...) 
 sub get_mount_point_NAS_regex {
-    my($self,$regex,$exclusion_list)=@_;
+    my ($self, $regex, $exclusion_list)=@_;
     $self->log->info("Parameters regex: <$regex>");
     $self->log->info("Parameters: exclusion_list: <$exclusion_list>") if defined $exclusion_list;
-
-    my(@output,%pairsfsnas,$rc);
-
-    $rc=$runtime->run_str("cat /etc/mtab",\@output,0);
+    my ($output, %pairsfsnas, $rc);
+    $rc = $runtime->run_str("cat /etc/mtab", \$output);
+    my @lines = split /\n/, $output;
     if ($rc) {
-        foreach (@output) {
-            my($line);
-            $line=$_;
+        foreach my $line (@lines) {
             chomp $line;
             if ($line =~ m{$regex}x ) {
                 $self->log->debug("match in line <$line> ");
-                my($nas,$mountpath,$filesystemmount);
-                $nas=$1;
-                $mountpath=$2;
-                $filesystemmount=$3;
+                my ($nas, $mountpath, $filesystemmount);
+                $nas = $1;
+                $mountpath = $2;
+                $filesystemmount = $3;
                 $self->log->debug("Got controller <$nas> mountpath controller: <$mountpath> file system: <$filesystemmount>");
 
-                if (defined $exclusion_list && scalar(@$exclusion_list) > 0 && FindInArray($filesystemmount,$exclusion_list)) {
-                    $self->log->debug("Controller <$nas> mountpath controller: <$mountpath> file system: <$filesystemmount> in exclusion list");
+                if (defined $exclusion_list && scalar(@$exclusion_list) > 0 
+                    && FindInArray($filesystemmount,$exclusion_list)) {
+                        $self->log->debug("Controller <$nas> mountpath controller: <$mountpath> file system: <$filesystemmount> in exclusion list");
                     next;
                 }
                 if (exists $pairsfsnas{$1}) {
@@ -127,7 +122,6 @@ sub get_mount_point_NAS_regex {
                 } else {
                     $pairsfsnas{$1} = [ $2 ];
                 }
-
             }
         }
     }
