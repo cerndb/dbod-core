@@ -630,14 +630,13 @@ sub snap_delete {
  
 sub check_API_call(){
     my ($self, $api_call)=@_;
-    my $err;
-    if ($api_call->results_errno !=0){
-            $err = 1; #err is defined if there is an error
+    if ($api_call->results_errno != 0){
             my $reason = $api_call->results_reason();
-            my $errno=$api_call->results_errno();
-            $self->log->debug("NetAPP API error #($errno), msg:$reason");
+            my $errno = $api_call->results_errno();
+            $self->log->debug("NetAPP API error #($errno), msg: $reason");
+            return $errno;
     }
-    return $err;
+    return;
 }
 
 1;
