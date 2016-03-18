@@ -15,7 +15,6 @@ our $VERSION = 0.68;
 use Moose;
 extends 'DBOD::Instance';
 
-use Data::Dumper;
 use DBOD::Runtime;
 
 my $runtime = DBOD::Runtime->new;
