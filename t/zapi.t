@@ -98,6 +98,27 @@ subtest 'snap_delete' => sub {
         ok(!$zapi->snap_delete($na_server_object, 'Volume', 'delete'), 'snap_delete FAIL');
     };
 
-    
+subtest 'snap_create' => sub {
+        $na_element_object->mock( results_errno => sub {return 0;});
+        ok($zapi->snap_create($na_server_object, 'Volume', 'create'), 'snap_create OK');
+        $na_element_object->mock( results_errno => sub {return 1;});
+        ok(!$zapi->snap_create($na_server_object, 'Volume', 'create'), 'snap_create FAIL');
+    };
+
+subtest 'snap_restore' => sub {
+        $na_element_object->mock( results_errno => sub {return 0;});
+        ok($zapi->snap_restore($na_server_object, 'Volume', 'restore'), 'snap_restore OK');
+        $na_element_object->mock( results_errno => sub {return 1;});
+        ok(!$zapi->snap_restore($na_server_object, 'Volume', 'restore'), 'snap_restore FAIL');
+    };
+
+subtest 'snap_prepare_snap_list' => sub {
+        # This calls exercise also the snap_list method
+        $na_element_object->mock( results_errno => sub {return 0;});
+        ok($zapi->snap_prepare($na_server_object, 'Volume', 2), 'snap_prepare OK');
+        $na_element_object->mock( results_errno => sub {return 1;});
+        ok(!$zapi->snap_delete($na_server_object, 'Volume', 'delete'), 'snap_prepare FAIL');
+    };
+
 done_testing();
 
