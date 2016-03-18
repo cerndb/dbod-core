@@ -14,40 +14,37 @@ use Test::MockObject;
 use Test::MockModule;
 
 # ZAPI Mocking objects
-my $na_server_object= Test::MockObject->new();
-my $na_element_object = Test::MockObject->new();
-$na_element_object->set_isa('NaElement');
+my $na_server= Test::MockObject->new();
+my $na_element = Test::MockObject->new();
+$na_element->set_isa('NaElement');
 
-$na_server_object->mock(set_style => sub {return $na_element_object;});
-$na_server_object->mock(set_port => sub {return $na_element_object;});
-$na_server_object->mock(set_transport_type => sub {return $na_element_object;});
-$na_server_object->mock(set_vserver => sub {return $na_element_object;});
-$na_server_object->mock(set_admin_user => sub {return $na_element_object;});
-$na_server_object->mock(invoke => sub {return $na_element_object;});
+$na_server->mock(set_style => sub {return $na_element;});
+$na_server->mock(set_port => sub {return $na_element;});
+$na_server->mock(set_transport_type => sub {return $na_element;});
+$na_server->mock(set_vserver => sub {return $na_element;});
+$na_server->mock(set_admin_user => sub {return $na_element;});
+$na_server->mock(invoke => sub {return $na_element;});
 
 
-my $na_server = Test::MockModule->new('NaServer');
-$na_server->mock( new => $na_server_object );
+my $na_server_mod = Test::MockModule->new('NaServer');
+$na_server_mod->mock( new => $na_server );
 
-my $na_element = Test::MockModule->new('NaElement');
-$na_element->mock( new => $na_element_object );
+my $na_element_mod = Test::MockModule->new('NaElement');
+$na_element_mod->mock( new => $na_element );
 
 # Tests configuration
 my %config = ();
-my %api = ();
-$api{'timeout'} = "3";
-$api{'user'} = "API-USER";
-$api{'password'} = "XXXXXXXXX";
-$api{'entity_metadata_endpoint'} = "api/v1/entity";
-$api{'entity_ipalias_endpoint'} = "api/v1/entity/alias";
-$config{'api'} = \%api;
+my %filers = ();
+$filers{'user'} = "API-USER";
+$filers{'password'} = "XXXXXXXXX";
+$config{filers} = \%filers;
 
 # Tests
 
-my $zapi = DBOD::Storage::NetApp::ZAPI->new();
+my $zapi = DBOD::Storage::NetApp::ZAPI->new( config => \%config );
 
 subtest 'create_server' => sub {
-        $na_element_object->mock( results_errno => sub {return 0;});
+        $na_element->mock( results_errno => sub {return 0;});
         my $res = $zapi->create_server(
             'ipaddr',
             'username',
@@ -55,15 +52,15 @@ subtest 'create_server' => sub {
             'vserver',
             'version');
         ok($res, 'create_server_ok');
-        $na_element_object->mock( results_errno => sub {return 0;});
+        $na_element->mock( results_errno => sub {return 0;});
         $res = $zapi->create_server(
             'ipaddr',
             'username',
             'password',
             'vserver');
         ok($res, 'create_server default version');
-        $na_element_object->mock( results_errno => sub {return 1;});
-        $na_element_object->mock( results_reason => sub {return "Wrong username";});
+        $na_element->mock( results_errno => sub {return 1;});
+        $na_element->mock( results_reason => sub {return "Wrong username";});
         $res = $zapi->create_server(
             'ipaddr',
             'username',
@@ -84,47 +81,62 @@ subtest 'get_mount_point_NAS_regex' => sub {
     };
 
 subtest 'check_API_call' => sub {
-        $na_element_object->mock( results_errno => sub {return 0;});
-        is($zapi->check_API_call($na_element_object), undef, 'Correct API call');
-        $na_element_object->mock( results_errno => sub {return 1;});
-        $na_element_object->mock( results_reason => sub {return "API call test";});
-        is($zapi->check_API_call($na_element_object), 1, 'Error in API call');
+        $na_element->mock( results_errno => sub {return 0;});
+        is($zapi->check_API_call($na_element), undef, 'Correct API call');
+        $na_element->mock( results_errno => sub {return 1;});
+        $na_element->mock( results_reason => sub {return "API call test";});
+        is($zapi->check_API_call($na_element), 1, 'Error in API call');
     };
 
 subtest 'snap_delete' => sub {
-        $na_element_object->mock( results_errno => sub {return 0;});
-        ok($zapi->snap_delete($na_server_object, 'Volume', 'delete'), 'snap_delete OK');
-        $na_element_object->mock( results_errno => sub {return 1;});
-        ok(!$zapi->snap_delete($na_server_object, 'Volume', 'delete'), 'snap_delete FAIL');
+        $na_element->mock( results_errno => sub {return 0;});
+        ok($zapi->snap_delete($na_server, 'Volume', 'delete'), 'snap_delete OK');
+        $na_element->mock( results_errno => sub {return 1;});
+        ok(!$zapi->snap_delete($na_server, 'Volume', 'delete'), 'snap_delete FAIL');
     };
 
 subtest 'snap_create' => sub {
-        $na_element_object->mock( results_errno => sub {return 0;});
-        ok($zapi->snap_create($na_server_object, 'Volume', 'create'), 'snap_create OK');
-        $na_element_object->mock( results_errno => sub {return 1;});
-        ok(!$zapi->snap_create($na_server_object, 'Volume', 'create'), 'snap_create FAIL');
+        $na_element->mock( results_errno => sub {return 0;});
+        ok($zapi->snap_create($na_server, 'Volume', 'create'), 'snap_create OK');
+        $na_element->mock( results_errno => sub {return 1;});
+        ok(!$zapi->snap_create($na_server, 'Volume', 'create'), 'snap_create FAIL');
     };
 
 subtest 'snap_restore' => sub {
-        $na_element_object->mock( results_errno => sub {return 0;});
-        ok($zapi->snap_restore($na_server_object, 'Volume', 'restore'), 'snap_restore OK');
-        $na_element_object->mock( results_errno => sub {return 1;});
-        ok(!$zapi->snap_restore($na_server_object, 'Volume', 'restore'), 'snap_restore FAIL');
+        $na_element->mock( results_errno => sub {return 0;});
+        ok($zapi->snap_restore($na_server, 'Volume', 'restore'), 'snap_restore OK');
+        $na_element->mock( results_errno => sub {return 1;});
+        ok(!$zapi->snap_restore($na_server, 'Volume', 'restore'), 'snap_restore FAIL');
     };
 
 subtest 'snap_prepare_snap_list' => sub {
         # This calls exercise also the snap_list method
-        $na_server_object->mock(invoke => sub {return $na_element_object;});
-        $na_element_object->mock( results_errno => sub {return 0;});
+        $na_server->mock(invoke => sub {return $na_element;});
+        $na_element->mock( results_errno => sub {return 0;});
         my $snaplist = Test::MockObject->new();
         my $snapshot = Test::MockObject->new();
-        $na_element_object->mock( child_get => sub {return $snaplist;});
+        $na_element->mock( child_get => sub {return $snaplist;});
         $snaplist->mock(children_get => sub {return ($snapshot);});
         $snapshot->mock(child_get_int => sub {return 1;});
         $snapshot->mock(child_get_string => sub {return "TEST";});
-        ok($zapi->snap_prepare($na_server_object, 'Volume', 2), 'snap_prepare OK');
-        $na_element_object->mock( results_errno => sub {return 1;});
-        ok(!$zapi->snap_delete($na_server_object, 'Volume', 'delete'), 'snap_prepare FAIL');
+        ok($zapi->snap_prepare($na_server, 'Volume', 2), 'snap_prepare OK');
+        $na_element->mock( results_errno => sub {return 1;});
+        ok(!$zapi->snap_delete($na_server, 'Volume', 'delete'), 'snap_prepare FAIL');
     };
+
+subtest 'snap_clone' => sub {
+        $na_element->mock( results_errno => sub {return 0;});
+        #ok($zapi->snap_clone($na_server, 'Volume', 'snapshot', 'junction'), 'snap_clone OK');
+        $na_element->mock( results_errno => sub {return 1;});
+        #ok(!$zapi->snap_clone($na_server, 'Volume', 'snapshot', 'junction'), 'snap_clone FAIL');
+    };
+
+
+subtest 'get_auth_details' => sub {
+        my $arr = $zapi->get_auth_details('localhost', 'mount_point');
+        diag Dumper $arr;
+        isa_ok($arr, 'ARRAY', 'get_auth_details');
+    };
+
 
 done_testing();

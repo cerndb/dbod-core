@@ -18,7 +18,7 @@ use lib '/opt/netapp-manageability-sdk-5.3.1/lib/perl/NetApp';
 use Moose;
 with 'MooseX::Log::Log4perl';
 
-has 'config' => (is => 'rw', isa => 'HashRef');
+has 'config' => (is => 'ro', isa => 'HashRef');
 
 use Try::Tiny;
 use DBOD::Runtime;
@@ -91,7 +91,6 @@ sub is_Cmode_mount() {
     }
     return $iscmode;
 } 
-
 
 #Get Mount points following a regex C-mode, hash: controler -> (mountpoint2, mountpoint2,...) 
 sub get_mount_point_NAS_regex {
@@ -368,7 +367,7 @@ sub get_server_and_volname {
 sub create_server_from_mount_point {
     my($self, $controller,$mount_point,$admin) = @_;
     $self->log->info("Parameters controller: <$controller>, mount_point: <$mount_point>, admin: <$admin>");
-    my $arref = $self->get_user_pass_from_mount_point($controller,$mount_point,$admin);
+    my $arref = $self->get_auth_details($controller,$mount_point,$admin);
     my($controller_mgmt,$ipcluster,$user_storage,$password_nas,$server_version,$server);
 
     if (defined $arref) {
@@ -386,73 +385,32 @@ sub create_server_from_mount_point {
 }
 
 #it returns an array with [user, password, server_version, ipcluster] credentials
-sub get_user_pass_from_mount_point {
+sub get_auth_details {
     my($self, $controller, $mount_point, $admin) = @_;
     $self->log->info("Parameters controller: <$controller>, mount_point: <$mount_point>, admin: <$admin>");
-
-    my($controller_mgmt,$ipcluster,$user_storage,$password_nas,$server_version,$iscmode);
-
-    if ($mount_point =~ m{\/vol\/(.*)$}x) {
-        $iscmode=0;
-    } else {
-        $iscmode=1;
+    my($controller_mgmt, $ipcluster,
+        $user_storage, $password_nas, $server_version);
+    if ($controller =~ m{^[\D]+\-([\d\w]+)}x) {
+        $controller = $1;
+    } elsif ($controller =~ m{([\d\w]+)\-[\D]+}x) {
+        $controller = $1;
     }
-
-
-    if ($admin && $iscmode) {
-        $controller_mgmt=$runtime->GetClusterMgmtNode($controller);
+    $self->log->debug("Controller match: <$controller>");
+    $self->log->debug('We are working with a C-mode volume <' . $mount_point . '>');
+    if ($admin) {
+        $user_storage = "admin";
+        $controller_mgmt = $controller . '-cluster-mgmt';
         $ipcluster = _host_ip($controller_mgmt);
     } else {
+        $user_storage = "vsadmin";
         $ipcluster = _host_ip($controller);
     }
-
-
-    if ($mount_point =~ m{\/vol\/(.*)$}x) {
-        $user_storage="root";
-        $password_nas = $self->config->{filers}->{password};
-        if (defined $password_nas) {
-            chomp $password_nas;
-        } else {
-            $self->log->error("No password to connect to NAS defined!");
-            return 0; #not ok
-        }
-        $self->log->debug("We are working with a 7-mode on <$mount_point>");
-        $server_version=15;
-        $iscmode=0;
-    } else {
-        $self->log->debug('We are working with a C-mode volume <' . $mount_point . '>');
-        if ($admin) {
-            $user_storage="admin";
-        } else {
-            $user_storage="vsadmin";
-        }
-        my($retrievepassword);
-        if ($controller =~ m{^[\D]+\-([\d\w]+)}x) {
-            $controller =$1;
-        } elsif ($controller =~ m{([\d\w]+)\-[\D]+}x) {
-            $controller =$1;
-        }
-        $self->log->debug("Controller match: <$controller>");
-
-        if ($controller=~m{(\D+)}x) {
-            $retrievepassword="password_user_${user_storage}_".$1;
-            }
-
-        $password_nas = $self->config->{filers}->{password};
-        if (defined $password_nas) {
-            chomp $password_nas;
-        } else {
-            $self->log->error("No password to connect to NAS defined!");
-            return 0; #not ok
-        }
-        $server_version=17;
-        $iscmode=1;
-    }
-
-    if ($ipcluster eq 0 ) {
-        $self->log->error("Some issue retrieving IP for controller: <$controller>!");
+    $password_nas = $self->config->{filers}->{password};
+    unless (defined $password_nas) {
+        $self->log->error("No password to connect to NAS defined!");
         return 0; #not ok
     }
+    $server_version = 17;
     $self->log->debug("Returning: $user_storage, XXXXXX, $server_version, $ipcluster");
     return [$user_storage, $password_nas, $server_version, $ipcluster];
 } 
@@ -536,7 +494,6 @@ sub snap_restore {
         return 1; #ok
     }
 }
-
 
 sub snap_list {
     my($self,$server_zapi,$volume_name)=@_;
