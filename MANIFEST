@@ -60,6 +60,7 @@ share/templates/ldap/mysql
 share/templates/ldap/pg
 share/templates/ldap/tnsnetservice
 share/test.json
+share/sample_mtab
 t/api.t
 t/config.t
 t/db.t
