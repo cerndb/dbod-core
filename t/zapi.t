@@ -127,7 +127,7 @@ subtest 'snap_prepare_snap_list' => sub {
 subtest 'snap_clone' => sub {
         $na_server->mock(invoke_elem => sub {return $na_element;});
         $na_element->mock( 'child_add_string' );
-        ok($zapi->snap_clone($na_server, 'Volume', 'snapshot', 'junction'), 'snap_clone OK');
+        ok(!$zapi->snap_clone($na_server, 'Volume', 'snapshot', 'junction'), 'snap_clone OK');
         $na_element->mock( results_errno => sub {return 1;});
         ok(!$zapi->snap_clone($na_server, 'Volume', 'snapshot', 'junction'), 'snap_clone FAIL');
     };
