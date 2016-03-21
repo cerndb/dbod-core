@@ -18,12 +18,13 @@ my $na_server= Test::MockObject->new();
 my $na_element = Test::MockObject->new();
 $na_element->set_isa('NaElement');
 
-$na_server->mock(set_style => sub {return $na_element;});
-$na_server->mock(set_port => sub {return $na_element;});
-$na_server->mock(set_transport_type => sub {return $na_element;});
-$na_server->mock(set_vserver => sub {return $na_element;});
-$na_server->mock(set_admin_user => sub {return $na_element;});
-$na_server->mock(invoke => sub {return $na_element;});
+my $na_element_ok = Test::MockObject->new();
+$na_element_ok->set_isa('NaElement');
+$na_element_ok->mock( results_errno => sub {return 0;});
+my $na_element_fail = Test::MockObject->new();
+$na_element_fail->set_isa('NaElement');
+$na_element_fail->mock( results_errno => sub {return 1;});
+
 
 
 my $na_server_mod = Test::MockModule->new('NaServer');
@@ -44,23 +45,33 @@ $config{filers} = \%filers;
 my $zapi = DBOD::Storage::NetApp::ZAPI->new( config => \%config );
 
 subtest 'create_server' => sub {
-        $na_element->mock( results_errno => sub {return 0;});
+        $na_server->mock(new => sub {return $na_element_ok;});
+        $na_server->mock(set_style => sub {return $na_element_ok;});
+        $na_server->mock(set_port => sub {return $na_element_ok;});
+        $na_server->mock(set_admin_user => sub {return $na_element_ok;});
+        $na_server->mock(set_transport_type => sub {return $na_element_ok;});
+        $na_server->mock(set_vserver => sub {return $na_element_ok;});
         my $res = $zapi->create_server(
             'ipaddr',
             'username',
             'password',
             'vserver',
             'version');
-        ok($res, 'create_server_ok');
-        $na_element->mock( results_errno => sub {return 0;});
+        ok($res, 'create_server style ok');
+
+        $na_server->mock(set_style => sub {return $na_element_fail;});
+        $na_element_fail->mock( results_reason => sub {return "Unable to set login style";});
         $res = $zapi->create_server(
             'ipaddr',
             'username',
             'password',
-            'vserver');
-        ok($res, 'create_server default version');
-        $na_element->mock( results_errno => sub {return 1;});
-        $na_element->mock( results_reason => sub {return "Wrong username";});
+            'vserver',
+            'version');
+        ok(!$res, 'create_server style fail');
+
+        $na_server->mock(set_style => sub {return $na_element_ok;});
+        $na_server->mock(set_admin_user => sub {return $na_element_fail;});
+        $na_element_fail->mock( results_reason => sub {return "Wrong username";});
         $res = $zapi->create_server(
             'ipaddr',
             'username',
@@ -68,6 +79,25 @@ subtest 'create_server' => sub {
             'vserver');
         ok(!$res, 'create_server username error');
 
+        $na_server->mock(set_admin_user => sub {return $na_element_ok;});
+        $na_server->mock(set_transport_type => sub {return $na_element_fail;});
+        $na_element_fail->mock( results_reason => sub {return "Wrong transport";});
+        $res = $zapi->create_server(
+            'ipaddr',
+            'username',
+            'password',
+            'vserver');
+        ok(!$res, 'create_server transport error');
+
+        $na_server->mock(set_transport_type => sub {return $na_element_ok;});
+        $na_server->mock(set_vserver => sub {return $na_element_fail;});
+        $na_element_fail->mock( results_reason => sub {return "Error creating vserver";});
+        $res = $zapi->create_server(
+            'ipaddr',
+            'username',
+            'password',
+            'vserver');
+        ok(!$res, 'create_server transport error');
     };
 
 subtest 'is_Cmode_mount' => sub {
@@ -89,23 +119,26 @@ subtest 'check_API_call' => sub {
     };
 
 subtest 'snap_delete' => sub {
-        $na_element->mock( results_errno => sub {return 0;});
+        $na_server->mock(invoke => sub {return $na_element_ok;});
         ok($zapi->snap_delete($na_server, 'Volume', 'delete'), 'snap_delete OK');
-        $na_element->mock( results_errno => sub {return 1;});
+        $na_server->mock(invoke => sub {return $na_element_fail;});
+        $na_element_fail->mock( results_reason => sub {return "snap_delete FAIL";});
         ok(!$zapi->snap_delete($na_server, 'Volume', 'delete'), 'snap_delete FAIL');
     };
 
 subtest 'snap_create' => sub {
-        $na_element->mock( results_errno => sub {return 0;});
+        $na_server->mock(invoke => sub {return $na_element_ok;});
         ok($zapi->snap_create($na_server, 'Volume', 'create'), 'snap_create OK');
-        $na_element->mock( results_errno => sub {return 1;});
+        $na_server->mock(invoke => sub {return $na_element_fail;});
+        $na_element_fail->mock( results_reason => sub {return "snap_create FAIL";});
         ok(!$zapi->snap_create($na_server, 'Volume', 'create'), 'snap_create FAIL');
     };
 
 subtest 'snap_restore' => sub {
-        $na_element->mock( results_errno => sub {return 0;});
+        $na_server->mock(invoke => sub {return $na_element_ok;});
         ok($zapi->snap_restore($na_server, 'Volume', 'restore'), 'snap_restore OK');
-        $na_element->mock( results_errno => sub {return 1;});
+        $na_server->mock(invoke => sub {return $na_element_fail;});
+        $na_element_fail->mock( results_reason => sub {return "snap_restore FAIL";});
         ok(!$zapi->snap_restore($na_server, 'Volume', 'restore'), 'snap_restore FAIL');
     };
 
@@ -139,5 +172,22 @@ subtest 'create_server_from_mount_point' => sub {
     };
 
 
+subtest 'get_server_and_volname' => sub {
+        $na_element->mock( results_errno => sub {return 0;});
+        ok($zapi->get_server_and_volname('localhost', 'mount_point'),
+            'get_server_and_volname OK');
+    };
+
+subtest 'get_volinfo_Cmode' => sub {
+        $na_server->mock(new => sub {return $na_element;});
+        $na_element->mock( results_errno => sub {return 0;});
+        $na_element->mock( child_get => sub {return $na_element;});
+        $na_element->mock( children_get => sub {return $na_element;});
+        $na_element->mock( child_get_string => sub {return "child_string";});
+        $na_element->mock( sprintf => sub {return "sprintf string";});
+        $na_element->mock( child_add => sub {return;});
+        ok($zapi->get_volinfo_Cmode($na_server, 'mount_point', 0),
+            'get_volinfo_Cmode OK');
+    };
 
 done_testing();
