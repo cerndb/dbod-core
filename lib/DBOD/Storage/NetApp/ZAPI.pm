@@ -94,13 +94,17 @@ sub is_Cmode_mount() {
 
 #Get Mount points following a regex C-mode, hash: controler -> (mountpoint2, mountpoint2,...) 
 sub get_mount_point_NAS_regex {
-    my ($self, $regex, $exclusion_list)=@_;
+    my ($self, $regex, $exclusion_list, $file)=@_;
     $self->log->info("Parameters regex: <$regex>");
     $self->log->info("Parameters: exclusion_list: <$exclusion_list>") if defined $exclusion_list;
-    my ($output, %pairsfsnas, $rc);
-    $rc = $runtime->run_str("cat /etc/mtab", \$output);
-    my @lines = split /\n/, $output;
-    if ($rc) {
+    my (%pairsfsnas, @lines);
+    if (defined $file) {
+        @lines = $runtime->read_file($file);
+        }
+    else {
+        @lines = $runtime->read_file('/etc/mtab');
+    };
+    if (@lines) {
         foreach my $line (@lines) {
             chomp $line;
             if ($line =~ m{$regex}x ) {
@@ -111,10 +115,11 @@ sub get_mount_point_NAS_regex {
                 $filesystemmount = $3;
                 $self->log->debug("Got controller <$nas> mountpath controller: <$mountpath> file system: <$filesystemmount>");
 
-                if (defined $exclusion_list && scalar(@$exclusion_list) > 0 
-                    && FindInArray($filesystemmount,$exclusion_list)) {
-                        $self->log->debug("Controller <$nas> mountpath controller: <$mountpath> file system: <$filesystemmount> in exclusion list");
-                    next;
+                if (defined $exclusion_list) {
+                    my @buf = grep $filesystemmount, @{$exclusion_list};
+                    if ((scalar @buf) > 0) {
+                        next;
+                    }
                 }
                 if (exists $pairsfsnas{$1}) {
                     push @{$pairsfsnas{$1}} ,$2;

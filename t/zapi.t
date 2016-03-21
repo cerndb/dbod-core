@@ -7,6 +7,7 @@ use Data::Dumper;
 require_ok( 'DBOD::Storage::NetApp::ZAPI' );
 
 use DBOD::Storage::NetApp::ZAPI;
+use File::ShareDir;
 
 BEGIN { Log::Log4perl->easy_init() };
 
@@ -24,8 +25,6 @@ $na_element_ok->mock( results_errno => sub {return 0;});
 my $na_element_fail = Test::MockObject->new();
 $na_element_fail->set_isa('NaElement');
 $na_element_fail->mock( results_errno => sub {return 1;});
-
-
 
 my $na_server_mod = Test::MockModule->new('NaServer');
 $na_server_mod->mock( new => $na_server );
@@ -106,7 +105,13 @@ subtest 'is_Cmode_mount' => sub {
     };
 
 subtest 'get_mount_point_NAS_regex' => sub {
-        my $pairs = $zapi->get_mount_point_NAS_regex('ORA');
+        my $mtab_file = File::ShareDir::dist_dir('DBOD') . '/sample_mtab';
+        my $mntpoint = '/ORA/dbs03/PINOCHO';
+        my $regex = "^(.*?dbnas[\\w-]+):(.*?)\\s+($mntpoint)\\s+nfs";
+        my $pairs = $zapi->get_mount_point_NAS_regex($regex, undef, $mtab_file);
+        isa_ok($pairs, 'HASH');
+        my @exclusion_list = (undef);
+        $pairs = $zapi->get_mount_point_NAS_regex($regex, \@exclusion_list, $mtab_file);
         isa_ok($pairs, 'HASH');
     };
 
