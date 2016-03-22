@@ -100,7 +100,7 @@ sub body {
 		$mntpoint_cmd = $pg_datadir_nosuffix; # copy the mount point for data.
 		$mntpoint_cmd =~ s/dbs03/$_/g;
 		$job->log->debug("Getting information from <$mntpoint_cmd>");
-		$rc=$runtime_zapi->get_volinfo_Cmode($server_zapi,$mntpoint_cmd,0);
+		$rc=$runtime_zapi->get_volinfo($server_zapi,$mntpoint_cmd,0);
 		if (!%$rc) {
 			$job->log->error("no information could be retrieved from <$mntpoint_cmd>");
      			$job->_output(1);	

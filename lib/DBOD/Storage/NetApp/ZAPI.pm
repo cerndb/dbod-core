@@ -78,21 +78,7 @@ sub create_server {
 
 }    
 
-sub is_Cmode_mount() {
-    my ($self, $mountpoint) = @_;
-    $self->log->info("Checking mountpoint: <$mountpoint>");
-    my($iscmode)=0;
-    if ($mountpoint =~ m{\/vol\/(.*)$}x) {
-        $iscmode = 0;
-        $self->log->debug("We are working with a 7-mode volume <$mountpoint>");
-    } else {
-        $self->log->debug("We are working with a C-mode volume <$mountpoint>");
-        $iscmode = 1;
-    }
-    return $iscmode;
-} 
-
-#Get Mount points following a regex C-mode, hash: controler -> (mountpoint2, mountpoint2,...) 
+#Get Mount points following a regex C-mode, hash: controler -> (mountpoint2, mountpoint2,...)
 sub get_mount_point_NAS_regex {
     my ($self, $regex, $exclusion_list, $file)=@_;
     $self->log->debug("Regex: <$regex>");
@@ -134,7 +120,7 @@ sub get_mount_point_NAS_regex {
 }
 
 # server object, array of mount points to look for. $aggrinfo if set it will also retrieve aggregate values
-sub get_volinfo_Cmode {
+sub get_volinfo {
     my($self, $server,$volname,$aggrinfo)=@_;
     $self->log->info("Parameters volname: <$volname>, aggrinfo: <$aggrinfo>");
     #build query
@@ -287,7 +273,7 @@ sub get_volinfo_Cmode {
                 }
         }
     }
-    my %vol_info_cmode = ( "name" => $name,
+    my %volinfo = ( "name" => $name,
                "autosize_enabled" => $autosize,
                "max_autosize" => $autosizemax,
                "size_used" => $used_size,
@@ -301,8 +287,8 @@ sub get_volinfo_Cmode {
                "state" => $volstate
             );
  
-       $self->log->debug("Final result " . Dumper \%vol_info_cmode );
-    return \%vol_info_cmode;
+       $self->log->debug("Final result " . Dumper \%volinfo );
+    return \%volinfo;
 }
 
 
@@ -323,7 +309,6 @@ sub get_server_and_volname {
         $self->log->debug("No mount points return. This makes no sense. We cant proceed.");
         return [undef,undef];
     }
-    my($iscmode)=0;
     my($server_zapi,$rc,$volume_name);
     if ( scalar (keys(%$nasmounts)) == 1 ) {
         while ( my ($controller, $mountpoint) = each(%$nasmounts) ) {
@@ -340,37 +325,21 @@ sub get_server_and_volname {
                 $self->log->debug("Server Zapi was not created.");
                 return [undef,undef];
             }
-            if ( $self->is_Cmode_mount( $$mountpoint[0]) == 0) {
-                $volume_name=$self->GetVolumeName7modeFromMount($$mountpoint[0]);
-                $iscmode=0;
-                chomp $volume_name;
-                $self->log->debug("We are working with a 7-mode volume <$volume_name> on <$$mountpoint[0]>");
-            } else {
-                $self->log->debug("Preparing query, we are working with a C-mode volume <$$mountpoint[0]>");
-                $volume_name= $$mountpoint[0];
-                $iscmode=1;
-            }
+            $volume_name = $$mountpoint[0];
         }
     } else {
         $self->log->debug("Too many mount points return < " . scalar (keys(%$nasmounts)) . ">. This makes no sense. We cant proceed.");
         return [undef,undef];
     }
 
-    if ($iscmode) {
-        $rc = $self->get_volinfo_Cmode($server_zapi,$volume_name,0);  # last parameter is 0 as we cant get access to aggregate information
-        if ($rc==0) {
-            $self->log->debug("Error retrieving info.!");
-            return [undef,undef];
-        }
-        $volume_name = $rc->{"name"};
-        $self->log->debug("Working with C-mode volume: <$volume_name>");
-    } else {
-        $rc = $self->GetVolInfo7mode($server_zapi,$volume_name,"true");
-        if ($rc == 0 ) {
-            $self->log->debug("Error retrieving info.!");
-            return [undef,undef];
-        }
+    $rc = $self->get_volinfo($server_zapi, $volume_name, 0);  # last parameter is 0 as we cant get access to aggregate information
+    if ($rc==0) {
+        $self->log->debug("Error retrieving info.!");
+        return [undef,undef];
     }
+    $volume_name = $rc->{"name"};
+    $self->log->debug("Working with C-mode volume: <$volume_name>");
+
     return [$server_zapi ,$volume_name];
 }
 
