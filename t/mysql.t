@@ -45,8 +45,8 @@ isa_ok($mysql->db(), 'DBOD::DB', 'db connection object OK');
 
 my $mtab_file = File::ShareDir::dist_dir('DBOD') . '/sample_mtab';
 
-my $buf = $mysql->parse_err_file('PIN', $mtab_file);
-ok(length $buf > 0, 'parse_err_file');
+my $buf = $mysql->_parse_err_file('PIN', $mtab_file);
+ok(length $buf > 0, '_parse_err_file');
 
 
 done_testing();
