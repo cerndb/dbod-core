@@ -99,11 +99,6 @@ subtest 'create_server' => sub {
         ok(!$res, 'create_server transport error');
     };
 
-subtest 'is_Cmode_mount' => sub {
-        is($zapi->is_Cmode_mount('/vol/test'), 0, '7 mode mount');
-        is($zapi->is_Cmode_mount('/ORA/test'), 1, 'C mode mount');
-    };
-
 subtest 'get_mount_point_NAS_regex' => sub {
         my $mtab_file = File::ShareDir::dist_dir('DBOD') . '/sample_mtab';
         my $mntpoint = '/ORA/dbs03/PINOCHO';
@@ -162,16 +157,17 @@ subtest 'snap_prepare_snap_list' => sub {
         ok($zapi->snap_prepare($na_server, 'Volume', 1), 'snap_prepare OK. Single snapshot');
         $na_server->mock(invoke => sub {return $na_element_fail;});
         $na_element_fail->mock( results_reason => sub {return "snapshot-list-info FAIL";});
-        ok(!$zapi->snap_prepare($na_server, 'Volume', 1), 'snap_prepare FAIL');
+        ok($zapi->snap_prepare($na_server, 'Volume', 1), 'snap_prepare FAIL');
         $na_server->mock(invoke => sub {return $na_element_ok;});
-        $snaplist->mock(children_get => sub {return undef;});
-        ok(!$zapi->snap_prepare($na_server, 'Volume', 1), 'snap_prepare FAIL. No Snapshots');
+        $snaplist->mock(children_get => sub {return 0;});
+        $snaplist->mock(child_get => sub {return 0;});
+        ok($zapi->snap_prepare($na_server, 'Volume', 1), 'snap_prepare FAIL. No Snapshots');
     };
 
 subtest 'snap_clone' => sub {
         $na_server->mock(invoke_elem => sub {return $na_element;});
         $na_element->mock( 'child_add_string' );
-        ok(!$zapi->snap_clone($na_server, 'Volume', 'snapshot', 'junction'), 'snap_clone OK');
+        ok($zapi->snap_clone($na_server, 'Volume', 'snapshot', 'junction'), 'snap_clone OK');
         $na_element->mock( results_errno => sub {return 1;});
         ok(!$zapi->snap_clone($na_server, 'Volume', 'snapshot', 'junction'), 'snap_clone FAIL');
     };
@@ -185,22 +181,34 @@ subtest 'create_server_from_mount_point' => sub {
 subtest 'get_server_and_volname' => sub {
         my $mtab_file = File::ShareDir::dist_dir('DBOD') . '/sample_mtab';
         my $mntpoint = '/ORA/dbs03/PINOCHO';
+        # Underlying get_volinfo call requirements
+        $na_element->mock( child_add => sub {return;});
+        $na_element->mock( sprintf => sub {return "sprintf string";});
+        $na_element->mock( children_get => sub {return $na_element;});
+        $na_element->mock( child_get_string => sub {return "child_string";});
+        $na_element->mock( children_get => sub {return $na_element;});
+        $na_element->mock( child_get => sub {return ($na_element, $na_element, $na_element);});
+        # Tests
         ok($zapi->get_server_and_volname($mntpoint, $mtab_file),
             'get_server_and_volname OK');
-        ok(!$zapi->get_server_and_volname('nothing_to_find', $mtab_file),
-            'get_volinfo_Cmode FAIL. No NAS mounts');
+        $na_element->mock( results_errno => sub {return 1;});
+        isa_ok($zapi->get_server_and_volname('nothing_to_find', $mtab_file),
+            'ARRAY',
+            'get_server_and_volname FAIL. No NAS mounts');
     };
 
-subtest 'get_volinfo_Cmode' => sub {
+subtest 'get_volinfo' => sub {
         $na_server->mock(new => sub {return $na_element;});
         $na_element->mock( results_errno => sub {return 0;});
-        $na_element->mock( child_get => sub {return $na_element;});
         $na_element->mock( children_get => sub {return $na_element;});
         $na_element->mock( child_get_string => sub {return "child_string";});
         $na_element->mock( sprintf => sub {return "sprintf string";});
         $na_element->mock( child_add => sub {return;});
-        ok($zapi->get_volinfo_Cmode($na_server, 'mount_point', 0),
-            'get_volinfo_Cmode OK');
+        $na_element->mock( child_get => sub {return ($na_element, $na_element, $na_element);});
+        ok($zapi->get_volinfo($na_server, 'mount_point'),
+            'get_volinfo OK');
+        $na_element->mock( new => sub {return;});
+
     };
 
 done_testing();
