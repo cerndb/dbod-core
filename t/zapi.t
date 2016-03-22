@@ -182,11 +182,13 @@ subtest 'create_server_from_mount_point' => sub {
             'create_server_from_mount_point OK');
     };
 
-
 subtest 'get_server_and_volname' => sub {
-        $na_element->mock( results_errno => sub {return 0;});
-        ok($zapi->get_server_and_volname('localhost', 'mount_point'),
+        my $mtab_file = File::ShareDir::dist_dir('DBOD') . '/sample_mtab';
+        my $mntpoint = '/ORA/dbs03/PINOCHO';
+        ok($zapi->get_server_and_volname($mntpoint, $mtab_file),
             'get_server_and_volname OK');
+        ok(!$zapi->get_server_and_volname('nothing_to_find', $mtab_file),
+            'get_volinfo_Cmode FAIL. No NAS mounts');
     };
 
 subtest 'get_volinfo_Cmode' => sub {

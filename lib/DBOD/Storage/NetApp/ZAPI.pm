@@ -95,8 +95,8 @@ sub is_Cmode_mount() {
 #Get Mount points following a regex C-mode, hash: controler -> (mountpoint2, mountpoint2,...) 
 sub get_mount_point_NAS_regex {
     my ($self, $regex, $exclusion_list, $file)=@_;
-    $self->log->info("Parameters regex: <$regex>");
-    $self->log->info("Parameters: exclusion_list: <$exclusion_list>") if defined $exclusion_list;
+    $self->log->debug("Regex: <$regex>");
+    $self->log->debug("Exclusion_list: <$exclusion_list>") if defined $exclusion_list;
     my (%pairsfsnas, @lines);
     if (defined $file) {
         @lines = $runtime->read_file($file);
@@ -309,10 +309,16 @@ sub get_volinfo_Cmode {
 
 #it returns an array of vserver + volname. It's used for snapshots operations. If there is a problem an undef will be return.
 sub get_server_and_volname {
-    my($self, $mntpoint)=@_;
-    $self->log->info("Parameters mntpoint: <$mntpoint>");
-
-    my $nasmounts = $self->get_mount_point_NAS_regex("^(.*?dbnas[\\w-]+):(.*?)\\s+($mntpoint)\\s+nfs");
+    my($self, $mountpoint, $file)=@_;
+    $self->log->debug("Mountpoint: <$mountpoint>");
+    my $regex = "^(.*?dbnas[\\w-]+):(.*?)\\s+($mountpoint)\\s+nfs";
+    my $nasmounts;
+    if (defined $file) {
+        $nasmounts = $self->get_mount_point_NAS_regex($regex, undef, $file);
+    }
+    else{
+        $nasmounts = $self->get_mount_point_NAS_regex($regex, undef, '/etc/mtab');
+    }
     if (! scalar keys %$nasmounts) { #we should get 1 entry
         $self->log->debug("No mount points return. This makes no sense. We cant proceed.");
         return [undef,undef];
