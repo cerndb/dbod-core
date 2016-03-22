@@ -154,12 +154,18 @@ subtest 'snap_prepare_snap_list' => sub {
         my $snaplist = Test::MockObject->new();
         my $snapshot = Test::MockObject->new();
         $na_element->mock( child_get => sub {return $snaplist;});
-        $snaplist->mock(children_get => sub {return ($snapshot);});
+        $snaplist->mock(children_get => sub {return ($snapshot, $snapshot, $snapshot);});
         $snapshot->mock(child_get_int => sub {return 1;});
         $snapshot->mock(child_get_string => sub {return "TEST";});
-        ok($zapi->snap_prepare($na_server, 'Volume', 2), 'snap_prepare OK');
-        $na_element->mock( results_errno => sub {return 1;});
-        ok(!$zapi->snap_delete($na_server, 'Volume', 'delete'), 'snap_prepare FAIL');
+        ok($zapi->snap_prepare($na_server, 'Volume', 1), 'snap_prepare OK. Multiple snapshots');
+        $snaplist->mock(children_get => sub {return ($snapshot);});
+        ok($zapi->snap_prepare($na_server, 'Volume', 1), 'snap_prepare OK. Single snapshot');
+        $na_server->mock(invoke => sub {return $na_element_fail;});
+        $na_element_fail->mock( results_reason => sub {return "snapshot-list-info FAIL";});
+        ok(!$zapi->snap_prepare($na_server, 'Volume', 1), 'snap_prepare FAIL');
+        $na_server->mock(invoke => sub {return $na_element_ok;});
+        $snaplist->mock(children_get => sub {return undef;});
+        ok(!$zapi->snap_prepare($na_server, 'Volume', 1), 'snap_prepare FAIL. No Snapshots');
     };
 
 subtest 'snap_clone' => sub {
