@@ -131,35 +131,6 @@ sub ssh {
     return scalar $stdout;
 }
 
-sub scp_get {
-    # uncoverable subroutine
-    my ($self, $arg_ref) = @_;
-    # Using named parameters, but unpacking for clarity and usability
-    my $user = $arg_ref->{user};
-    my $host = $arg_ref->{host};
-    my $path_from = $arg_ref->{path_from};
-    my $path_to = $arg_ref->{path_to};
-    my $ssh;
-    $self->log->debug("Opening SSH connection ${user}\@${host}");
-    $ssh = Net::OpenSSH->new("$user\@$host",
-        password => $arg_ref->{password},
-        master_stdout_discard => 0,
-        master_stderr_discard => 1,
-        master_opts => [-o => "StrictHostKeyChecking=no",
-                        -o => "UserKnownHostsFile=/dev/null"]);
-    if ($ssh->error) {
-        $self->log->error("SSH connection error: " . $ssh->error);
-        return;
-    }
-    $self->log->debug("Executing scp_get ${path_from}, ${path_to}");
-    $ssh->scp_get({recursive => 1}, $path_from, $path_to);
-    if ($ssh->error) {
-        $self->log->error("SSH Error: " . $ssh->error);
-        return; 
-    }
-    return scalar 1;
-}
-
 sub wait_until_file_exist {
     my ($self, $timeout, $filename) = @_;
     my $poll_interval = 1; # seconds
