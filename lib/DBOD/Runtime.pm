@@ -103,34 +103,6 @@ sub result_code{
     }
 }
 
-sub ssh {
-    # uncoverable subroutine
-    my ($self, $arg_ref) = @_;
-    # Using named parameters, but unpacking for clarity and usability
-    my $user = $arg_ref->{user};
-    my $host = $arg_ref->{host};
-    my $cmd = $arg_ref->{cmd};
-    my $ssh;
-    $self->log->debug("Opening SSH connection ${user}\@${host}");
-    $ssh = Net::OpenSSH->new("$user\@$host",
-        password => $arg_ref->{password},
-        master_stdout_discard => 0,
-        master_stderr_discard => 1);
-    if ($ssh->error) {
-        $self->log->error("SSH connection error: " . $ssh->error);
-        return;
-    }    
-    $self->log->debug("Executing SSH ${cmd} at ${host}");
-    my($stdout, $stderr) = $ssh->capture2({timeout => 60 }, $cmd); 
-    if ($ssh->error) {
-        $self->log->error("SSH Error: " . $ssh->error);
-        $self->log->error("SSH Stdout: " . $stdout);
-        $self->log->error("SSH Stderr: " . $stderr);
-        return;
-    }
-    return scalar $stdout;
-}
-
 sub wait_until_file_exist {
     my ($self, $timeout, $filename) = @_;
     my $poll_interval = 1; # seconds
