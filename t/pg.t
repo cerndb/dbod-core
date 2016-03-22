@@ -19,12 +19,24 @@ my @lines = <DATA>;
 $rt->write_file_arr('/tmp/pg_ctl', \@lines);
 chmod 0755, '/tmp/pg_ctl';
 
-my $metadata = { datadir => "/ORA/dbs03/PGTEST/data",
-    bindir => "/tmp" };
+my $metadata = {
+    datadir => "/ORA/dbs03/PGTEST/data",
+    bindir => "/tmp",
+    socket => "/var/lib/pgsql",
+    port => '6600',
+};
+
+my $config = {
+    pgsql => {
+        db_user => 'dod_mysql',
+        db_password => 'password',
+    },
+};
 
 my $pg = DBOD::PG->new(
     instance => 'pgtest',
     metadata => $metadata,
+    config => $config,
 );
 
 # Check status
@@ -32,6 +44,9 @@ ok(!$pg->is_running(), 'check_state');
 
 # Stop
 ok($pg->stop(), 'stop');
+
+$pg->_connect_db();
+isa_ok($pg->db(), 'DBOD::DB', 'db connection object OK');
 
 done_testing();
 

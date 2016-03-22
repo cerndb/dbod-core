@@ -35,29 +35,22 @@ sub BUILD {
 
 sub _connect_db {
     my $self = shift;
-    if (defined $self->metadata->{'subcategory'}) {
-        # Set up db connector
-        my $db_type = lc $self->metadata->{'subcategory'};
-        my $db_user = $self->config->{$db_type}->{'db_user'};
-        my $db_password = $self->config->{$db_type}->{'db_password'};
-        my $dsn;
-        my $db_attrs;
-        $self->log->info('Creating DB connection with instance');
-        $dsn = "DBI:Pg:dbname=postgres;host=" . $self->metadata->{'socket'}.
-            ";port=" . $self->metadata->{'port'};
-        $db_attrs = {
-            AutoCommit => 1,
-            RaiseError => 1,
-        };
-        $self->db(DBOD::DB->new(
-                db_dsn  => $dsn,
-                db_user => $db_user,
-                db_password => $db_password,
-                db_attrs => $db_attrs,));
-    }
-    else {
-        $self->log->info('Skipping DB connection with instance');
-    }
+    my $db_user = $self->config->{pgsql}->{db_user};
+    my $db_password = $self->config->{pgsql}->{db_password};
+    my $dsn;
+    my $db_attrs;
+    $self->log->info('Creating DB connection with instance');
+    $dsn = "DBI:Pg:dbname=postgres;host=" . $self->metadata->{socket}.
+        ";port=" . $self->metadata->{port};
+    $db_attrs = {
+        AutoCommit => 1,
+        RaiseError => 1,
+    };
+    $self->db(DBOD::DB->new(
+            db_dsn  => $dsn,
+            db_user => $db_user,
+            db_password => $db_password,
+            db_attrs => $db_attrs,));
     return;
 }
 
