@@ -121,16 +121,13 @@ sub get_mount_point_NAS_regex {
 
 # server object, array of mount points to look for. $aggrinfo if set it will also retrieve aggregate values
 sub get_volinfo {
-    my($self, $server,$volname,$aggrinfo)=@_;
-    $self->log->info("Parameters volname: <$volname>, aggrinfo: <$aggrinfo>");
+    my($self, $server,$volname)=@_;
+    $self->log->info("Volume name: <$volname>");
     #build query
     my($nelem,$query,$volpath,$volpath_parent);
     my($autosize, $autosizemax, $autoincrement, $total_size,
         $used_size,$aggregate,$isOnautosize,$name,$vservername,$volstate);
     $autoincrement=0; #not enabled
-    if (! defined $aggrinfo) {
-        $aggrinfo=1; #get aggregate information
-    }
     $self->log->debug("Working with volume: <$volname>");
     my $tag=""; #for iterations
     while (defined($tag)) {
@@ -220,59 +217,9 @@ sub get_volinfo {
     }#while
 
     #Get attributes of the aggregate
-    my($aggrfreesize,$aggrusedsize,$nodename);
+    my($aggrfreesize, $aggrusedsize, $nodename);
     $aggrfreesize=0;
     $aggrusedsize=0;
-    if ($aggrinfo) {
-        $tag=""; #for iterations
-        while (defined($tag)) {
-            $nelem = NaElement->new("aggr-get-iter");
-            if ($tag ne "") {
-                $nelem->child_add_string("tag", $tag);
-                }
-            $nelem->child_add_string("max-records",10);
-
-            #Build the query
-            $query = NaElement->new("query");
-            my $aggr_parent = NaElement->new("aggr-attributes");
-            $query->child_add($aggr_parent);
-            $aggr_parent->child_add_string("aggregate-name", $aggregate);
-            $nelem->child_add($query);
-            my $desiredAttrs = NaElement->new("desired-attributes");
-            my $desiredSpace = NaElement->new("aggr-space-attributes");
-            my $nodeid = NaElement->new("aggr-ownership-attributes"); #
-            $desiredAttrs->child_add($desiredSpace);
-            $desiredAttrs->child_add($nodeid); #
-            $nelem->child_add($desiredAttrs);
-
-            $self->log->debug("Query looks like: \n " . $nelem->sprintf());
-
-            my $out = $server->invoke_elem($nelem);
-            if (ref ($out) eq "NaElement" && $out->results_status() eq "failed") {
-                $self->log->debug("Reason: " . $out->results_reason() . ", err number: " .
-                        $out->results_errno() . ", status: " . $out->results_status() );
-                return();
-            }
-            if (ref ($out) eq "NaElement" && $out->child_get_int("num-records") == 0) {
-                $self->log->debug("No volume with name <$volname>");
-                    return();
-            }
-            $tag= $out->child_get_string("next-tag");
-            my @aggrList = $out->child_get("attributes-list")->children_get();
-
-            foreach my $aggrInfo (@aggrList) {
-                my $aggrSizeAttrs = $aggrInfo->child_get("aggr-space-attributes");
-                if (defined $aggrSizeAttrs ) {
-                    $aggrusedsize = $aggrSizeAttrs->child_get_string("size-used"); # in bytes
-                    $aggrfreesize= $aggrSizeAttrs->child_get_string("size-available"); # in bytes
-                    }
-                my $nodeidinfo = $aggrInfo->child_get("aggr-ownership-attributes");
-                if (defined $nodeidinfo) {
-                    $nodename=$nodeidinfo->child_get_string("owner-name");
-                }
-                }
-        }
-    }
     my %volinfo = ( "name" => $name,
                "autosize_enabled" => $autosize,
                "max_autosize" => $autosizemax,
@@ -290,8 +237,6 @@ sub get_volinfo {
        $self->log->debug("Final result " . Dumper \%volinfo );
     return \%volinfo;
 }
-
-
 
 #it returns an array of vserver + volname. It's used for snapshots operations. If there is a problem an undef will be return.
 sub get_server_and_volname {
