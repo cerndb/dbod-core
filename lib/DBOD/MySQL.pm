@@ -45,32 +45,26 @@ sub BUILD {
 
 sub _connect_db {
     my $self = shift;
-    if (defined $self->metadata->{'subcategory'}) {
-        # Set up db connector
-        my $db_type = lc $self->metadata->{'subcategory'};
-        my $db_user = $self->config->{$db_type}->{'db_user'};
-        my $db_password = $self->config->{$db_type}->{'db_password'};
-        my $dsn;
-        my $db_attrs;
-        $self->log->info('Creating DB connection with instance');
-        $dsn = "DBI:mysql:mysql_socket=" . $self->metadata->{'socket'};
-        $db_attrs = {
-            AutoCommit => 1,
-        };
-        $self->db(DBOD::DB->new(
-                db_dsn  => $dsn,
-                db_user => $db_user,
-                db_password => $db_password,
-                db_attrs => $db_attrs,));
-    }
-    else {
-        $self->log->info('Skipping DB connection with instance');
-    }
+    # Set up db connector
+    my $db_user = $self->config->{mysql}->{'db_user'};
+    my $db_password = $self->config->{mysql}->{'db_password'};
+    my $dsn;
+    my $db_attrs;
+    $self->log->info('Creating DB connection with instance');
+    $dsn = "DBI:mysql:mysql_socket=" . $self->metadata->{'socket'};
+    $db_attrs = {
+        AutoCommit => 1,
+    };
+    $self->db(DBOD::DB->new(
+            db_dsn  => $dsn,
+            db_user => $db_user,
+            db_password => $db_password,
+            db_attrs => $db_attrs,));
     return;
 }
 
 #Parses mysql error file after a certain string
-sub parse_err_file {
+sub _parse_err_file {
 	my ($self, $cad, $file) = @_;
 	my $start = int(`grep \"$cad\" $file --line-number |tail -n1 |cut -d\":\" -f1`);
 	my $total = int(`wc -l $file|cut -d\" \" -f1`);
@@ -118,12 +112,12 @@ sub start {
 		if ($rc) {
 			$self->log->debug("MySQL instance is up");
 			$self->log->debug("mysqld output:\n\n" .
-                    $self->parse_err_file($log_search_string, $log_error_file));
+                    $self->_parse_err_file($log_search_string, $log_error_file));
 			return 1; #ok
 		} else {
 			$self->log->error("Problem starting MySQL instance. Please check.");
 			$self->log->error("mysqld output:\n\n" .
-                    $self->parse_err_file($log_search_string, $log_error_file));
+                    $self->_parse_err_file($log_search_string, $log_error_file));
 			return 0; #notok
 		}
 	}
