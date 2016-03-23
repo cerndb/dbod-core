@@ -94,36 +94,35 @@ sub start {
 
     my $entity = 'dod_' . $self->instance;
 
-	unless ($self->is_running()) {
+	if ($self->is_running()) {
+        $self->log->debug("Nothing to do");
+        return 1;
+	}
+	else{
         my ($cmd);
         my $log_search_string = "mysqld_safe Starting";
         my $hostname;
         $runtime->run_cmd(cmd => 'hostname', output => \$hostname);
         chomp($hostname);
         my $log_error_file = $self->datadir() . "/$hostname.err";
-		$self->log->debug("No instance running");
-		if ($skip_networking) {
-			$cmd = "/etc/init.d/mysql_$entity start --skip-networking";
-		}
-		else {
-			$cmd = "/etc/init.d/mysql_$entity start";
-		}
-		my $rc = $runtime->run_cmd( cmd => $cmd );
-		if ($rc) {
-			$self->log->debug("MySQL instance is up");
-			$self->log->debug("mysqld output:\n\n" .
+        if ($skip_networking) {
+            $cmd = "/etc/init.d/mysql_$entity start --skip-networking";
+        }
+        else {
+            $cmd = "/etc/init.d/mysql_$entity start";
+        }
+        my $rc = $runtime->run_cmd( cmd => $cmd );
+        if ($rc) {
+            $self->log->debug("MySQL instance is up");
+            $self->log->debug("mysqld output:\n\n" .
                     $self->_parse_err_file($log_search_string, $log_error_file));
-			return 1; #ok
-		} else {
-			$self->log->error("Problem starting MySQL instance. Please check.");
-			$self->log->error("mysqld output:\n\n" .
+            return 1; #ok
+        } else {
+            $self->log->error("Problem starting MySQL instance. Please check.");
+            $self->log->error("mysqld output:\n\n" .
                     $self->_parse_err_file($log_search_string, $log_error_file));
-			return 0; #notok
-		}
-	}
-	else{
-		$self->log->debug("The instance was running. Nothing to do");
-		return 1;
+            return 0; #notok
+        }
 	}
 }
 
@@ -134,11 +133,11 @@ sub stop {
 	if ($self->is_running()) {
         my ($cmd, $rc);
 		#Put the instance down
-		$self->log->debug("Instance is running. Shutting down");
+		$self->log->debug("Shutting down");
         $cmd = '/etc/init.d/mysql_'. $entity . ' stop';
 		$rc = $runtime->run_cmd( cmd => $cmd);
 		if ($rc) {
-			$self->log->debug("MySQL shutdown completed");
+			$self->log->debug("Shutdown completed");
 			return 1; #ok
 		} else  {
 			$self->log->error("Problem shutting down MySQL instance. Please check.");
@@ -146,8 +145,8 @@ sub stop {
 		}
 	}
     else{
-        $self->log->error("No instance running. Nothing to do.");
-        return 0;
+        $self->log->error("Nothing to do.");
+        return 1;
     }
 }
 

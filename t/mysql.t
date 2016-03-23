@@ -11,7 +11,7 @@ BEGIN { Log::Log4perl->easy_init() };
 use_ok('DBOD::MySQL');
 
 # Initialization
-
+use Test::MockModule;
 use File::ShareDir;
 
 my $metadata = {
@@ -34,11 +34,38 @@ my $mysql = DBOD::MySQL->new(
     config => $config,
 );
 
+my $runtime = Test::MockModule->new('DBOD::Runtime');
+
+my @outputs = (
+    0,1, # check_State
+    0, # Start OK. Nothing to do
+    1,0,1, # Start OK
+    1,0,1, # Start OK. Skip networking
+    1,0,0, # Start FAIL
+    1, # Stop OK. Nothing to do
+    0,1, # Stop OK
+    0,0); # stop FAIL
+
 # Check status
-ok(!$mysql->is_running(), 'check_state');
+$runtime->mock('run_cmd' => sub {
+        my $ret = shift @outputs;
+        #DEBUG "run_cmd: " . $ret;
+        return $ret;}
+);
+
+ok($mysql->is_running(), 'check_state: RUNNING');
+ok(!$mysql->is_running(), 'check_state: STOPPED');
+
+# Instance start
+ok($mysql->start(), 'start OK: Nothing to do');
+ok($mysql->start(), 'start OK');
+ok($mysql->start( skip_networking => 1), 'start OK. Skip networking');
+ok(!$mysql->start(), 'start FAIL');
 
 # Stop
-ok(!$mysql->stop(), 'stop');
+ok($mysql->stop(), 'stop OK: Nothing to do');
+ok($mysql->stop(), 'stop OK');
+ok(!$mysql->stop(), 'stop FAIL');
 
 $mysql->_connect_db();
 isa_ok($mysql->db(), 'DBOD::DB', 'db connection object OK');
