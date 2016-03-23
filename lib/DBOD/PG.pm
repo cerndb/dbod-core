@@ -56,17 +56,11 @@ sub _connect_db {
 
 #Starts a PostgreSQL database
 sub start {
-	my ($self) = @_;
-	my ($cmd, $rc);
-    my $entity = 'dod_' . $self->instance;
-
-	#Check is instance is running
-	#Check if server is running
-	$rc = $self->is_running() ;
-	if ($rc == 0) {
-		$self->log->debug("No instance running");
-		$cmd = "/etc/init.d/pgsql_$entity start";
-		$rc = $runtime->run_cmd(cmd => $cmd);
+	my $self = shift;
+    my $entity = 'dod_' . $self->instance();
+	if ($self->is_running() == 0) {
+		my $cmd = "/etc/init.d/pgsql_$entity start";
+		my $rc = $runtime->run_cmd(cmd => $cmd);
 		if ($rc) {
 			$self->log->debug("PostgreSQL instance is up");
 			return 1; #ok
@@ -76,7 +70,7 @@ sub start {
 		}
 	}
 	else{
-		$self->log->debug("The instance was running. Nothing to do");
+		$self->log->debug("Nothing to do");
 		return 1;
 	}
 }
@@ -84,18 +78,10 @@ sub start {
 #Stops a PostgreSQL database
 sub stop {
 	my $self = shift;
-	my ($cmd, $rc);
     my $entity = 'dod_' . $self->instance;
-	#Check if server is running
-	$rc = $self->is_running() ;
-	if ($rc == 0) {
-		$self->log->debug("No instance running. Nothing to do.");
-		return 1;
-	}
-	else {
-		# Stops instance
-		$cmd = "/etc/init.d/pgsql_$entity stop";
-		$rc = $runtime->run_cmd(cmd => $cmd);
+	if ($self->is_running()) {
+		my $cmd = "/etc/init.d/pgsql_$entity stop";
+		my $rc = $runtime->run_cmd(cmd => $cmd);
 		if ($rc) {
 			$self->log->debug("PostgreSQL shutdown completed");
 			return 1; #ok
@@ -104,10 +90,14 @@ sub stop {
 			return 0; #not ok
 		}
 	}
+	else {
+		$self->log->debug("Nothing to do.");
+		return 1;
+	}
 }
 
 sub is_running {
-	my ($self) = @_;
+	my $self = shift;
 	my ($cmd, $rc);
 	#Check if database server is running
 	$cmd = $self->pg_ctl() . ' status -D ' . $self->datadir() . ' -s';

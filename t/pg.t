@@ -13,6 +13,7 @@ BEGIN { Log::Log4perl->easy_init() };
 # Initialization
 
 use DBOD::Runtime;
+use Test::MockModule;
 
 my $rt = DBOD::Runtime->new();
 my @lines = <DATA>;
@@ -39,11 +40,37 @@ my $pg = DBOD::PG->new(
     config => $config,
 );
 
+my $runtime = Test::MockModule->new('DBOD::Runtime');
+
+my @outputs = (
+    0,1, # check_State
+    0,1, # start OK
+    1, # start OK. Nothing to do
+    0,0, # start FAIL
+    0, # Stop OK. Nothing to do
+    1,1, # Stop OK
+    1,0,
+    1,0); # Stop FAIL
+
 # Check status
-ok(!$pg->is_running(), 'check_state');
+$runtime->mock('run_cmd' => sub {
+        my $ret = shift @outputs;
+        #DEBUG "run_cmd: " . $ret;
+        return $ret;}
+    );
+
+ok(!$pg->is_running(), 'check_state STOPPED');
+ok($pg->is_running(), 'check_state RUNNING');
+
+# Instance start
+ok($pg->start(), 'start OK');
+ok($pg->start(), 'start OK: Nothing to do');
+ok(!$pg->start(), 'start FAIL');
 
 # Stop
-ok($pg->stop(), 'stop');
+ok($pg->stop(), 'stop OK: Nothing to do');
+ok($pg->stop(), 'stop OK');
+ok(!$pg->stop(), 'stop FAIL');
 
 $pg->_connect_db();
 isa_ok($pg->db(), 'DBOD::DB', 'db connection object OK');
