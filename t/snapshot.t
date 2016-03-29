@@ -3,7 +3,7 @@ use strict;
 use warnings;
 use Test::More;
 
-use_ok('DBOD::Snapshot');
+use_ok('DBOD::Storage::NetApp::Snapshot');
 
 use Log::Log4perl qw(:easy);
 BEGIN { Log::Log4perl->easy_init() };
@@ -18,10 +18,10 @@ my $pitr_past = '2014-02-13_09:23:34';
 my $pitr_close = '2015-12-03_17:44:30';
 
 subtest 'check_time' => sub {
-        ok(DBOD::Snapshot::check_times($snapshot, $pitr, $version), 'Valid date pair');
-        ok(DBOD::Snapshot::check_times($snapshot . '_cold', $pitr, $version), 'Cold snapshot');
-        ok(!DBOD::Snapshot::check_times($snapshot . '_cold', $pitr_close, $version), 'Cold snapshot, PITR too close');
-        ok(!DBOD::Snapshot::check_times($snapshot, $pitr_past, $version), 'Invalid date pair');
+        ok(DBOD::Storage::NetApp::Snapshot::check_times($snapshot, $pitr, $version), 'Valid date pair');
+        ok(DBOD::Storage::NetApp::Snapshot::check_times($snapshot . '_cold', $pitr, $version), 'Cold snapshot');
+        ok(!DBOD::Storage::NetApp::Snapshot::check_times($snapshot . '_cold', $pitr_close, $version), 'Cold snapshot, PITR too close');
+        ok(!DBOD::Storage::NetApp::Snapshot::check_times($snapshot, $pitr_past, $version), 'Invalid date pair');
 };
 
 done_testing();

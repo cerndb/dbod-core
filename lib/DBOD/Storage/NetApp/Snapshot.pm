@@ -5,7 +5,7 @@
 # granted to it by virtue of its status as Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-package DBOD::Snapshot;
+package DBOD::Storage::NetApp::Snapshot;
 use strict;
 use warnings FATAL => 'all';
 use Log::Log4perl qw(:easy);

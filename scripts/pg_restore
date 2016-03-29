@@ -64,7 +64,7 @@ sub body {
 	$entity = 'dod_' . $job->entity;	
 
 	my $actual_version = $runtime->get_instance_version($job->metadata->{'version'});
-	if (DBOD::Snapshot::check_times($job->snapshot, $job->pitr, $actual_version )){
+	if (DBOD::Storage::NetApp::Snapshot::check_times($job->snapshot, $job->pitr, $actual_version )){
 		$job->debug->error('Error validating snapshot file and/or PITR time');
 		$job->_output(1);
 		return 1;
