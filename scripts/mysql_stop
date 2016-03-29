@@ -33,11 +33,11 @@ BEGIN {
     Log::Log4perl->easy_init() ;
 }
 
-my $job = DBOD::MySQL::stop->new_with_options;
+my $job = DBOD::Systems::MySQL::stop->new_with_options;
 
 sub body {
 
-	my $mysql = DBOD::MySQL->new(
+	my $mysql = DBOD::Systems::MySQL->new(
 		instance => $self->entity,
 		metadata => $self->metadata,
 	);
@@ -61,7 +61,7 @@ sub body {
 
 	#If instance is CRS
 	if ($job->metadata->{'crs_ref'}) {
-		$rc = DBOD::CRS::stop_resource($entity, $job->config->{'mysql'}->{'oracle_crs'});
+		$rc = DBOD::Systems::CRS::stop_resource($entity, $job->config->{'mysql'}->{'oracle_crs'});
 	}
 	else {
 		$rc = $mysql->stop();

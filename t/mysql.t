@@ -8,7 +8,7 @@ use Data::Dumper;
 use Log::Log4perl qw(:easy);
 BEGIN { Log::Log4perl->easy_init() };
 
-use_ok('DBOD::MySQL');
+use_ok('DBOD::Systems::MySQL');
 
 # Initialization
 use Test::MockModule;
@@ -28,7 +28,7 @@ my $config = {
     },
     };
 
-my $mysql = DBOD::MySQL->new(
+my $mysql = DBOD::Systems::MySQL->new(
     instance => 'mytest',
     metadata => $metadata,
     config => $config,

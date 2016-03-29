@@ -5,7 +5,7 @@
 # granted to it by virtue of its status as Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-package DBOD::PG;
+package DBOD::Systems::PG;
 
 use strict;
 use warnings;

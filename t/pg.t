@@ -5,7 +5,7 @@ use Test::More;
 use File::ShareDir;
 use Data::Dumper;
 
-use_ok('DBOD::PG');
+use_ok('DBOD::Systems::PG');
 
 use Log::Log4perl qw(:easy);
 BEGIN { Log::Log4perl->easy_init() };
@@ -34,7 +34,7 @@ my $config = {
     },
 };
 
-my $pg = DBOD::PG->new(
+my $pg = DBOD::Systems::PG->new(
     instance => 'pgtest',
     metadata => $metadata,
     config => $config,

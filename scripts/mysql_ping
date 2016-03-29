@@ -37,7 +37,7 @@ my $runtime = DBOD::Runtime->new;
 
 sub body {
 
-	my $mysql = DBOD::MySQL->new(
+	my $mysql = DBOD::Systems::MySQL->new(
 		instance => $self->entity,
 		metadata => $self->metadata,
 	);

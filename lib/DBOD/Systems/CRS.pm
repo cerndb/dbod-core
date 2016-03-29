@@ -1,4 +1,4 @@
-package DBOD::CRS;
+package DBOD::Systems::CRS;
 use strict;
 use warnings FATAL => 'all';
 

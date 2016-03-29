@@ -5,7 +5,7 @@
 # granted to it by virtue of its status as Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-package DBOD::MySQL;
+package DBOD::Systems::MySQL;
 
 use strict;
 use warnings;

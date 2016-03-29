@@ -38,11 +38,11 @@ BEGIN {
 }
 
 
-my $job = DBOD::MySQL::start->new_with_options();
+my $job = DBOD::Systems::MySQL::start->new_with_options();
 
 sub body {
 
-	my $mysql = DBOD::MySQL->new(
+	my $mysql = DBOD::Systems::MySQL->new(
 		instance => $self->entity,
 		metadata => $self->metadata,
 	);
@@ -65,7 +65,7 @@ sub body {
 
 	#If instance is CRS
 	if ($job->metadata->{'crs_ref'}) {
-		$rc = DBOD::CRS::start_resource($entity, $job->config->{'mysql'}->{'oracle_crs'});
+		$rc = DBOD::Systems::CRS::start_resource($entity, $job->config->{'mysql'}->{'oracle_crs'});
 	} else {
 		$rc = $mysql->start();
 	}	

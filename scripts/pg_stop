@@ -36,11 +36,11 @@ BEGIN {
 }
 
 
-my $job = DBOD::PG::stop->new_with_options();
+my $job = DBOD::Systems::PG::stop->new_with_options();
 
 sub body {
     # Initialize a new PG instance object with the entity details
-	my $pg = DBOD::PG->new(
+	my $pg = DBOD::Systems::PG->new(
         instance => $self->entity,
         metadata => $self->metadata,
     );
@@ -59,7 +59,7 @@ sub body {
 
 	#If instance is CRS
 	if ($job->metadata->{'crs_ref'}) {
-		$rc = DBOD::CRS::stop_resource($entity, $job->config->{'common'}->{'crsctl'});
+		$rc = DBOD::Systems::CRS::stop_resource($entity, $job->config->{'common'}->{'crsctl'});
 	} else {
 		$rc = $pg->stop();
 	}	

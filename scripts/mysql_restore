@@ -64,7 +64,7 @@ sub read_directory {
 
 sub body {
 
-	my $mysql = DBOD::MySQL->new(
+	my $mysql = DBOD::Systems::MySQL->new(
 		instance => $self->entity,
 		metadata => $self->metadata,
 	);
@@ -145,7 +145,7 @@ sub body {
 	if (! $instance_down ) { # we need to shutdown the instance
 		#put the instance down
 		if ($job->metadata->{'crs_ref'}) {
-			$rc = DBOD::CRS::stop_resource($entity, $job->config->{'mysql'}->{'oracle_crs'});
+			$rc = DBOD::Systems::CRS::stop_resource($entity, $job->config->{'mysql'}->{'oracle_crs'});
 		}
 		else {
 			$rc = $mysql->stop();
@@ -268,7 +268,7 @@ sub body {
 	}
 
 	if ($job->metadata->{'crs_ref'}) {
-		$rc = DBOD::CRS::start_resource($entity, $job->config->{'mysql'}->{'oracle_crs'});
+		$rc = DBOD::Systems::CRS::start_resource($entity, $job->config->{'mysql'}->{'oracle_crs'});
 	} else {
 		$rc = $mysql->start();
 	}	

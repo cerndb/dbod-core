@@ -39,7 +39,7 @@ my $runtime = DBOD::Runtime->new;
 
 sub body {
 
-    my $pg = DBOD::PG->new(
+    my $pg = DBOD::Systems::PG->new(
         instance => $self->entity,
         metadata => $metadata,
     );
