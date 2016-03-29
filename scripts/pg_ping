@@ -6,15 +6,12 @@
 # granted to it by virtue of its status as Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-
 # Extension of the base DBOD::Job class to add extra required parameters
-package DBOD::PG::ping;
+package ping;
 use Moose;
-
 extends 'DBOD::Job';
-with 'MooseX::Getopt::Usage',
-     'MooseX::Getopt::Usage::Role::Man';
-has 'help' => (is => 'ro', isa => 'Bool', documentation => qq{Print command usage} );
+#has 'help' => 
+#    (is => 'ro', isa => 'Bool', documentation => qq{Print command usage} );
 
 # Main
 package main;
@@ -23,79 +20,47 @@ use strict;
 use warnings;
 
 use Log::Log4perl;
-use DBOD::Runtime;
-use DBOD::PG;
+use DBOD qw( $ERROR $OK);
+use DBOD::Systems::PG;
+use Try::Tiny;
+use Data::Dumper;
 
 # Initiates logger
 BEGIN { 
     Log::Log4perl->easy_init() ;
 }
 
-my $job = DBOD::PG::ping->new_with_options();
-my $runtime = DBOD::Runtime->new;
+my $job = ping->new_with_options();
 
 sub body {
 
+    $job->log->info('Pinging '. $job->entity );
+
 	my $pg = DBOD::Systems::PG->new(
-		instance => $self->entity,
-		metadata => $metadata,
+		instance => $job->entity(),
+		metadata => $job->metadata(),
+		config => $job->config(),
 	);
 
-	$job->log->info('Executing posgresql start-up on '. $job->entity );
-	
-    my($rc,$entity);
-	$entity = 'dod_' . $job->entity;	
-	
-	#Check if instance is running
-	unless($pg->is_running()) {
-		$job->log->debug("No instance running");
-		$job->_output(1);
-		return 1;
-	}
+    try {
+        $pg->_connect_db();
+        unless($pg->db->do('delete from dod_ping') == 1) {
+            $job->log->debug('Problem deleting entry from ping table');
+        };
+        unless($pg->db->do('insert into dod_ping select current_date, current_time') == 1) {
+            $job->log->debug('Problem deleting entry from ping table');
+            $job->log->debug("Database seems UP but not responsive");
+        }
+        $job->log->debug("Database is UP and responsive");
+    } catch {
+        $job->log->error("Problem connecting to database. DB object:");
+        $job->log->debug( Dumper $pg->db() );
+        return $ERROR;
 
-	#build ping file
-	my(@lines)=<DATA>;
-	if (scalar(@lines) != 3) {	#we didnt read properly the data
-		$job->log->error("pg_hba_local.conf couldnt be generated, wrong number of lines. Please contact dbod admins!.");
-		$job->_output(1);
-		return 1;
-	}
-	my $tempfile = $runtime->get_temp_filename('pg_ping_' . $job->entity . 'XXXX','/tmp','.sql');
+    };
 
-	$runtime->write_file_arr($tempfile,\@lines);
-	if (! -e $tempfile) {
-		$job->log->error("<$tempfile> file couldnt be written. Please contact dbod admins!.");
-		$job->_output(1);
-		return 1;
-	} else {
-		$rc = chmod 0700, $tempfile;
-		if ($rc == 0) {
-			$job->log->error("<$tempfile> permissions couldnt be set. Please contact dbod admins!.");
-			$job->_output(1);
-			return 1;
-		}
-	}
-
-	my @output=();
-	my $rc_ping = $runtime->run_str($job->metadata->{'bindir'} . "/psql -h " . $job->metadata->{'socket'} ." -p " . $job->metadata->{'port'} . " -U " . $job->config->{'pgsql'}->{'db_user'} . " -f " . $tempfile , \@output);
-
-	if ($rc_ping)  {
-		$job->log->debug("database is up");
-	}
-	else {  
-		$job->log->error("Problem pinging database. Please check!");
-		return 1;
-	}
-
-	# The End
-	$job->log->debug("pg_ping is over.");
-	$job->_output(0);
-	return 0;	
+	return $OK;	
 }
 
 $job->run(\&body);
 
-__DATA__
-select * from dod_ping;
-delete from dod_ping;
-insert into dod_ping select current_date, current_time;
