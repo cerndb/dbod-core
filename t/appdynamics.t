@@ -4,7 +4,7 @@ use warnings;
 use Test::More;
 use Data::Dumper;
 
-use_ok('DBOD::Appdynamics');
+use_ok('DBOD::Monitoring::Appdynamics');
 
 use Log::Log4perl qw(:easy);
 BEGIN { Log::Log4perl->easy_init() };
@@ -41,29 +41,29 @@ my $data = \%metadata;
 
 subtest 'is_enabled' => sub {
         $mock_db->mock('do', sub {return 1;});
-        ok(DBOD::Appdynamics::is_enabled('testserver', $conf->{appdynamics}),
+        ok(DBOD::Monitoring::Appdynamics::is_enabled('testserver', $conf->{appdynamics}),
             'is_enabled: true');
         $mock_db->mock('do', sub {return 0;});
-        ok(!DBOD::Appdynamics::is_enabled('testserver', $conf->{appdynamics}),
+        ok(!DBOD::Monitoring::Appdynamics::is_enabled('testserver', $conf->{appdynamics}),
             'is_enabled: false');
     };
 
 subtest 'disable' => sub {
         $mock_db->mock('do', sub {return 1;});
-        ok(DBOD::Appdynamics::disable('testserver', $conf->{appdynamics}),
+        ok(DBOD::Monitoring::Appdynamics::disable('testserver', $conf->{appdynamics}),
             'disable: SUCCESS');
         $mock_db->mock('do', sub {return 0;});
-        ok(!DBOD::Appdynamics::disable('testserver', $conf->{appdynamics}),
+        ok(!DBOD::Monitoring::Appdynamics::disable('testserver', $conf->{appdynamics}),
             'disable: FAIL');
     };
 
 subtest 'enable' => sub {
         print Dumper $data;
         $mock_db->mock('do', sub {return 1;});
-        ok(DBOD::Appdynamics::enable('testserver', $conf, $data),
+        ok(DBOD::Monitoring::Appdynamics::enable('testserver', $conf, $data),
             'enable: SUCCESS');
         $mock_db->mock('do', sub {return 0;});
-        ok(!DBOD::Appdynamics::enable('testserver', $conf, $data),
+        ok(!DBOD::Monitoring::Appdynamics::enable('testserver', $conf, $data),
             'enable: FAIL');
     };
 done_testing();

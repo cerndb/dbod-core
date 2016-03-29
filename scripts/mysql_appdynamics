@@ -50,7 +50,7 @@ sub body {
 	$servername = $job->entity;
 	$servername =~ s/dod_//g;
 
-	if (DBOD::Appdynamics::is_enabled($servername, $job->config->{'appdynamics'})) {
+	if (DBOD::Monitoring::Appdynamics::is_enabled($servername, $job->config->{'appdynamics'})) {
 		$job->log->debug("Either directory: <$servername> is already monitored by AppDynamics.");
 		$isappmonitored =1;
 	} else {
@@ -71,7 +71,7 @@ sub body {
 	} 
 
 	my $connectionstring	= "jdbc:mysql://" . $job->metadata->{'hosts'}[0] . ":" . $job->metadata->{'port'} . "/";
-	my $functionalalias = DBOD::Appdynamics::get_active_alias("dod_" . $job->entity);
+	my $functionalalias = DBOD::Monitoring::Appdynamics::get_active_alias("dod_" . $job->entity);
 	if ( $functionalalias eq '0' ) {
 		$job->log->debug("Entity: <" . $job->entity . "> has not a valid functional alias. Please check!");
 		$functionalalias=$job->metadata->{'hosts'}[0];
@@ -79,7 +79,7 @@ sub body {
 		$job->log->debug("Entity: <" . $job->entity . "> has <$functionalalias > as functional alias");
 	}
 	if ($job->enable && !$isappmonitored) {
-		if (DBOD::Appdynamics::enable($servername, $job->config, $job->metadata)) {
+		if (DBOD::Monitoring::Appdynamics::enable($servername, $job->config, $job->metadata)) {
 			$job->log->debug("Entity: <" . $job->entity . "> -> servername: <$servername> has been enabled");
 			$job->_output(0);
 			return 0;
@@ -95,7 +95,7 @@ sub body {
 	} 
 
 	if ($job->disable && $isappmonitored) {
-		if (DBOD::Appdynamics::disable($servername, $job->config->{'appdynamics'})) {
+		if (DBOD::Monitoring::Appdynamics::disable($servername, $job->config->{'appdynamics'})) {
 			$job->log->debug("Entity: <" . $job->entity . "> -> servername: <$servername> has been disabled");
 			$job->_output(0);
 			return 0;

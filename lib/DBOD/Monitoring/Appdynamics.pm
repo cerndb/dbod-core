@@ -1,4 +1,4 @@
-package DBOD::Appdynamics;
+package DBOD::Monitoring::Appdynamics;
 use strict;
 use warnings FATAL => 'all';
 
