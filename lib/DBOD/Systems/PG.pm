@@ -29,7 +29,7 @@ sub BUILD {
     $self->pg_ctl($self->metadata->{bindir} . '/pg_ctl');
 
     $self->logger->debug('Instance: '. $self->instance .
-        ' datadir: ' . $self->datadir . ' pg_ctl: '. $self->pg_ctl);
+        "\ndatadir: " . $self->datadir . "\npg_ctl: " . $self->pg_ctl);
     return;
 };
 
@@ -40,8 +40,8 @@ sub _connect_db {
     my $dsn;
     my $db_attrs;
     $self->log->info('Creating DB connection with instance');
-    $dsn = "DBI:Pg:dbname=postgres;host=" . $self->metadata->{socket}.
-        ";port=" . $self->metadata->{port};
+    $dsn = "DBI:Pg:dbname=postgres;host=dbod-" . $self->instance .
+        ".cern.ch;port=" . $self->metadata->{port};
     $db_attrs = {
         AutoCommit => 1,
         RaiseError => 1,
