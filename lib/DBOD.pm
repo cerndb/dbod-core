@@ -9,10 +9,16 @@ package DBOD;
 
 use strict;
 use warnings;
-use Exporter;
+use base 'Exporter';
+use Readonly;
 
-our ($VERSION);
+our ($VERSION, @EXPORT_OK, $ERROR, $OK);
 
-$VERSION     = 0.67;
+$VERSION = 0.70;
+
+Readonly $ERROR => 1;
+Readonly $OK => 0;
+
+@EXPORT_OK   = qw( $ERROR $OK );
 
 1;

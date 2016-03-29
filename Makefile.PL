@@ -35,6 +35,8 @@ requires    'Net::LDAP' => 0;
 requires    'JSON' => 0;
 requires    'MooseX::Getopt::Usage' => 0;
 requires    'Try::Tiny' => 0;
+requires    'Readonly' => 0;
+requires    'Readonly::XS' => 0;
 requires    'SOAP::Lite' => 0;
 requires    'XML::Parser' => 0;
 
