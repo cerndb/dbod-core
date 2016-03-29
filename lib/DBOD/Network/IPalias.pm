@@ -14,8 +14,8 @@ our $VERSION = 0.67;
 
 use Log::Log4perl qw(:easy);
 use DBOD::Runtime;
-use DBOD::Api;
-use DBOD::Network;
+use DBOD::Network::Api;
+use DBOD::Network::LanDB;
 
 sub add_alias {
     # Registers ip alias for the dbname

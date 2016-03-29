@@ -19,7 +19,7 @@ with 'MooseX::Getopt';
 use Data::Dumper;
 
 use DBOD::Config;
-use DBOD::Api qw( load_cache get_entity_metadata );
+use DBOD::Network::Api qw( load_cache get_entity_metadata );
 use DBOD::DB;
 
 # Input

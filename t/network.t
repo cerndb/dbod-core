@@ -7,7 +7,6 @@ use Data::Dumper;
 
 use_ok('DBOD::Network::LanDB');
 
-use DBOD::Network;
 use Test::MockObject;
 use Test::MockObject::Extends;
 use Test::MockModule;

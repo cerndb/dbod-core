@@ -7,7 +7,6 @@ use Data::Dumper;
 
 use_ok('DBOD::Network::Api');
 
-use DBOD::Api;
 use Test::MockObject;
 use Test::MockModule;
 

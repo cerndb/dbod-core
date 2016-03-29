@@ -15,7 +15,7 @@ use Log::Log4perl;
 
 use DBOD::Job;
 use Data::Dumper;
-use DBOD::Api;
+use DBOD::Network::Api;
 use JSON; 
 
 use DBOD::IPalias;
