@@ -13,8 +13,15 @@ use warnings;
 our $VERSION = 0.67;
 
 use Moose;
-with 'MooseX::Log::Log4perl';
-with 'MooseX::Getopt';
+with 'MooseX::Log::Log4perl',
+     'MooseX::Getopt::Usage';
+
+sub getopt_usage_config {
+    return (
+        format   => "Usage: %c [OPTIONS]",
+        headings => 0,
+    );
+ }
 
 use Data::Dumper;
 
@@ -23,14 +30,20 @@ use DBOD::Network::Api qw( load_cache get_entity_metadata );
 use DBOD::DB;
 
 # Input
-has 'entity' => ( is => 'ro', isa => 'Str', required => 1);
-has 'debug' => (is => 'ro', isa => 'Bool', default=> 0);
+has 'entity' => ( is => 'ro', isa => 'Str', required => 1,
+    documentation => 'Entity to act on');
+has 'debug' => (is => 'ro', isa => 'Bool', default=> 0,
+    documentation => 'Enables debug messages');
 
 # Internal attributes 
-has 'md_cache' => (is => 'rw', isa =>'HashRef');
-has 'config' => (is => 'rw', isa => 'HashRef');
-has 'metadata' => (is => 'rw', isa => 'HashRef');
-has 'db' => (is => 'rw', isa => 'Object');
+has 'md_cache' => (is => 'rw', isa =>'HashRef',
+    documentation => 'Local metadata cache');
+has 'config' => (is => 'rw', isa => 'HashRef',
+    documentation => 'General configuration (from core.conf file)');
+has 'metadata' => (is => 'rw', isa => 'HashRef',
+    documentation => 'Entity metadata (from API)');
+has 'db' => (is => 'rw', isa => 'Object',
+    documentation => 'DB connection object');
 
 
 # output
