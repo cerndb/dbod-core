@@ -5,7 +5,7 @@
 # granted to it by virtue of its status as Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-package DBOD::Network;
+package DBOD::Network::LanDB;
 
 use strict;
 use warnings;
@@ -84,7 +84,7 @@ sub create_alias {
     my ($input, $config) = @_;
 
     DEBUG "Registering ip aplias $input->{ip_alias} in API for entity: $input->{dbname}";
-    my $call = DBOD::Api::set_ip_alias($input->{dbname}, $input->{ip_alias}, $config);
+    my $call = DBOD::Network::Api::set_ip_alias($input->{dbname}, $input->{ip_alias}, $config);
     my $dnsname = $call->{response}->[0];
     my $cmd = $config->{'ipalias'}->{'change_command'};
     my $host = $input->{hosts}->[0];

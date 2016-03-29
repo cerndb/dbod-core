@@ -5,7 +5,7 @@ use Test::More;
 use File::ShareDir;
 use Data::Dumper;
 
-use_ok( 'DBOD::Ldap' );
+use_ok( 'DBOD::Network::Ldap' );
 
 use Test::MockObject;
 use Test::MockModule;
@@ -33,7 +33,7 @@ subtest "load_ldif" => sub {
 # part of the templates test suite.
 
 # Try to read a wrongly formated LDIF file
-    is( DBOD::Ldap::load_ldif( "${share_dir}/test.json" ), undef, 'Incorrect LDIF load' );
+    is( DBOD::Network::Ldap::load_ldif( "${share_dir}/test.json" ), undef, 'Incorrect LDIF load' );
 
     };
 
@@ -59,11 +59,11 @@ $ldap_m->mock( 'new', sub {return $ldap_client} );
 
 subtest "get_connection" => sub {
 
-    my $conn = DBOD::Ldap::get_connection( \%config );
+    my $conn = DBOD::Network::Ldap::get_connection( \%config );
     like( $conn, qr/Test::MockObject/, 'get_connection returns object' );
 
     $msg->set_true( 'code' );
-    $conn = DBOD::Ldap::get_connection( \%config );
+    $conn = DBOD::Network::Ldap::get_connection( \%config );
     like( $conn, qr/Test::MockObject/, 'get_connection binding FAILS' );
 
 };
@@ -71,7 +71,7 @@ subtest "get_connection" => sub {
 subtest "timestamp_entity" => sub {
 
     my %input = ( dbname => 'test', );
-    is( DBOD::Ldap::timestamp_entity( $ldap_client, \%input ), undef, 'timestamp_entity OK' );
+    is( DBOD::Network::Ldap::timestamp_entity( $ldap_client, \%input ), undef, 'timestamp_entity OK' );
 
 };
 
@@ -79,13 +79,13 @@ subtest "get_entity" => sub {
 
     $msg->set_true( 'code' );
     $msg->mock( 'error', sub { return 'LDAP OK'} );
-    my $entity = DBOD::Ldap::get_entity( $ldap_client, 'entity_base', undef );
+    my $entity = DBOD::Network::Ldap::get_entity( $ldap_client, 'entity_base', undef );
     like ( $entity, qr/ARRAY/, 'get_entity OK' );
 
     $msg->set_false( 'code' );
     $msg->mock( 'error', sub { return 'LDAP ERROR'} );
     $msg->mock( 'entries', sub { return undef } );
-    $entity = DBOD::Ldap::get_entity( $ldap_client, 'entity_base', 'subtree' );
+    $entity = DBOD::Network::Ldap::get_entity( $ldap_client, 'entity_base', 'subtree' );
     like ( $entity, qr/ARRAY/, 'get_entity FAIL' );
 
 };
@@ -94,11 +94,11 @@ subtest "add_attributes" => sub {
 
     $msg->set_true( 'code' );
     $msg->mock( 'error', sub { return 'LDAP OK'} );
-    ok( DBOD::Ldap::add_attributes( $ldap_client, @attributes ), 'add_attributes OK' );
+    ok( DBOD::Network::Ldap::add_attributes( $ldap_client, @attributes ), 'add_attributes OK' );
 
     $msg->set_false( 'code' );
     $msg->mock( 'error', sub { return 'LDAP ERROR'} );
-    is( DBOD::Ldap::add_attributes( $ldap_client, @attributes ), undef, 'add_attributes FAIL' );
+    is( DBOD::Network::Ldap::add_attributes( $ldap_client, @attributes ), undef, 'add_attributes FAIL' );
 
 };
 
@@ -106,11 +106,11 @@ subtest "modify_attributes" => sub {
 
     $msg->set_true( 'code' );
     $msg->mock( 'error', sub { return 'LDAP OK'} );
-    ok( DBOD::Ldap::modify_attributes( $ldap_client, @attributes ), 'modify_attributes OK' );
+    ok( DBOD::Network::Ldap::modify_attributes( $ldap_client, @attributes ), 'modify_attributes OK' );
 
     $msg->set_false( 'code' );
     $msg->mock( 'error', sub { return 'LDAP ERROR'} );
-    is( DBOD::Ldap::modify_attributes( $ldap_client, @attributes ), undef, 'modify_attributes FAIL' );
+    is( DBOD::Network::Ldap::modify_attributes( $ldap_client, @attributes ), undef, 'modify_attributes FAIL' );
 
 };
 

@@ -5,7 +5,7 @@
 # granted to it by virtue of its status as Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-package DBOD::IPalias;
+package DBOD::Network::IPalias;
 
 use strict;
 use warnings;
@@ -28,14 +28,14 @@ sub add_alias {
     my ($dbname, $host, $config) = @_;
     my $ipalias = "dbod-" . $dbname;
     $ipalias =~ s/\_/\-/g; # Substitutes underscores for dashes for ip-alias
-    DBOD::Api::set_ip_alias($dbname, $ipalias, $config);
-    my $result = DBOD::Api::get_ip_alias($dbname, $config);
+    DBOD::Network::Api::set_ip_alias($dbname, $ipalias, $config);
+    my $result = DBOD::Network::Api::get_ip_alias($dbname, $config);
     my $dnsname;
     if (defined $result) {
         ($dnsname, $ipalias) = @{$result->{'response'}};
         # Extract dnsname and alias from JSON result of Api call
         # Register ip alias to dns name on the CERN Network service
-        DBOD::Network::add_ip_alias($dnsname, $ipalias, $config);
+        DBOD::Network::LanDB::add_ip_alias($dnsname, $ipalias, $config);
         # Generates DNS entry
         my $cmd = $config->{'ipalias'}->{'change_command'};
         my $command = $cmd . " --dnsname=" . $dnsname . " --add_ip=" . $host;
@@ -70,13 +70,13 @@ sub remove_alias {
     # Returns false if it fails, true if it succeeds
     
     my ($dbname, $host, $config) = @_;
-    my $result = DBOD::Api::get_ip_alias($dbname, $config);
-    DBOD::Api::remove_ip_alias($dbname, $config);
+    my $result = DBOD::Network::Api::get_ip_alias($dbname, $config);
+    DBOD::Network::Api::remove_ip_alias($dbname, $config);
     if (defined $result) {
         my ($dnsname, $ipalias) = @{$result->{'response'}};
         # Extract dnsname and alias from JSON result of Api call
         # Register ip alias to dns name on the CERN Network service
-        DBOD::Network::remove_ip_alias($dnsname, $ipalias, $config);
+        DBOD::Network::LanDB::remove_ip_alias($dnsname, $ipalias, $config);
         # Generates DNS entry
         my $cmd = $config->{'ipalias'}->{'change_command'};
         my $command = $cmd . " --dnsname=" . $dnsname . " --rm_ip=" . $host;

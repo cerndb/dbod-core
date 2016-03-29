@@ -5,7 +5,7 @@
 # granted to it by virtue of its status as Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-package DBOD::Ldap;
+package DBOD::Network::Ldap;
 use strict;
 use warnings;
 
@@ -67,7 +67,7 @@ sub timestamp_entity {
     my ($conn, $entity) = @_;
     my $entity_name = "dod_" . lc $entity->{dbname};
     my $base = "SC-ENTITY=$entity_name,SC-CATEGORY=entities,ou=syscontrol,dc=cern,dc=ch";
-    DBOD::Ldap::modify_attributes($conn, $base,
+    DBOD::Network::Ldap::modify_attributes($conn, $base,
         ['SC-COMMENT' => 'Entity Modified @(' . localtime(time) . ')']);
     return;
 }

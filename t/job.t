@@ -69,7 +69,7 @@ subtest 'DB connection' => sub {
     $config{api} = \%api;
 
     # Mock get_entity_metadata and Config::load()
-    my $api_mock = Test::MockModule->new('DBOD::Api');
+    my $api_mock = Test::MockModule->new('DBOD::Network::Api');
     my $config_mock = Test::MockModule->new('DBOD::Config');
     $config_mock->mock( load => sub { return \%config; } );
 

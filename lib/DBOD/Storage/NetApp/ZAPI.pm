@@ -459,7 +459,7 @@ sub snap_list {
 }
 
 sub snap_prepare {
-    my($self,$server_zapi,$volume_name,$num)=@_;
+    my($self, $server_zapi, $volume_name,$num)=@_;
     $self->log->info("Parameters server_zapi: not displayed, volume_name: <$volume_name>, num: <$num>");
 
     my ($rc);

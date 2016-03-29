@@ -402,7 +402,7 @@ sub body {
 	if ($job->fake) {
 		$job->log->debug('we would run: $api->set_metadata($job->entity, $job->metadata, $job->config)');
 	} else {
-		DBOD::Api::set_metadata($job->entity, $job->metadata, $job->config);
+		DBOD::Network::Api::set_metadata($job->entity, $job->metadata, $job->config);
 	}
 
 	$job->log->debug("Upgrade is successfully over"); 
