@@ -35,15 +35,14 @@ MANIFEST			This list of files
 META.yml
 README.md
 scripts/init_instance
+scripts/dbod_ping
 scripts/mysql_appdynamics
-scripts/mysql_ping
 scripts/mysql_restore
 scripts/mysql_snapclone
 scripts/mysql_snapshot
 scripts/mysql_start
 scripts/mysql_stop
 scripts/pg_appdynamics
-scripts/pg_ping
 scripts/pg_restore
 scripts/pg_snapclone
 scripts/pg_snapshot
