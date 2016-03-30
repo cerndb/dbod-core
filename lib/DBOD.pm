@@ -12,13 +12,15 @@ use warnings;
 use base 'Exporter';
 use Readonly;
 
-our ($VERSION, @EXPORT_OK, $ERROR, $OK);
+our ($VERSION, @EXPORT_OK, $ERROR, $OK, $TRUE, $FALSE);
 
 $VERSION = 0.70;
 
 Readonly $ERROR => 1;
 Readonly $OK => 0;
+Readonly $TRUE => 1;
+Readonly $FALSE => 0;
 
-@EXPORT_OK   = qw( $ERROR $OK );
+@EXPORT = qw( $ERROR $OK $TRUE $FALSE );
 
 1;
