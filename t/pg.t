@@ -73,6 +73,30 @@ is($pg->stop(), $OK, 'stop OK: Nothing to do');
 is($pg->stop(), $OK, 'stop OK');
 is($pg->stop(), $ERROR, 'stop FAIL');
 
+my @db_do_outputs = (
+    1, 1,
+    1, 0,
+    0, 0,
+);
+my $db = Test::MockModule->new('DBOD::DB');
+$db->mock('do' => sub {
+        return shift @db_do_outputs;
+    });
+
+is($pg->ping(), $OK, 'ping OK. Responsive');
+is($pg->ping(), $ERROR, 'ping ERROR. Unresponsive delete');
+is($pg->ping(), $ERROR, 'ping ERROR. Unresponsive insert');
+
+$db->mock('do' => sub {
+        return undef;
+    });
+
+# TODO: Fix this test
+SKIP: {
+    skip "ping ERROR: Unable to raise exception", 1;
+    is( $pg->ping(), $ERROR, 'ping ERROR' );
+};
+
 $pg->_connect_db();
 isa_ok($pg->db(), 'DBOD::DB', 'db connection object OK');
 

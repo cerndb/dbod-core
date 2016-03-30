@@ -67,10 +67,13 @@ sub ping() {
         }
         unless($self->db->do('delete from dod_ping') == 1) {
             $self->log->debug('Problem deleting entry from ping table');
+            $self->log->debug("Database seems UP but not responsive");
+            return $ERROR;
         };
         unless($self->db->do('insert into dod_ping select current_date, current_time') == 1) {
             $self->log->debug('Problem inserting entry into ping table');
             $self->log->debug("Database seems UP but not responsive");
+            return $ERROR;
         }
         $self->log->debug("Database is UP and responsive");
         return $OK;
