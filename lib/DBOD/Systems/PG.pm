@@ -13,8 +13,10 @@ use warnings;
 use Moose;
 with 'DBOD::Instance';
 
+use Data::Dumper;
+use DBOD;
 use DBOD::Runtime;
-my $runtime = DBOD::Runtime->new;
+my $runtime = DBOD::Runtime->new();
 
 has 'pg_ctl' => ( is => 'rw', isa => 'Str', required => 0);
 has 'datadir' => ( is => 'rw', isa => 'Str', required => 0);
@@ -25,9 +27,15 @@ sub BUILD {
     $self->datadir($self->metadata->{datadir});
     $self->pg_ctl($self->metadata->{bindir} . '/pg_ctl');
 
-    $self->logger->debug('Instance: '. $self->instance .
-        "\ndatadir: " . $self->datadir . "\npg_ctl: " . $self->pg_ctl);
+    my $ip_alias = 'dbod-' . lc $self->instance . ".cern.ch";
+    $ip_alias =~ s/\_/\-/g;
+    $self->ip_alias($ip_alias);
+
+    $self->logger->debug("Instance: " . $self->instance);
+    $self->logger->debug("Datadir: " . $self->datadir);
+    $self->logger->debug("pg_ctl: " . $self->pg_ctl);
     return;
+
 };
 
 sub _connect_db {
@@ -37,8 +45,8 @@ sub _connect_db {
     my $dsn;
     my $db_attrs;
     $self->log->info('Creating DB connection with instance');
-    $dsn = "DBI:Pg:dbname=postgres;host=dbod-" . $self->instance .
-        ".cern.ch;port=" . $self->metadata->{port};
+    $dsn = "DBI:Pg:dbname=postgres;host=" . $self->ip_alias .
+        ";port=" . $self->metadata->{port};
     $db_attrs = {
         AutoCommit => 1,
         RaiseError => 1,
@@ -51,6 +59,31 @@ sub _connect_db {
     return;
 }
 
+sub ping() {
+    my $self = shift;
+    try {
+        unless (defined $self->db()) {
+            $self->_connect_db();
+        }
+        unless($self->db->do('delete from dod_ping') == 1) {
+            $self->log->debug('Problem deleting entry from ping table');
+        };
+        unless($self->db->do('insert into dod_ping select current_date, current_time') == 1) {
+            $self->log->debug('Problem inserting entry into ping table');
+            $self->log->debug("Database seems UP but not responsive");
+        }
+        $self->log->debug("Database is UP and responsive");
+        return $OK;
+    } catch {
+        $self->log->error("Problem connecting to database. DB object:");
+        $self->log->debug( Dumper $self->db() );
+        return $ERROR;
+    };
+
+    return $OK;
+
+}
+
 #Starts a PostgreSQL database
 sub start {
 	my $self = shift;
@@ -60,15 +93,15 @@ sub start {
 		my $rc = $runtime->run_cmd(cmd => $cmd);
 		if ($rc) {
 			$self->log->debug("PostgreSQL instance is up");
-			return 1; #ok
+			return $OK;
 		} else {
-			$self->log->error("Problem starting PostgreSQL instance. Please check log.");
-			return 0; #notok
+			$self->log->error("Problem starting instance. Please check log.");
+			return $ERROR;
 		}
 	}
 	else{
 		$self->log->debug("Nothing to do");
-		return 1;
+		return $OK;
 	}
 }
 
@@ -81,15 +114,15 @@ sub stop {
 		my $rc = $runtime->run_cmd(cmd => $cmd);
 		if ($rc) {
 			$self->log->debug("PostgreSQL shutdown completed");
-			return 1; #ok
+			return $OK;
 		} else  {
-			$self->log->error("Problem shutting down PostgreSQL instance. Please check log.");
-			return 0; #not ok
+			$self->log->error("Problem shutting down instance. Please check log.");
+			return $ERROR;
 		}
 	}
 	else {
 		$self->log->debug("Nothing to do.");
-		return 1;
+		return $OK;
 	}
 }
 
@@ -101,10 +134,10 @@ sub is_running {
 	$rc = $runtime->run_cmd(cmd => $cmd);
 	if ($rc == 0) {
 		$self->log->info("Instance is not running");
-		return 0;
+		return $FALSE;
 	} else { 
 		$self->log->info("Instance running.");
-		return 1;
+		return $TRUE;
 	}
 }  
 
