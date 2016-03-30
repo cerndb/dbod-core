@@ -12,7 +12,7 @@ use warnings;
 use base 'Exporter';
 use Readonly;
 
-our ($VERSION, @EXPORT_OK, $ERROR, $OK, $TRUE, $FALSE);
+our ($VERSION, @EXPORT, $ERROR, $OK, $TRUE, $FALSE);
 
 $VERSION = 0.70;
 
