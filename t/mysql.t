@@ -14,6 +14,8 @@ use_ok('DBOD::Systems::MySQL');
 use Test::MockModule;
 use File::ShareDir;
 
+use DBOD;
+
 my $metadata = {
     datadir => "/ORA/dbs03/MYTEST/mysql",
     bindir => "/tmp",
@@ -53,19 +55,19 @@ $runtime->mock('run_cmd' => sub {
         return $ret;}
 );
 
-ok($mysql->is_running(), 'check_state: RUNNING');
-ok(!$mysql->is_running(), 'check_state: STOPPED');
+is($mysql->is_running(), $TRUE, 'check_state: RUNNING');
+is($mysql->is_running(), $FALSE, 'check_state: STOPPED');
 
 # Instance start
-ok($mysql->start(), 'start OK: Nothing to do');
-ok($mysql->start(), 'start OK');
-ok($mysql->start( skip_networking => 1), 'start OK. Skip networking');
-ok(!$mysql->start(), 'start FAIL');
+is($mysql->start(), $OK, 'start OK: Nothing to do');
+is($mysql->start(), $OK, 'start OK');
+is($mysql->start( skip_networking => 1), $OK, 'start OK. Skip networking');
+is($mysql->start(), $ERROR, 'start FAIL');
 
 # Stop
-ok($mysql->stop(), 'stop OK: Nothing to do');
-ok($mysql->stop(), 'stop OK');
-ok(!$mysql->stop(), 'stop FAIL');
+is($mysql->stop(), $OK, 'stop OK: Nothing to do');
+is($mysql->stop(), $OK, 'stop OK');
+is($mysql->stop(), $ERROR, 'stop FAIL');
 
 $mysql->_connect_db();
 isa_ok($mysql->db(), 'DBOD::DB', 'db connection object OK');

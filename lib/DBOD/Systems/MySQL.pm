@@ -13,6 +13,8 @@ use warnings;
 use Moose;
 with 'DBOD::Instance';
 
+use Data::Dumper;
+use DBOD;
 use DBOD::Runtime;
 
 my $runtime = DBOD::Runtime->new();
@@ -35,9 +37,14 @@ sub BUILD {
 	$self->mysql_admin($self->metadata->{bindir} . '/mysqladmin');
     $self->socket($self->metadata->{socket});
 
-	$self->logger->debug('Instance: '. $self->instance .
-			' datadir: ' . $self->datadir . ' mysql_admin: '. $self->mysql_admin .
-            ' socket: ' . $self->socket);
+    my $ip_alias = 'dbod-' . lc $self->instance() . ".cern.ch";
+    $ip_alias =~ s/\_/\-/g;
+    $self->ip_alias($ip_alias);
+
+    $self->logger->debug("Instance: " . $self->instance);
+    $self->logger->debug("Datadir: " . $self->datadir);
+    $self->logger->debug("mysql_admin: " . $self->mysql_admin);
+    $self->logger->debug('Socket: ' . $self->socket);
 	return;
 };
 
@@ -49,7 +56,7 @@ sub _connect_db {
     my $dsn;
     my $db_attrs;
     $self->log->info('Creating DB connection with instance');
-    $dsn = "DBI:mysql:mysql_socket=" . $self->metadata->{'socket'};
+    $dsn = 'DBI:mysql:host=' . $self->ip_alias . ';port=' . $self->metadata->{port};
     $db_attrs = {
         AutoCommit => 1,
     };
@@ -62,6 +69,7 @@ sub _connect_db {
 }
 
 #Parses mysql error file after a certain string
+# TODO: refactor to use run_cmd
 sub _parse_err_file {
 	my ($self, $cad, $file) = @_;
 	my $start = int(`grep \"$cad\" $file --line-number |tail -n1 |cut -d\":\" -f1`);
@@ -77,11 +85,33 @@ sub is_running {
         cmd => "ps -elf | grep -i datadir="  . $self->datadir);
 	if ($rc == 0) {
 		$self->log->debug("Instance is running");
-		return 1;
+		return $TRUE;
 	} else {
 		$self->log->debug("Instance not running");
-		return 0; #ok
+		return $FALSE;
 	}
+}
+
+sub ping {
+    my $self = shift;
+    try {
+        unless (defined $self->db()) {
+            $self->_connect_db();
+        }
+        unless($self->db->do('delete from dod_dbmon.ping') == 1) {
+            $self->log->debug('Problem deleting entry from ping table');
+        };
+        unless($self->db->do('insert into dod_dbmon.ping values (curdate(), curtime())') == 1) {
+            $self->log->debug('Problem inserting entry into ping table');
+            $self->log->debug("Database seems UP but not responsive");
+        }
+        $self->log->debug("Database is UP and responsive");
+        return $OK;
+    } catch {
+        $self->log->error("Problem connecting to database. DB object:");
+        $self->log->debug( Dumper $self->db() );
+        return $ERROR;
+    };
 }
 
 #Starts a MySQL database 
@@ -94,7 +124,7 @@ sub start {
 
 	if ($self->is_running()) {
         $self->log->debug("Nothing to do");
-        return 1;
+        return $OK;
 	}
 	else{
         my ($cmd);
@@ -114,12 +144,12 @@ sub start {
             $self->log->debug("MySQL instance is up");
             $self->log->debug("mysqld output:\n\n" .
                     $self->_parse_err_file($log_search_string, $log_error_file));
-            return 1; #ok
+            return $OK;
         } else {
             $self->log->error("Problem starting MySQL instance. Please check.");
             $self->log->error("mysqld output:\n\n" .
                     $self->_parse_err_file($log_search_string, $log_error_file));
-            return 0; #notok
+            return $ERROR;
         }
 	}
 }
@@ -136,15 +166,15 @@ sub stop {
 		$rc = $runtime->run_cmd( cmd => $cmd);
 		if ($rc) {
 			$self->log->debug("Shutdown completed");
-			return 1; #ok
+			return $OK;
 		} else  {
 			$self->log->error("Problem shutting down MySQL instance. Please check.");
-			return 0; #not ok
+			return $ERROR; #not ok
 		}
 	}
     else{
         $self->log->error("Nothing to do.");
-        return 1;
+        return $OK;
     }
 }
 
