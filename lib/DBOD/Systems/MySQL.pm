@@ -10,10 +10,8 @@ package DBOD::Systems::MySQL;
 use strict;
 use warnings;
 
-our $VERSION = 0.68;
-
 use Moose;
-extends 'DBOD::Instance';
+with 'DBOD::Instance';
 
 use DBOD::Runtime;
 

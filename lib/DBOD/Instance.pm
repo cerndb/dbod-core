@@ -6,17 +6,13 @@
 # or submit itself to any jurisdiction.
 
 package DBOD::Instance;
-# This package defines an abstract instance class to be subclassed by type:
-#   e.g: MySQL, PG, Oracle, ...
 
 use strict;
 use warnings FATAL => 'all';
 use Log::Log4perl qw (:easy);
 use Data::Dumper;
 
-our $VERSION = 0.68;
-use Moose;
-use MooseX::ABC;
+use Moose::Role;
 with 'MooseX::Log::Log4perl';
 
 use DBOD::DB;
@@ -32,13 +28,17 @@ has 'db' => (is => 'rw', isa => 'Object');
 requires 'is_running'; # Checks status of server process
 requires 'start'; # Starts instance server
 requires 'stop'; # Stops instance server
-#requires 'snapshot'; # Perform a consistent snapshot
-#requires 'recover'; # Recovers the instance datafiles from a snapshot to a PIT
-#requires 'upgrade'; # Upgrades the datafiles and running server of the instance
 
 ## Private
 requires '_connect_db';
 # Initializes the $instance->db object with the connection parameters of the
 # job target instance
+
+package DBOD::Instance::Factory;
+use MooseX::AbstractFactory;
+
+implementation_does [ qw( DBOD::Instance ) ];
+implementation_class_via sub { 'DBOD::Systems::' . shift };
+
 
 1;
