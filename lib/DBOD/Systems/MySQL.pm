@@ -100,10 +100,13 @@ sub ping {
         }
         unless($self->db->do('delete from dod_dbmon.ping') == 1) {
             $self->log->debug('Problem deleting entry from ping table');
+            $self->log->debug("Database seems UP but not responsive");
+            return $ERROR;
         };
         unless($self->db->do('insert into dod_dbmon.ping values (curdate(), curtime())') == 1) {
             $self->log->debug('Problem inserting entry into ping table');
             $self->log->debug("Database seems UP but not responsive");
+            return $ERROR;
         }
         $self->log->debug("Database is UP and responsive");
         return $OK;
@@ -112,6 +115,7 @@ sub ping {
         $self->log->debug( Dumper $self->db() );
         return $ERROR;
     };
+    return $OK;
 }
 
 #Starts a MySQL database 

@@ -21,6 +21,7 @@ my $metadata = {
     bindir => "/tmp",
     socket => "/tmp/socket",
     subcategory => 'mysql',
+    port => '5500',
 };
 
 my $config = {
@@ -69,8 +70,33 @@ is($mysql->stop(), $OK, 'stop OK: Nothing to do');
 is($mysql->stop(), $OK, 'stop OK');
 is($mysql->stop(), $ERROR, 'stop FAIL');
 
+
+my @db_do_outputs = (
+    1, 1,
+    1, 0,
+    0, 0,
+);
+my $db = Test::MockModule->new('DBOD::DB');
+$db->mock('do' => sub {
+        return shift @db_do_outputs;
+    });
+
+is($mysql->ping(), $OK, 'ping OK. Responsive');
+is($mysql->ping(), $ERROR, 'ping ERROR. Unresponsive delete');
+is($mysql->ping(), $ERROR, 'ping ERROR. Unresponsive insert');
+
+$db->mock('do' => sub {
+        return undef;
+    });
+
+# TODO: Fix this test
+SKIP: {
+    skip "ping ERROR: Unable to raise exception", 1;
+    is( $mysql->ping(), $ERROR, 'ping ERROR' );
+};
+
 $mysql->_connect_db();
-isa_ok($mysql->db(), 'DBOD::DB', 'db connection object OK');
+isa_ok( $mysql->db(), 'DBOD::DB', 'db connection object OK' );
 
 my $mtab_file = File::ShareDir::dist_dir('DBOD') . '/sample_mtab';
 
