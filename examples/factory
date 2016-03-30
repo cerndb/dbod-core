@@ -1,0 +1,39 @@
+#!/usr/bin/env perl
+# Copyright (C) 2015, CERN
+# This software is distributed under the terms of the GNU General Public
+# Licence version 3 (GPL Version 3), copied verbatim in the file "LICENSE".
+# In applying this license, CERN does not waive the privileges and immunities
+# granted to it by virtue of its status as Intergovernmental Organization
+# or submit itself to any jurisdiction.
+
+use warnings;
+
+use DBOD::Job;
+use Data::Dumper;
+
+# Initiates logger
+BEGIN { 
+    Log::Log4perl->easy_init() ;
+}
+
+my $job = DBOD::Job->new_with_options();
+
+use DBOD qw ($ERROR $OK);
+use DBOD::Instance;
+ 
+sub body {
+    
+    my $instance = DBOD::Instance::Factory->create(
+        $job->metadata->{'subcategory'}, 
+        instance => $job->entity(),
+        metadata => $job->metadata(),
+        config => $job->config());
+
+    print Dumper $instance->metadata();
+    print Dumper ref $instance;
+
+    return $OK; 
+}
+
+$job->run(\&body);
+
