@@ -22,10 +22,12 @@ has 'instance' => ( is => 'ro', isa => 'Str', required => 1);
 has 'metadata' => (is => 'rw', isa => 'HashRef', required => 1);
 has 'config' => (is => 'ro', isa => 'HashRef');
 has 'db' => (is => 'rw', isa => 'Object');
+has 'ip_alias' => (is => 'rw', isa => 'Str');
 
 # Class methods
 ## Public;
 requires 'is_running'; # Checks status of server process
+requires 'ping'; # Executes transaction on the instance's DB
 requires 'start'; # Starts instance server
 requires 'stop'; # Stops instance server
 
