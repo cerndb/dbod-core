@@ -10,7 +10,7 @@ package DBOD::Job;
 use strict;
 use warnings;
 
-our $VERSION = 0.67;
+our $VERSION = 0.70;
 
 use Moose;
 with 'MooseX::Log::Log4perl',
@@ -24,10 +24,12 @@ sub getopt_usage_config {
  }
 
 use Data::Dumper;
+use Socket;
 
 use DBOD::Config;
 use DBOD::Network::Api qw( load_cache get_entity_metadata );
 use DBOD::DB;
+use DBOD::Runtime;
 
 # Input
 has 'entity' => ( is => 'ro', isa => 'Str', required => 1,
@@ -42,9 +44,6 @@ has 'config' => (is => 'rw', isa => 'HashRef',
     documentation => 'General configuration (from core.conf file)');
 has 'metadata' => (is => 'rw', isa => 'HashRef',
     documentation => 'Entity metadata (from API)');
-has 'db' => (is => 'rw', isa => 'Object',
-    documentation => 'DB connection object');
-
 
 # output
 has '_output' => ( is => 'rw', isa => 'Str' );
@@ -82,49 +81,20 @@ sub BUILD {
     return;
 };
 
-# Initializes the $job->db obect with the connection parameters of the
-# job target instance
-
-sub connect_db {
-    my ($self,) = @_;
-    if (defined $self->metadata->{'subcategory'}) {
-        # Set up db connector
-        my $db_type = lc $self->metadata->{'subcategory'};
-        my $db_user = $self->config->{$db_type}->{'db_user'};
-        my $db_password = $self->config->{$db_type}->{'db_password'};
-
-        my $dsn;
-        my $db_attrs;
-        $self->log->info('Creating DB connection with instance');
-        for ($db_type) {
-            if (m{^mysql$}x) {
-                $dsn = "DBI:mysql:mysql_socket=" . $self->metadata->{'socket'};
-                $db_attrs = {
-                    AutoCommit => 1, 
-                    };
-            }
-            if (m{^pgsql$}x) {
-                $dsn = "DBI:Pg:dbname=postgres;host=" . $self->metadata->{'socket'}.
-                 ";port=" . $self->metadata->{'port'};
-                $db_attrs = {
-                    AutoCommit => 1, 
-		        RaiseError => 1,
-                    };
-            }
-        };
-
-        $self->db(DBOD::DB->new(
-                      db_dsn  => $dsn,
-                      db_user => $db_user,
-                      db_password => $db_password,
-                      db_attrs => $db_attrs,));
-    }
-    else { 
-        $self->log->info('Skipping DB connection with instance');
-    }
-
-    return;
-
+sub is_local {
+    my $self = shift;
+    my $ip_alias = 'dbod-' . lc $self->entity . ".cern.ch";
+    $ip_alias =~ s/\_/\-/g;
+    $self->log->debug('Fetching IP address for '. $ip_alias);
+    my $host_ip =  inet_ntoa(inet_aton($ip_alias));
+    $self->log->debug('Host IP: '. $host_ip);
+    my $rt = DBOD::Runtime->new();
+    my $host_addresses;
+    $self->log->debug('Fetching local addresses');
+    $rt->run_cmd( cmd => 'hostname -I', output => \$host_addresses );
+    my @addresses = split / /, $host_addresses;
+    my $res = grep {/$host_ip/} @addresses;
+    return scalar $res;
 }
 
 sub run {
