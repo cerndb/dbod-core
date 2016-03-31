@@ -9,6 +9,7 @@
 package dbod_ping;
  
 use warnings;
+use strict;
 
 use DBOD::Job;
 use Data::Dumper;
