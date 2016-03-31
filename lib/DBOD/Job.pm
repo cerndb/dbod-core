@@ -26,6 +26,7 @@ sub getopt_usage_config {
 use Data::Dumper;
 use Socket;
 
+use DBOD;
 use DBOD::Config;
 use DBOD::Network::Api qw( load_cache get_entity_metadata );
 use DBOD::DB;
@@ -82,15 +83,24 @@ sub BUILD {
 };
 
 sub is_local {
-    my $self = shift;
-    my $ip_alias = 'dbod-' . lc $self->entity . ".cern.ch";
-    $ip_alias =~ s/\_/\-/g;
-    $self->log->debug('Fetching IP address for '. $ip_alias);
-    my $host_ip =  inet_ntoa(inet_aton($ip_alias));
-    $self->log->debug('Host IP: '. $host_ip);
+    my ($self, $ip_alias) = @_;
+    unless (defined $ip_alias) {
+        $ip_alias = 'dbod-' . lc $self->entity . ".cern.ch";
+        $ip_alias =~ s/\_/\-/g;
+    }
+    $self->log->debug( 'Fetching IP address for '. $ip_alias );
+    my $nip = inet_aton($ip_alias);
+    my $host_ip;
+    if (defined $nip) {
+        $host_ip = inet_ntoa( $nip);
+        $self->log->debug( 'Host IP: '.$host_ip );
+    } else {
+        $self->log->error('Error fetching host IP');
+        return $FALSE;
+    };
     my $rt = DBOD::Runtime->new();
     my $host_addresses;
-    $self->log->debug('Fetching local addresses');
+    $self->log->debug( 'Fetching local addresses' );
     $rt->run_cmd( cmd => 'hostname -I', output => \$host_addresses );
     my @addresses = split / /, $host_addresses;
     my $res = grep {/$host_ip/} @addresses;
@@ -108,6 +118,5 @@ after 'run' => sub {
     my $self = shift;
     $self->log->info('[' . $self->_result()  . ']');
 };
-
 
 1;
