@@ -9,11 +9,8 @@ package DBOD::Runtime;
 
 use strict;
 use warnings;
-
-our $VERSION = 0.68;
-
-use Moose;
-with 'MooseX::Log::Log4perl';
+use base qw(Exporter);
+use Log::Log4perl qw(:easy);
 
 use Try::Tiny;
 use IPC::Run qw(run timeout);
@@ -25,8 +22,24 @@ use Time::Local;
 use Time::localtime;
 use autodie qw(:io);
 
+use DBOD;
+
+our (@EXPORT_OK);
+
+#Exported methods
+@EXPORT_OK = qw(
+    run_cmd
+    mywait
+    result_code
+    wait_until_file_exist
+    run_str
+    get_instance_version
+    read_file
+    write_file_arr
+    get_temp_filename
+    );
+
 sub run_cmd {
-    my $self = shift;
     my %args = @_;
     # Using named parameters, but unpacking for clarity and usability
     my $cmd_str = $args{cmd};
@@ -37,30 +50,30 @@ sub run_cmd {
     my ($err, $return_code);
     try {
         if (defined $timeout) {
-            $self->log->debug("Executing ${cmd_str} with timeout: ${timeout}");
+            DEBUG "Executing ${cmd_str} with timeout: ${timeout}";
             run \@cmd, ,'>', $output_ref, '2>', \$err, (my $t = timeout $timeout);
         }
         else {
-            $self->log->debug("Executing ${cmd_str}");
+            DEBUG "Executing ${cmd_str}";
             run \@cmd, ,'>', $output_ref, '2>', \$err;
         }
         # If the command executed succesfully we return its exit code
-        $self->log->debug("${cmd_str} stdout: " . $$output_ref);
-        $self->log->debug("${cmd_str} return code: " . $?);
+        DEBUG "${cmd_str} stdout: " . $$output_ref;
+        DEBUG "${cmd_str} return code: " . $?;
         $return_code = $?;
     } 
     catch {
         if ($_ =~ m{^IPC::Run: .*timeout}x) {
             # Timeout exception
-            $self->log->error("Timeout exception: " . $_);
-            $self->log->error("CMD stderr: " . $err);
+            ERROR "Timeout exception: " . $_;
+            ERROR "CMD stderr: " . $err;
             return;
         }
         else {
             # Other type of exception ocurred
-            $self->log->error("Exception found: " . $_);
+            ERROR "Exception found: " . $_;
             if (defined $err) {
-                $self->log->error( "CMD stderr: " . $err );
+                ERROR  "CMD stderr: " . $err ;
             }
             return;
         }
@@ -69,29 +82,29 @@ sub run_cmd {
 }
 
 sub mywait {
-    my ($self, $method, @params) = @_;
+    my ($method, @params) = @_;
     my $result;
-    $self->log->debug( "Calling $method with @params until obtaining results");
+    DEBUG  "Calling $method with @params until obtaining results";
     $result= $method->(@params);
     my $time = 1.0;
     while (! defined $result) {
-        $self->log->debug( "Received: $result. Waiting $time seconds" );
+        DEBUG  "Received: $result. Waiting $time seconds" ;
         sleep $time;
         $time = $time * 2;
         $result = $method->(@params);
     }
-    $self->log->debug($result);
+    DEBUG $result;
     return $result;
 }
 
 sub result_code{
-    my ($self, $log) = @_;
+    my $log = shift;
     my @lines = split(m{\n}x, $log);
     my $code = undef;
     foreach (@lines){
         if ( $_ =~ m{\[(\d)\]}x ){
             $code = $1;
-            $self->log->debug('Found return code: ' . $code);
+            DEBUG 'Found return code: ' . $code;
         }
     }
     if (defined $code){
@@ -104,9 +117,9 @@ sub result_code{
 }
 
 sub wait_until_file_exist {
-    my ($self, $timeout, $filename) = @_;
+    my ($timeout, $filename) = @_;
     my $poll_interval = 1; # seconds
-    $self->log->debug('Waiting for creation of ' . $filename);
+    DEBUG 'Waiting for creation of ' . $filename;
     until ((-e $filename) || ($timeout <= 0))
     {
         $timeout -= $poll_interval;
@@ -119,41 +132,41 @@ sub wait_until_file_exist {
 # Using it as interface to maintain the inverted logic for error handling
 # until the required changes are made in the action scripts
 sub run_str {
-    my($self, $cmd, $output_ref, $fake, $text) = @_;
-    my $rc = $self->run_cmd(cmd => $cmd, output => $output_ref);
+    my ($cmd, $output_ref, $fake, $text) = @_;
+    my $rc = run_cmd(cmd => $cmd, output => $output_ref);
     if ($rc != 0) {
-        $self->log->error(" $cmd failed with return code: <$rc>");
-        return 0; #error
+        ERROR " $cmd failed with return code: <$rc>";
+        return $ERROR;
     } else {
-        return 1; #ok
+        return $OK;
     }
 }
 
 # We maintain the method to keep compatibility with current calls
 sub get_instance_version {
-    my($self, $version) = @_;
+    my $version = shift;
     $version =~ tr/\.//d;
-    $self->log->debug('Processed version' . $version);
+    DEBUG 'Processed version' . $version;
     return $version;
 }
 
 sub read_file {
-    my ($self, $file) = @_;
-    $self->log->info("Reading file: <$file>");
+    my $file = shift;
+    INFO "Reading file: <$file>";
     try {
         open my $F, '<', $file;
         my (@text) = <$F>;
         close($F);
         return @text;
     } catch {
-        $self->log->error( "Error: $_" );
+        ERROR  "Error: $_" ;
         return;
     };
 }
 
 sub write_file_arr {
-    my ($self, $file, $text) = @_;
-    $self->log->info("Writing file: <$file> # of lines: " . scalar(@$text) );
+    my ($file, $text) = @_;
+    INFO "Writing file: <$file> # of lines: " . scalar(@$text);
     try {
         open my $F, '>', $file;
         foreach (@$text) {
@@ -162,7 +175,7 @@ sub write_file_arr {
         close($F);
         return;
     } catch {
-        $self->log->error( "Error: $_" );
+        ERROR  "Error: $_" ;
         return;
     };
 }
@@ -170,12 +183,12 @@ sub write_file_arr {
 #it expects three arguments, otherwise returns undef
 #it returns a full patch <dir>/<filename>
 sub get_temp_filename {
-    my($self, $template,$directory,$suffix)=@_;
+    my ($template, $directory, $suffix) = @_;
     if (! defined $template || ! defined $directory || ! defined $suffix) {
-        $self->log->debug("some variable missing, please check ");
+        DEBUG "some variable missing, please check ";
         return;
     }
-    $self->log->debug("template: <$template> directory: <$directory> suffix: <$suffix> ");
+    DEBUG "template: <$template> directory: <$directory> suffix: <$suffix> ";
     my $fh = File::Temp->new(
         TEMPLATE => $template,
         DIR      => $directory,

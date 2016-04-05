@@ -15,7 +15,9 @@ use DBOD;
 
 # Initiates logger
 BEGIN { Log::Log4perl->easy_init() };
-    
+
+my $runtime = Test::MockModule->new('DBOD::Runtime');
+
 # Check class parameters
 subtest 'Class parameters' => sub {
     use DBOD::Job;
@@ -44,8 +46,20 @@ subtest 'is_local' => sub {
             entity => 'test',
             debug => 1,
         );
+
         my $fqdn = `hostname -f`;
         chomp $fqdn;
+
+        my $host_addresses = `hostname -I`;
+
+        $runtime->mock( 'run_cmd' =>
+            sub {
+                my %args = @_;
+                my $output_ref = $args{output};
+                $$output_ref = $host_addresses;
+                return $OK;
+            });
+
         is($job->is_local($fqdn), $TRUE, 'Local Job');
         is($job->is_local(), $FALSE, 'Remote Job');
     };

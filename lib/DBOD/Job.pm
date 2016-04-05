@@ -98,11 +98,11 @@ sub is_local {
         $self->log->error('Error fetching host IP');
         return $FALSE;
     };
-    my $rt = DBOD::Runtime->new();
     my $host_addresses;
     $self->log->debug( 'Fetching local addresses' );
-    $rt->run_cmd( cmd => 'hostname -I', output => \$host_addresses );
+    DBOD::Runtime::run_cmd( cmd => 'hostname -I', output => \$host_addresses );
     my @addresses = split / /, $host_addresses;
+    $self->log->debug($host_addresses);
     my $res = grep {/$host_ip/} @addresses;
     return scalar $res;
 }

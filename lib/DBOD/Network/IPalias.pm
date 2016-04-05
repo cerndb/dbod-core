@@ -10,9 +10,8 @@ package DBOD::Network::IPalias;
 use strict;
 use warnings;
 
-our $VERSION = 0.67;
-
 use Log::Log4perl qw(:easy);
+use DBOD;
 use DBOD::Runtime;
 use DBOD::Network::Api;
 use DBOD::Network::LanDB;
@@ -40,24 +39,23 @@ sub add_alias {
         my $cmd = $config->{'ipalias'}->{'change_command'};
         my $command = $cmd . " --dnsname=" . $dnsname . " --add_ip=" . $host;
         DEBUG 'Executing ' . $command;
-        my $runtime = DBOD::Runtime->new();
-        my $return_code = $runtime->run_cmd(cmd => $command);
+        my $return_code = DBOD::Runtime::run_cmd(cmd => $command);
         if ($return_code) {
             # An error ocurred executing external command
             ERROR 'An error occurred creating DNS entry for ip-alias';
-            return scalar 0;
+            return scalar $ERROR;
         }
         else { 
             INFO sprintf("Registerd alias: %s to dnsname: %s, host: %s",
                 $ipalias, $dnsname, $host);
-            return scalar 1;
+            return scalar $OK;
         }
     }
     else { 
         # An error occurred getting a free dnsname. Either the DB is down
         # or there are no more dnsnames free
         ERROR "Error adding alias %s to host: %s", $ipalias, $host;
-        return scalar 0;
+        return scalar $ERROR;
     }
 }
 
@@ -81,23 +79,22 @@ sub remove_alias {
         my $cmd = $config->{'ipalias'}->{'change_command'};
         my $command = $cmd . " --dnsname=" . $dnsname . " --rm_ip=" . $host;
         DEBUG 'Executing ' . $command;
-        my $runtime = DBOD::Runtime->new();
-        my $return_code = $runtime->run_cmd(cmd => $command);
+        my $return_code = DBOD::Runtime::run_cmd(cmd => $command);
         if ($return_code) {
             # An error ocurred executing external command
             ERROR 'An error occurred creating DNS entry for ip-alias';
-            return scalar 0;
+            return scalar $ERROR;
         }
         else { 
             INFO sprintf("Registerd alias: %s to dnsname: %s, host: %s",
                 $ipalias, $dnsname, $host);
-            return scalar 1;
+            return scalar $OK;
         }
     }
     else { 
         # An error occurred removing the alias
         ERROR "Error removing alias from host: %s", $host;
-        return scalar 0;
+        return scalar $ERROR;
     }
 }
     

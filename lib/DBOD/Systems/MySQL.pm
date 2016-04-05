@@ -17,7 +17,6 @@ use Data::Dumper;
 use DBOD;
 use DBOD::Runtime;
 
-my $runtime = DBOD::Runtime->new();
 # input parameters
 has 'instance' => ( is => 'ro', isa => 'Str', required => 1);
 has 'metadata' => (is => 'rw', isa => 'HashRef', required => 1);
@@ -81,7 +80,7 @@ sub _parse_err_file {
 
 sub is_running {
 	my $self = shift;
-	my $rc = $runtime->run_cmd(
+	my $rc = DBOD::Runtime::run_cmd(
         cmd => "ps -elf | grep -i datadir="  . $self->datadir);
 	if ($rc == 0) {
 		$self->log->debug("Instance is running");
@@ -134,7 +133,7 @@ sub start {
         my ($cmd);
         my $log_search_string = "mysqld_safe Starting";
         my $hostname;
-        $runtime->run_cmd(cmd => 'hostname', output => \$hostname);
+        DBOD::Runtime::run_cmd(cmd => 'hostname', output => \$hostname);
         chomp($hostname);
         my $log_error_file = $self->datadir() . "/$hostname.err";
         if ($skip_networking) {
@@ -143,7 +142,7 @@ sub start {
         else {
             $cmd = "/etc/init.d/mysql_$entity start";
         }
-        my $rc = $runtime->run_cmd( cmd => $cmd );
+        my $rc = DBOD::Runtime::run_cmd( cmd => $cmd );
         if ($rc) {
             $self->log->debug("MySQL instance is up");
             $self->log->debug("mysqld output:\n\n" .
@@ -167,7 +166,7 @@ sub stop {
 		#Put the instance down
 		$self->log->debug("Shutting down");
         $cmd = '/etc/init.d/mysql_'. $entity . ' stop';
-		$rc = $runtime->run_cmd( cmd => $cmd);
+		$rc = DBOD::Runtime::run_cmd( cmd => $cmd);
 		if ($rc) {
 			$self->log->debug("Shutdown completed");
 			return $OK;

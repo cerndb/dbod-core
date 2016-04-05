@@ -9,14 +9,13 @@ package DBOD::Network::LanDB;
 
 use strict;
 use warnings;
-use Exporter;
-
-our $VERSION = 0.67;
+use base qw(Exporter);
 
 use Log::Log4perl qw(:easy);
 use SOAP::Lite;
 
-use base qw(Exporter);
+use DBOD;
+use DBOD::Runtime;
 
 sub _get_landb_connection {
 
@@ -49,10 +48,10 @@ sub add_ip_alias {
         my $call = $conn->dnsDelegatedAliasAdd($auth, $dnsname, $scope_view, $alias);
         if ($call->fault) {
             ERROR "FAILED: " . $call->faultstring;
-            return scalar 1;
+            return scalar $ERROR;
         }
     }
-    return scalar 0;
+    return scalar $OK;
 }
 sub remove_ip_alias {
     my ($dnsname, $alias, $config) = @_;
@@ -62,10 +61,10 @@ sub remove_ip_alias {
         my $call = $conn->dnsDelegatedAliasRemove($auth, $dnsname, $scope_view, $alias);
         if ($call->fault) {
             ERROR "FAILED: " . $call->faultstring;
-            return scalar 1;
+            return scalar $ERROR;
         }
     }
-    return scalar 0;
+    return scalar $OK;
 }
 
 sub get_ip_alias {
@@ -90,12 +89,11 @@ sub create_alias {
     my $host = $input->{hosts}->[0];
     my $command = $cmd . " --dnsname=" . $dnsname . " --add_ip=" . $host;
     DEBUG 'Adding entry to DNS by executing: ' . $command;
-    my $runtime = DBOD::Runtime->new();
-    my $return_code = $runtime->run_cmd(cmd => $command);
+    my $return_code = DBOD::Runtime::run_cmd(cmd => $command);
     if ($return_code) {
         # An error ocurred executing external command
         ERROR 'An error occurred creating DNS entry for ip-alias';
-        return scalar 0;
+        return scalar $return_code;
     }
     DEBUG "Adding ipalias $input->{ip_alias} to dnsname: $dnsname";
     $return_code = add_ip_alias($dnsname, $input->{ip_alias}, $config);

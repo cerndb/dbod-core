@@ -16,9 +16,8 @@ use DBOD;
 use DBOD::Runtime;
 use Test::MockModule;
 
-my $rt = DBOD::Runtime->new();
 my @lines = <DATA>;
-$rt->write_file_arr('/tmp/pg_ctl', \@lines);
+DBOD::Runtime::write_file_arr('/tmp/pg_ctl', \@lines);
 chmod 0755, '/tmp/pg_ctl';
 
 my $metadata = {

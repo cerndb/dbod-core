@@ -10,10 +10,7 @@ package DBOD::Storage::NetApp::ZAPI;
 use strict;
 use warnings;
 
-our $VERSION = 0.68;
-
-# uncoverable statement
-use lib '/opt/netapp-manageability-sdk-5.3.1/lib/perl/NetApp'; 
+use lib '/opt/netapp-manageability-sdk-5.3.1/lib/perl/NetApp';
 
 use Moose;
 with 'MooseX::Log::Log4perl';
@@ -21,7 +18,7 @@ with 'MooseX::Log::Log4perl';
 has 'config' => (is => 'ro', isa => 'HashRef');
 
 use Try::Tiny;
-use DBOD::Runtime;
+use DBOD::Runtime qw(run_cmd read_file);
 use Data::Dumper;
 
 use NaServer; # uncoverable statement
@@ -33,8 +30,6 @@ sub _host_ip {
     my $servername = shift;
     return inet_ntoa(inet_aton($servername));
 }
-
-my $runtime = DBOD::Runtime->new;
 
 sub create_server {
     my ($self, $ipaddr, ,$username, $password, $vserver, $version) = @_;
@@ -85,10 +80,10 @@ sub get_mount_point_NAS_regex {
     $self->log->debug("Exclusion_list: <$exclusion_list>") if defined $exclusion_list;
     my (%pairsfsnas, @lines);
     if (defined $file) {
-        @lines = $runtime->read_file($file);
+        @lines = read_file($file);
         }
     else {
-        @lines = $runtime->read_file('/etc/mtab');
+        @lines = read_file('/etc/mtab');
     };
     if (@lines) {
         foreach my $line (@lines) {

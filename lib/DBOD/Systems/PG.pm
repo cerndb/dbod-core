@@ -16,7 +16,6 @@ with 'DBOD::Instance';
 use Data::Dumper;
 use DBOD;
 use DBOD::Runtime;
-my $runtime = DBOD::Runtime->new();
 
 has 'pg_ctl' => ( is => 'rw', isa => 'Str', required => 0);
 has 'datadir' => ( is => 'rw', isa => 'Str', required => 0);
@@ -93,7 +92,7 @@ sub start {
     my $entity = 'dod_' . $self->instance();
 	if ($self->is_running() == 0) {
 		my $cmd = "/etc/init.d/pgsql_$entity start";
-		my $rc = $runtime->run_cmd(cmd => $cmd);
+		my $rc = DBOD::Runtime::run_cmd(cmd => $cmd);
 		if ($rc) {
 			$self->log->debug("PostgreSQL instance is up");
 			return $OK;
@@ -114,7 +113,7 @@ sub stop {
     my $entity = 'dod_' . $self->instance;
 	if ($self->is_running()) {
 		my $cmd = "/etc/init.d/pgsql_$entity stop";
-		my $rc = $runtime->run_cmd(cmd => $cmd);
+		my $rc = DBOD::Runtime::run_cmd(cmd => $cmd);
 		if ($rc) {
 			$self->log->debug("PostgreSQL shutdown completed");
 			return $OK;
@@ -134,7 +133,7 @@ sub is_running {
 	my ($cmd, $rc);
 	#Check if database server is running
 	$cmd = $self->pg_ctl() . ' status -D ' . $self->datadir() . ' -s';
-	$rc = $runtime->run_cmd(cmd => $cmd);
+	$rc = DBOD::Runtime::run_cmd(cmd => $cmd);
 	if ($rc == 0) {
 		$self->log->info("Instance is not running");
 		return $FALSE;
