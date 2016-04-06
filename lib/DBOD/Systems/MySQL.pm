@@ -68,21 +68,41 @@ sub _connect_db {
 }
 
 #Parses mysql error file after a certain string
-# TODO: refactor to use run_cmd
 sub _parse_err_file {
 	my ($self, $cad, $file) = @_;
-	my $start = int(`grep \"$cad\" $file --line-number |tail -n1 |cut -d\":\" -f1`);
-	my $total = int(`wc -l $file|cut -d\" \" -f1`);
-	my $lines = $total - $start + 1;
-	my $res = `tail $file -n $lines`;
+    my ($buf, $start, $total, $res, @buf);
+    my $error = DBOD::Runtime::run_cmd(
+        cmd => "grep ${cad} ${file} --line-number",
+        output => \$buf);
+    if ($error) {
+        return;
+    }
+    @buf = split m{/\n/}x, $buf; # Split into lines
+    my $last_line = pop @buf; # Take last appearance
+    @buf = split m{/ /}x, $last_line; # Split into fields
+    $start = int($buf[0]); # Convert first field to numeric
+    DBOD::Runtime::run_cmd(
+        cmd => "wc -l $file",
+        output => \$total);
+    @buf = split m{/ /}x, $last_line; # Split into fields
+    $start = int($buf[0]); # Convert first field to numeric
+	my $lines = int($total) - int($start) + 2;
+    DBOD::Runtime::run_cmd(
+        cmd => "tail $file -n $lines",
+        output => \$res);
 	return $res;
 }
 
 sub is_running {
 	my $self = shift;
-	my $rc = DBOD::Runtime::run_cmd(
-        cmd => "ps -elf | grep -i datadir="  . $self->datadir);
-	if ($rc == 0) {
+    my ($output, @buf);
+	DBOD::Runtime::run_cmd(
+        cmd => "ps -u mysql -f",
+        output => \$output);
+    @buf = split m{/\n/}x, $output;
+    my $datadir = $self->datadir();
+    my @search =  grep {/$datadir/} @buf;
+    if (scalar @search) {
 		$self->log->debug("Instance is running");
 		return $TRUE;
 	} else {
@@ -119,8 +139,7 @@ sub ping {
 
 #Starts a MySQL database 
 sub start {
-    my $self = shift;
-    my %args = @_;
+    my ($self, %args) = @_;
     my $skip_networking = ( defined ($args{skip_networking}) ? $args{skip_networking}: 0 );
 
     my $entity = 'dod_' . $self->instance;
@@ -142,17 +161,17 @@ sub start {
         else {
             $cmd = "/etc/init.d/mysql_$entity start";
         }
-        my $rc = DBOD::Runtime::run_cmd( cmd => $cmd );
-        if ($rc) {
-            $self->log->debug("MySQL instance is up");
-            $self->log->debug("mysqld output:\n\n" .
-                    $self->_parse_err_file($log_search_string, $log_error_file));
-            return $OK;
-        } else {
+        my $error = DBOD::Runtime::run_cmd( cmd => $cmd );
+        if ($error) {
             $self->log->error("Problem starting MySQL instance. Please check.");
             $self->log->error("mysqld output:\n\n" .
                     $self->_parse_err_file($log_search_string, $log_error_file));
             return $ERROR;
+        } else {
+            $self->log->debug("MySQL instance is up");
+            $self->log->debug("mysqld output:\n\n" .
+                    $self->_parse_err_file($log_search_string, $log_error_file));
+            return $OK;
         }
 	}
 }
@@ -162,17 +181,17 @@ sub stop {
 	my ($self) = @_;
     my $entity = 'dod_' . $self->instance;
 	if ($self->is_running()) {
-        my ($cmd, $rc);
+        my ($cmd, $error);
 		#Put the instance down
 		$self->log->debug("Shutting down");
         $cmd = '/etc/init.d/mysql_'. $entity . ' stop';
-		$rc = DBOD::Runtime::run_cmd( cmd => $cmd);
-		if ($rc) {
-			$self->log->debug("Shutdown completed");
-			return $OK;
+		$error = DBOD::Runtime::run_cmd( cmd => $cmd);
+		if ($error) {
+            $self->log->error("Problem shutting down MySQL instance. Please check.");
+            return $ERROR; #not ok
 		} else  {
-			$self->log->error("Problem shutting down MySQL instance. Please check.");
-			return $ERROR; #not ok
+            $self->log->debug("Shutdown completed");
+            return $OK;
 		}
 	}
     else{

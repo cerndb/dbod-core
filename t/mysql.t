@@ -40,36 +40,53 @@ my $mysql = DBOD::Systems::MySQL->new(
 my $runtime = Test::MockModule->new('DBOD::Runtime');
 
 my @outputs = (
-    0,1, # check_State
-    0, # Start OK. Nothing to do
-    1,0,1, # Start OK
-    1,0,1, # Start OK. Skip networking
-    1,0,0, # Start FAIL
-    1, # Stop OK. Nothing to do
-    0,1, # Stop OK
-    0,0); # stop FAIL
-
-# Check status
-$runtime->mock('run_cmd' => sub {
-        my $ret = shift @outputs;
-        #DEBUG "run_cmd: " . $ret;
-        return $ret;}
+    $OK, # is_running TRUE
+    $TRUE, # Start OK. Nothing to do
+    $FALSE, $OK, # Stop OK
+    $FALSE, $ERROR, # stop FAIL
 );
 
-is($mysql->is_running(), $TRUE, 'check_state: RUNNING');
-is($mysql->is_running(), $FALSE, 'check_state: STOPPED');
+my @outputs2 = (
+    $ERROR, # is_running FALSE
+    $TRUE, # Stop OK. Nothing to do
+    $FALSE, $ERROR, $OK, # Start OK
+    $FALSE, $ERROR, $OK, # Start OK. Skip networking
+    $FALSE, $ERROR, $ERROR, # Start FAIL
+);
 
-# Instance start
+$runtime->mock('run_cmd' =>
+        sub {
+            my %args = @_;
+            my $output_ref = $args{output};
+            $$output_ref = "1234 mysqld /ORA/dbs03/MYTEST/mysql\ntest";
+            my $ret = shift @outputs;
+            return $ret;
+        });
+
+my $mymod = Test::MockModule->new('DBOD::Systems::MySQL');
+$mymod->mock('_parse_err_file' => sub {
+        return "Test err file";
+    });
+
+is($mysql->is_running(), $TRUE, 'Instance is RUNNING');
 is($mysql->start(), $OK, 'start OK: Nothing to do');
-is($mysql->start(), $OK, 'start OK');
-is($mysql->start( skip_networking => 1), $OK, 'start OK. Skip networking');
-is($mysql->start(), $ERROR, 'start FAIL');
-
-# Stop
-is($mysql->stop(), $OK, 'stop OK: Nothing to do');
 is($mysql->stop(), $OK, 'stop OK');
 is($mysql->stop(), $ERROR, 'stop FAIL');
 
+$runtime->mock('run_cmd' =>
+    sub {
+        my %args = @_;
+        my $output_ref = $args{output};
+        $$output_ref = "666 error";
+        my $ret = shift @outputs2;
+        return $ret;
+    });
+
+is($mysql->is_running(), $FALSE, 'Instance is NOT RUNNING');
+is($mysql->stop(), $OK, 'stop OK: Nothing to do');
+is($mysql->start(), $OK, 'start OK');
+is($mysql->start( skip_networking => 1), $OK, 'start OK. Skip networking');
+is($mysql->start(), $ERROR, 'start FAIL');
 
 my @db_do_outputs = (
     1, 1,
@@ -98,8 +115,11 @@ SKIP: {
 $mysql->_connect_db();
 isa_ok( $mysql->db(), 'DBOD::DB', 'db connection object OK' );
 
-my $mtab_file = File::ShareDir::dist_dir('DBOD') . '/sample_mtab';
+$mymod->unmock('_parse_err_file');
+$runtime->unmock('run_cmd');
 
+my $mtab_file = File::ShareDir::dist_dir('DBOD') . '/sample_mtab';
+diag Dumper $mtab_file;
 my $buf = $mysql->_parse_err_file('PIN', $mtab_file);
 ok(length $buf > 0, '_parse_err_file');
 
