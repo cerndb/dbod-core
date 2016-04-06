@@ -97,7 +97,7 @@ sub get_mount_point_NAS_regex {
                 $self->log->debug("Got controller <$nas> mountpath controller: <$mountpath> file system: <$filesystemmount>");
 
                 if (defined $exclusion_list) {
-                    my @buf = grep $filesystemmount, @{$exclusion_list};
+                    my @buf = grep {$filesystemmount} @{$exclusion_list};
                     if ((scalar @buf) > 0) {
                         next;
                     }
@@ -341,7 +341,8 @@ sub snap_clone {
     $self->log->info("Parameters junction-path: <$junction>") if defined $junction;
 
 
-    my($suffix)= `date +%d%m%Y%H%M%S`;
+    my $suffix;
+    DBOD::Runtime::run_cmd(cmd => 'date +%d%m%Y%H%M%S', output=> \$suffix);
     chomp $suffix;
     my($newvol)= $volume_name . $suffix . "clone";
     my($newjunction) = $junction;
