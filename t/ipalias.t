@@ -5,11 +5,16 @@ use Test::More;
 use File::ShareDir;
 use Data::Dumper;
 
-use_ok('DBOD::IPalias');
+use_ok('DBOD::Network::IPalias');
 
 use Test::MockObject;
 use Test::MockModule;
 use Test::MockObject::Extends;
+
+use DBOD;
+
+use Log::Log4perl qw(:easy);
+BEGIN { Log::Log4perl->easy_init() };
 
 # We need to Mock the _api_client method on the
 # DBOD::Api module
@@ -25,7 +30,7 @@ $rest_client->mock('POST');
 $rest_client->mock('DELETE');
 
 my %result = ( response => ['db-dbod-000', 'dbod-test'] ); 
-my $api_m = Test::MockModule->new('DBOD::Api');
+my $api_m = Test::MockModule->new('DBOD::Network::Api');
 $api_m->mock( get_ip_alias => sub {return \%result} );
 $api_m->mock( set_ip_alias => sub {return \%result} );
 
@@ -40,7 +45,7 @@ $client->mock('dnsDelegatedAliasAdd', sub {return $call;} );
 $client->mock('dnsDelegatedAliasRemove', sub {return $call;} );
 $client->mock('dnsDelegatedAliasSearch', sub {return $call;} );
 
-my $network = Test::MockModule->new('DBOD::Network');
+my $network = Test::MockModule->new('DBOD::Network::LanDB');
 $network->mock( _get_landb_connection => sub { return ($client, $auth);} );
 
 my $share_dir = File::ShareDir::dist_dir('DBOD');
@@ -59,34 +64,68 @@ $config{'api'} = \%api;
 $config{'common'} = { template_folder => "${share_dir}/templates" };
 $config{'ipalias'} = \%ipalias;
 
-my $rt = Test::MockObject->new();
 my $runtime = Test::MockModule->new('DBOD::Runtime');
-$runtime->mock('new', sub {return $rt;});
 
-subtest 'add_alias' => sub { 
-    
-    $rt->mock('run_cmd', sub { return 0 });
-    is(DBOD::IPalias::add_alias('test', 'dbod-test', \%config), 1, 'Registered alias');
+subtest 'add_alias' => sub {
 
-    $rt->mock('run_cmd', sub { return 1 });
-    is(DBOD::IPalias::add_alias('test', 'dbod-test', \%config), 0, 'External failure: change_command');
+        $runtime->mock( 'run_cmd' =>
+            sub {
+                my %args = @_;
+                my $output_ref = $args{output};
+                $$output_ref = "output OK";
+                return $OK;
+            });
 
-    $api_m->mock( get_ip_alias => sub {return undef} );
-    is(DBOD::IPalias::add_alias('test', 'dbod-test', \%config), 0, 'API Failure');
+        is(DBOD::Network::IPalias::add_alias('test', 'dbod-test', \%config),
+            $OK, 'Registered alias');
+
+        $runtime->mock( 'run_cmd' =>
+            sub {
+                my %args = @_;
+                my $output_ref = $args{output};
+                $$output_ref = "output ERROR";
+                return $ERROR;
+            });
+
+        is(DBOD::Network::IPalias::add_alias('test', 'dbod-test', \%config),
+            $DBOD::ERROR, 'External failure: change_command');
+
+        note Dumper $ERROR;
+        $api_m->mock( get_ip_alias => sub {return undef} );
+        is(DBOD::Network::IPalias::add_alias('test', 'dbod-test', \%config),
+            $DBOD::ERROR, 'API Failure');
 
 };
 
-subtest 'remove_alias' => sub { 
+subtest 'remove_alias' => sub {
 
-    $api_m->mock( get_ip_alias => sub {return \%result} );
-    $rt->mock('run_cmd', sub { return 0 });
-    is(DBOD::IPalias::remove_alias('test', 'hostname', \%config), 1, 'Removed alias');
-    
-    $rt->mock('run_cmd', sub { return 1 });
-    is(DBOD::IPalias::remove_alias('test', 'hostname', \%config), 0, 'External failure: change_command');
-    
-    $api_m->mock( get_ip_alias => sub {return undef} );
-    is(DBOD::IPalias::remove_alias('test', 'dbod-test', \%config), 0, 'API Failure');
+        $api_m->mock( get_ip_alias => sub {return \%result} );
+
+        $runtime->mock( 'run_cmd' =>
+            sub {
+                my %args = @_;
+                my $output_ref = $args{output};
+                $$output_ref = "output OK";
+                return $OK;
+            });
+
+        is(DBOD::Network::IPalias::remove_alias('test', 'hostname', \%config),
+            $OK, 'Removed alias');
+
+        $runtime->mock( 'run_cmd' =>
+            sub {
+                my %args = @_;
+                my $output_ref = $args{output};
+                $$output_ref = "output ERROR";
+                return $ERROR;
+            });
+
+        is(DBOD::Network::IPalias::remove_alias('test', 'hostname', \%config),
+            $DBOD::ERROR, 'External failure: change_command');
+
+        $api_m->mock( get_ip_alias => sub {return undef} );
+        is(DBOD::Network::IPalias::remove_alias('test', 'dbod-test', \%config),
+            $DBOD::ERROR, 'API Failure');
 
 };
 

@@ -27,7 +27,7 @@ use strict;
 use warnings;
 
 use Log::Log4perl;
-use DBOD::Runtime;
+use DBOD::CRS;
 use DBOD::MySQL;
 use Data::Dumper;
 
@@ -38,18 +38,22 @@ BEGIN {
 }
 
 
-my $job = DBOD::MySQL::start->new_with_options();
-my $runtime = DBOD::Runtime->new;
-my $mysql = DBOD::MySQL->new;
+my $job = DBOD::Systems::MySQL::start->new_with_options();
 
 sub body {
+
+	my $mysql = DBOD::Systems::MySQL->new(
+		instance => $self->entity,
+		metadata => $self->metadata,
+	);
+
 	$job->log->info('Executing mysql start-up on '. $job->entity );
 	
-       my($rc,$entity);
+    my ($rc, $entity);
 	$entity = 'dod_' . $job->entity;	
 	
 	#Check if instance is running
-	$rc=$mysql->CheckMySQLState($job->metadata->{'datadir'});
+	$rc=$mysql->is_running();
 	if ($rc == 0) {
 		$job->log->debug("Instance " . $job->entity . " not running");
 	} else {
@@ -59,13 +63,11 @@ sub body {
 		return 0;
 	}
 
-	
-	
 	#If instance is CRS
 	if ($job->metadata->{'crs_ref'}) {
-		$rc = $runtime->StartCRSResource($entity, $job->config->{'mysql'}->{'oracle_crs'});
+		$rc = DBOD::Systems::CRS::start_resource($entity, $job->config->{'mysql'}->{'oracle_crs'});
 	} else {
-		$rc = $mysql->StartMySQL($entity, $job->metadata->{'bindir'} . "/mysqladmin", $job->config->{'mysql'}->{'db_user'}, $job->config->{'mysql'}->{'db_password'}, $job->metadata->{'socket'},$job->metadata->{'datadir'} , 0);
+		$rc = $mysql->start();
 	}	
 	if ($rc) {
 		$job->log->debug("Instance is up");
@@ -74,8 +76,6 @@ sub body {
 		$job->_output(1);
 		return 1;
 	}
-
-
 
 	# The End
 	$job->log->debug("mysql_start is over.");

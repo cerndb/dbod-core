@@ -5,7 +5,7 @@
 # granted to it by virtue of its status as Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-package DBOD::Ldap;
+package DBOD::Network::Ldap;
 use strict;
 use warnings;
 
@@ -67,7 +67,7 @@ sub timestamp_entity {
     my ($conn, $entity) = @_;
     my $entity_name = "dod_" . lc $entity->{dbname};
     my $base = "SC-ENTITY=$entity_name,SC-CATEGORY=entities,ou=syscontrol,dc=cern,dc=ch";
-    DBOD::Ldap::modify_attributes($conn, $base,
+    DBOD::Network::Ldap::modify_attributes($conn, $base,
         ['SC-COMMENT' => 'Entity Modified @(' . localtime(time) . ')']);
     return;
 }
@@ -124,17 +124,22 @@ sub create_instance {
  
     my $conn = get_connection($config);
 
-    for my $subtree (@{$entry}) {
-        $subtree->add($conn);
-    }
-    for my $subtree (@{$tns}) {
-        $subtree->add($conn);
+    if (defined $conn) {
+        for my $subtree (@{$entry}) {
+            $subtree->add($conn);
+        }
+        for my $subtree (@{$tns}) {
+            $subtree->add($conn);
+        }
+        timestamp_entity($conn, $new_instance);
+        $conn->unbind();
+        $conn->disconnect();
+    } else {
+        ERROR "Couldn\'t connect to LDAP server. Aborting instance registration";
+        return scalar 1;
     }
 
-    timestamp_entity($conn, $new_instance);
-
-    $conn->unbind();
-    $conn->disconnect();
+    return scalar 0;
 
 }
 

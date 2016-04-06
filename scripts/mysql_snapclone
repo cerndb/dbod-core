@@ -35,7 +35,7 @@ BEGIN {
 
 
 my $job = DBOD::MySQL::snapclone->new_with_options();
-my $runtime_zapi  = DBOD::Runtime_Zapi->new;
+my $runtime_zapi  = DBOD::Storage::NetApp::ZAPI->new;
 my $runtime = DBOD::Runtime->new;
 
 
@@ -71,7 +71,7 @@ sub body {
 	#check if snapshot exists
 	my $cmd = "ls -1 $mntpoint/.snapshot | grep " . $job->snapshot;
 	my @output=();
-	my $rc = $runtime->RunStr($cmd,\@output);
+	my $rc = $runtime->run_str($cmd,\@output);
 	
 	if ($rc == 0) {
     	 	$job->log->error("Snapshot <" . $job->snapshot . "> doesnt exist.");
@@ -82,7 +82,7 @@ sub body {
 	
 	
 	my($server_zapi,$volume_name);
-	my($arref)= $runtime_zapi->GetServerAndVolname($mntpoint);
+	my($arref)= $runtime_zapi->get_server_and_volname($mntpoint);
 
 	if (defined($$arref[0])) {
 		$server_zapi=$$arref[0];
@@ -106,7 +106,7 @@ sub body {
 	chomp $tag;
 	my $junction = $mntpoint . "_" . $job->snapshot . "_" . $tag;
 		
-	$rc=$runtime_zapi->SnapClone($server_zapi,$volume_name,$job->snapshot,$junction); 
+	$rc=$runtime_zapi->snap_clone($server_zapi,$volume_name,$job->snapshot,$junction);
 	if (!defined $rc) {
 		$job->log->error("Error creating clone: <" . $job->snapshot . "> on volume: <$volume_name>");
 		$job->_output(1);	
@@ -122,7 +122,7 @@ sub body {
 		$mntpoint_cmd = $mntpoint; # copy the mount point for data.
 		$mntpoint_cmd =~ s/dbs03/$_/g;
 		$job->log->debug("Getting information from <$mntpoint_cmd>");
-		$rc=$runtime_zapi->GetVolInfoCmode($server_zapi,$mntpoint_cmd,0);
+		$rc=$runtime_zapi->get_volinfo($server_zapi,$mntpoint_cmd,0);
 		if (!%$rc) {
 			$job->log->error("no information could be retrieved from <$mntpoint_cmd>");
 			$job->_output(1);	
@@ -137,7 +137,7 @@ sub body {
 		$junction_cmd  =~ s/dbs03/$_/g;
 		$job->log->debug("New junction path is <$junction_cmd>");
 
-		$rc=$runtime_zapi->SnapClone($server_zapi,$volume_name,undef,$junction_cmd); 
+		$rc=$runtime_zapi->snap_clone($server_zapi,$volume_name,undef,$junction_cmd);
 		if (!defined $rc) {
 			$job->log->error("Error creating clone on volume: <$volume_name> !");
 			$job->_output(1);	

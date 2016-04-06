@@ -5,7 +5,7 @@ use inc::Module::Install;
 
 # Package metadata
 author  'Ignacio Coterillo <ignacio.coterillo@cern.ch>';
-version '0.67';
+version '0.68';
 license 'GPLv3';
 name    'DBOD';
 
@@ -18,8 +18,8 @@ requires    'Log::Dispatch::Syslog' => 0;
 requires    'YAML::Syck' => 0;
 requires    'File::ShareDir' => 0;
 requires    'Moose' => 0;
+requires    'MooseX::AbstractFactory' => 0;
 requires    'MooseX::Log::Log4perl' => 0;
-requires    'MooseX::Getopt' => 0;
 requires    'MooseX::Role::DBIx::Connector' => 0;
 requires    'MooseX::Getopt::Usage' => 0;
 requires    'Config::General' => 0;
@@ -34,6 +34,8 @@ requires    'Net::LDAP' => 0;
 requires    'JSON' => 0;
 requires    'MooseX::Getopt::Usage' => 0;
 requires    'Try::Tiny' => 0;
+requires    'Readonly' => 0;
+requires    'Readonly::XS' => 0;
 requires    'SOAP::Lite' => 0;
 requires    'XML::Parser' => 0;
 
@@ -49,15 +51,14 @@ install_share;
 
 # Install executables
 install_script 'scripts/init_instance';
+install_script 'scripts/dbod_ping';
 install_script 'scripts/mysql_appdynamics';
-install_script 'scripts/mysql_ping';
 install_script 'scripts/mysql_restore';
 install_script 'scripts/mysql_snapclone';
 install_script 'scripts/mysql_snapshot';
 install_script 'scripts/mysql_start';
 install_script 'scripts/mysql_stop';
 install_script 'scripts/pg_appdynamics';
-install_script 'scripts/pg_ping';
 install_script 'scripts/pg_restore';
 install_script 'scripts/pg_snapclone';
 install_script 'scripts/pg_snapshot';

@@ -44,9 +44,9 @@ local $ENV{PERL_LWP_SSL_VERIFY_HOSTNAME} = 0;
 my $job = DBOD::PG::upgrade->new_with_options();
 $job->connect_db();
 
-my $runtime_zapi  = DBOD::Runtime_Zapi->new;
+my $runtime_zapi  = DBOD::Storage::NetApp::ZAPI->new;
 my $runtime = DBOD::Runtime->new;
-my $pg = DBOD::PG->new;
+my $pg = DBOD::Systems::PG->new;
 
 my @allsymlinks;
 sub body {
@@ -54,17 +54,8 @@ sub body {
 	my($entity);
 	$entity = 'dod_' . $job->entity;
 	my ($rc,@output);	
-	$rc = $runtime->RunStr("cat " . $job->metadata->{'datadir'} . "/current-version",\@output);
-	my $current_version = $output[0];
-	if (!$rc || !defined $current_version) {
-		$job->log->error("A problem occurred while fetching current version");
-		$job->_output(1);
-		return 1;
-	}
-	chomp $current_version;
-	$job->log->debug(">>> Pre-upgrade checks");
-
-	if (! $runtime->IsRunningVersionDiffMySQLPG($job->metadata->{'datadir'}."/current-version",$job->versionto)) {
+	my $current_version = $job->metadata->{version};
+	if ($current_version eq $job->versionto) {
 		$job->log->error("You are running already the right version, likely!!");
 		$job->_output(1);
 		return 1;
@@ -91,7 +82,7 @@ sub body {
 	}
 	
 	#check if instance is up
-	$rc = $runtime->RunStr("/ORA/dbs01/work/git/DBOD-core/src/scripts/pg_ping --debug --entity " . $job->entity . " 2>&1" ,\@output,$job->fake);
+	$rc = $runtime->run_str("/ORA/dbs01/work/git/DBOD-core/src/scripts/pg_ping --debug --entity " . $job->entity . " 2>&1" ,\@output,$job->fake);
 	if (!$job->fake) { 
 		if (!$rc || !defined $output[-1] || !($output[-1] =~ /.*\[0\]/x)) {
 			$job->log->error("Instance is down. An upgrade can only go for a running instance.");
@@ -127,7 +118,7 @@ sub body {
 	
 	# Execute snapshot
 	$job->log->debug(">>> Executing pre-upgrade snapshot");
-	$rc = $runtime->RunStr("/ORA/dbs01/work/git/DBOD-core/src/scripts/pg_snapshot --debug --entity " . $job->entity . " 2>&1" ,\@output,$job->fake);
+	$rc = $runtime->run_str("/ORA/dbs01/work/git/DBOD-core/src/scripts/pg_snapshot --debug --entity " . $job->entity . " 2>&1" ,\@output,$job->fake);
 	if (!$job->fake) { 
 		if (!$rc || !defined $output[-1] || !($output[-1] =~ /.*\[0\]/x)) {
 			$job->log->error("A problem occurred while executing pre-upgrade snapshot");
@@ -139,7 +130,7 @@ sub body {
 
 	# Stop instance
 	$job->log->debug(">>> Stopping instance");
-	$rc = $runtime->RunStr("/ORA/dbs01/work/git/DBOD-core/src/scripts/pg_stop --debug --entity " . $job->entity . " 2>&1" ,\@output,$job->fake);
+	$rc = $runtime->run_str("/ORA/dbs01/work/git/DBOD-core/src/scripts/pg_stop --debug --entity " . $job->entity . " 2>&1" ,\@output,$job->fake);
 	if (!$job->fake) {
 		if (!$rc || !defined $output[-1] || !($output[-1] =~ /.*\[0\]/x)) {
 			$job->log->error("A problem occurred while attempting to stop the instance");
@@ -156,14 +147,14 @@ sub body {
 	my $identifier = $job->entity . '_' . $nowdate;
        $job->log->debug(">>> Security backup of configuration files");
 	my $cmd = "cp -p " . $job->metadata->{'datadir'} . "/pg_hba.conf " . $job->metadata->{'datadir'} . "/" . $identifier . '_' . "pg_hba.conf";
-	$rc = $runtime->RunStr($cmd,\@output,$job->fake);
+	$rc = $runtime->run_str($cmd,\@output,$job->fake);
 	if (!$rc) {
 		$job->log->error("A problem occurred while coping <$cmd>");
 		$job->_output(1);
 		return 1;
 	}
 	$cmd="cp -p " . $job->metadata->{'datadir'} . "/postgresql.conf " . $job->metadata->{'datadir'} . "/" . $identifier . '_' . "postgresql.conf";
-	$rc = $runtime->RunStr($cmd,\@output,$job->fake);
+	$rc = $runtime->run_str($cmd,\@output,$job->fake);
 	if (!$rc) {
 		$job->log->error("A problem occurred while coping <$cmd>");
 		$job->_output(1);
@@ -173,14 +164,14 @@ sub body {
 
 	# move data and create new directories
 	$cmd = "mv " . $job->metadata->{'datadir'} . " " . $job->metadata->{'datadir'} . ".old";
-	$rc = $runtime->RunStr($cmd,\@output,$job->fake);
+	$rc = $runtime->run_str($cmd,\@output,$job->fake);
 	if (!$rc) {
 		$job->log->error("A problem occurred while moving <$cmd>");
 		$job->_output(1);
 		return 1;
 	}
 	$cmd="mkdir " . $job->metadata->{'datadir'} . ";chmod 700 " . $job->metadata->{'datadir'};
-	$rc = $runtime->RunStr($cmd,\@output,$job->fake);
+	$rc = $runtime->run_str($cmd,\@output,$job->fake);
 	if (!$rc) {
 		$job->log->error("A problem occurred while creating and setting premissions on <$cmd>");
 		$job->_output(1);
@@ -189,7 +180,7 @@ sub body {
 	#Create a flag: upgrade can be executed only once automatically. If there is an issue, DBoD admin should intervene. 
 
 	$cmd="touch $stopperfile";
-	$rc = $runtime->RunStr($cmd,\@output,$job->fake);
+	$rc = $runtime->run_str($cmd,\@output,$job->fake);
 	if (!$rc) {
 		$job->log->error("A problem occurred while creating  <$cmd>");
 		$job->_output(1);
@@ -197,28 +188,28 @@ sub body {
 	}
 	
 	$cmd= "mv " . $job->metadata->{'archivedir'} . " " . $job->metadata->{'archivedir'} . ".old";
-	$rc = $runtime->RunStr($cmd,\@output,$job->fake);
+	$rc = $runtime->run_str($cmd,\@output,$job->fake);
 	if (!$rc) {
 		$job->log->error("A problem occurred while moving <$cmd>");
 		$job->_output(1);
 		return 1;
 	}
 	$cmd="mkdir " . $job->metadata->{'archivedir'} . ";chmod 700 " . $job->metadata->{'archivedir'};
-	$rc = $runtime->RunStr($cmd,\@output,$job->fake);
+	$rc = $runtime->run_str($cmd,\@output,$job->fake);
 	if (!$rc) {
 		$job->log->error("A problem occurred while creating and setting premissions on <$cmd>");
 		$job->_output(1);
 		return 1;
 	}
 	$cmd="mv " . $job->metadata->{'xlogdir'} . " " . $job->metadata->{'xlogdir'} . ".old";
-	$rc = $runtime->RunStr($cmd,\@output,$job->fake);
+	$rc = $runtime->run_str($cmd,\@output,$job->fake);
 	if (!$rc) {
 		$job->log->error("A problem occurred while moving <$cmd>");
 		$job->_output(1);
 		return 1;
 	}
 	$cmd="mkdir " . $job->metadata->{'xlogdir'} . ";chmod 700 " . $job->metadata->{'xlogdir'};
-	$rc = $runtime->RunStr($cmd,\@output,$job->fake);
+	$rc = $runtime->run_str($cmd,\@output,$job->fake);
 	if (!$rc) {
 		$job->log->error("A problem occurred while creating and setting premissions on <$cmd>");
 		$job->_output(1);
@@ -229,7 +220,7 @@ sub body {
 	# symbolic links on datadir.old
 	if (-l $job->metadata->{'datadir'} . ".old/pg_xlog") { #recreate the symbolic link
 		$cmd="rm " . $job->metadata->{'datadir'} . ".old/pg_xlog; cd " . $job->metadata->{'datadir'} . ".old; ln -s " . $job->metadata->{'xlogdir'} . ".old pg_xlog";
-		$rc = $runtime->RunStr($cmd,\@output,$job->fake);
+		$rc = $runtime->run_str($cmd,\@output,$job->fake);
 		if (!$rc) {
 			$job->log->error("A problem occurred while creating symbolic links <$cmd>");
 			$job->_output(1);
@@ -237,7 +228,7 @@ sub body {
 		}
 	} elsif (-d $job->metadata->{'datadir'} . ".old/pg_xlog") { #check that this is a directory, we need to copy contents first
 		$cmd="cp -pr " . $job->metadata->{'datadir'} . ".old/pg_xlog/* " . $job->metadata->{'xlogdir'} . ".old;rm -rf " . $job->metadata->{'datadir'} . ".old/pg_xlog; cd " . $job->metadata->{'datadir'} . ".old; ln -s " . $job->metadata->{'xlogdir'} . ".old pg_xlog";
-		$rc = $runtime->RunStr($cmd,\@output,$job->fake);
+		$rc = $runtime->run_str($cmd,\@output,$job->fake);
 		if (!$rc) {
 			$job->log->error("A problem occurred while copying and creating symbolic links <$cmd>");
 			$job->_output(1);
@@ -255,7 +246,7 @@ sub body {
 			if ($destiny =~ /archive/) {
 				$destiny =~ s/archive/archive.old/;
 				$cmd = "rm -f $destiny; ln -s $destiny $_";
-				$rc = $runtime->RunStr($cmd,\@output,$job->fake);
+				$rc = $runtime->run_str($cmd,\@output,$job->fake);
 				if (!$rc) {
 					$job->log->error("A problem occurred while copying and creating symbolic links <$cmd>");
 					$job->_output(1);
@@ -270,7 +261,7 @@ sub body {
 	}
 	$job->log->debug(">>> Changing attribute in <". $job->metadata->{'datadir'} . ".old/postgresql.conf");
 	$cmd="sed -i 's/\\/archive\\//\\/archive.old\\//g' ". $job->metadata->{'datadir'} . ".old/postgresql.conf ";
-       $rc = $runtime->RunStr($cmd,\@output,$job->fake); #Appdynamics monitoring
+       $rc = $runtime->run_str($cmd,\@output,$job->fake); #Appdynamics monitoring
 	if (!$rc) {
 		$job->log->error("A problem occurred while changing archive_command <$cmd> ");
 		$job->_output(1);
@@ -282,7 +273,7 @@ sub body {
 	$job->log->debug(">>> Create target database in " . $job->versionto);
 	#do cleanup
 	$cmd="rm -rf " . $job->metadata->{'datadir'} . "/*; rm -rf " . $job->metadata->{'xlogdir'} . "/*; rm -rf " . $job->metadata->{'archivedir'} . "/*";
-	$rc = $runtime->RunStr($cmd,\@output,$job->fake); #Appdynamics monitoring
+	$rc = $runtime->run_str($cmd,\@output,$job->fake); #Appdynamics monitoring
 	if (!$rc) {
 		$job->log->error("A problem occurred while cleaning directories <$cmd> ");
 		$job->_output(1);
@@ -294,7 +285,7 @@ sub body {
 	} else {
 		$cmd= $newbindir . "/initdb -X " . $job->metadata->{'xlogdir'} . " -D " . $job->metadata->{'datadir'};
 	}
-	$rc = $runtime->RunStr($cmd,\@output,$job->fake);
+	$rc = $runtime->run_str($cmd,\@output,$job->fake);
 	if (!$rc) {
 		$job->log->error("A problem occurred while creating running <$cmd>");
 		$job->_output(1);
@@ -304,7 +295,7 @@ sub body {
 	$job->log->debug(">>> Running upgrade check");
 	
 	$cmd="cd " . $job->metadata->{'datadir'} . "; $newbindir/pg_upgrade -d " . $job->metadata->{'datadir'} . ".old -D " . $job->metadata->{'datadir'} . " -b " . $job->metadata->{'bindir'} . " -B $newbindir -v --check"; 
-	$rc = $runtime->RunStr($cmd,\@output,$job->fake);
+	$rc = $runtime->run_str($cmd,\@output,$job->fake);
 	my $compatibleclusteres =0;
 	if ($job->fake) {
 		$job->log->debug("dry run: clusters are compatible. Go on.");
@@ -320,7 +311,7 @@ sub body {
 	}
 	#Avoid issues with puppet. Create dbod-users file.
 	$cmd="touch " . $job->metadata->{'datadir'} . "/dbod_users; chmod 644 " . $job->metadata->{'datadir'} . "/dbod_users";
-	$rc = $runtime->RunStr($cmd,\@output,$job->fake);
+	$rc = $runtime->run_str($cmd,\@output,$job->fake);
 	if (!$rc) {
 		$job->log->error("A problem occurred while running <$cmd>");
 		$job->_output(1);
@@ -328,7 +319,7 @@ sub body {
 	}
 	#Set new version in current-version 
 	$cmd = "echo " . $job->versionto . " > " . $job->metadata->{'datadir'} . "/current-version";
-	$rc = $runtime->RunStr($cmd,\@output,$job->fake);
+	$rc = $runtime->run_str($cmd,\@output,$job->fake);
 	if (!$rc) {
 		$job->log->error("A problem occurred while running <$cmd>");
 		$job->_output(1);
@@ -342,7 +333,7 @@ sub body {
 	$job->log->debug(">>> Running real upgrade");
 
 	$cmd="cd " . $job->metadata->{'datadir'} . ".old; $newbindir/pg_upgrade -d " . $job->metadata->{'datadir'} . ".old -D " . $job->metadata->{'datadir'} . " -b " . $job->metadata->{'bindir'} . " -B $newbindir -v -r"; 
-	$rc = $runtime->RunStr($cmd,\@output,$job->fake);
+	$rc = $runtime->run_str($cmd,\@output,$job->fake);
 	if (!$job->fake ) {
 		my $goodupgrade =0;
 		foreach (@output) {
@@ -364,7 +355,7 @@ sub body {
 	$job->log->debug(">>> Copying configuration files and change postgresql.conf file");
 
 	$cmd="cp " . $job->metadata->{'datadir'} . ".old/pg_hba.conf " . $job->metadata->{'datadir'} . "/pg_hba.conf";
-       $rc = $runtime->RunStr($cmd,\@output,$job->fake);
+       $rc = $runtime->run_str($cmd,\@output,$job->fake);
 	if (!$rc) {
 		$job->log->error("A problem occurred while running <$cmd>");
 		$job->_output(1);
@@ -372,14 +363,14 @@ sub body {
 	}
 	#Original postgresql.conf was modified: e.g. archive_directory
 	$cmd="cp " . $job->metadata->{'datadir'} . ".old/$identifier" . '_' . "postgresql.conf " .$job->metadata->{'datadir'} . "/postgresql.conf";
-       $rc = $runtime->RunStr($cmd,\@output,$job->fake);
+       $rc = $runtime->run_str($cmd,\@output,$job->fake);
 	if (!$rc) {
 		$job->log->error("A problem occurred while running <$cmd>");
 		$job->_output(1);
 		return 1;
 	} 
 	
-	$rc = $runtime->RunStr("sed -i 's/unix_socket_directory/unix_socket_directories/g' " . $job->metadata->{'datadir'} . "/postgresql.conf",\@output,$job->fake); #Appdynamics monitoring
+	$rc = $runtime->run_str("sed -i 's/unix_socket_directory/unix_socket_directories/g' " . $job->metadata->{'datadir'} . "/postgresql.conf",\@output,$job->fake); #Appdynamics monitoring
 	if ($? != 0) {
 		$job->log->error("A problem occurred while copying and creating symbolic links <@output>");
 		$job->_output(1);
@@ -390,14 +381,14 @@ sub body {
 	$job->log->debug(">>> Start the server and run statistics");
 
 	$cmd="$newbindir/pg_ctl start -w -l " . $job->metadata->{'datadir'} . "/postgresql.log -D " . $job->metadata->{'datadir'};
-       $rc = $runtime->RunStr($cmd,\@output,$job->fake);
+       $rc = $runtime->run_str($cmd,\@output,$job->fake);
 	if (!$rc) {
 		$job->log->error("A problem occurred while starting PGSQL server <$cmd>");
 		$job->_output(1);
 		return 1;
 	}
 	$cmd="$newbindir/vacuumdb -U postgres -h " . $job->metadata->{'socket'} . " -p " . $job->metadata->{'port'} . " --all --analyze-in-stages";
-       $rc = $runtime->RunStr($cmd,\@output,$job->fake);
+       $rc = $runtime->run_str($cmd,\@output,$job->fake);
 	if (!$rc)  {
 		$job->log->error("A problem occurred while running vacuumdb <$cmd>");
 		$job->_output(1);
@@ -411,7 +402,7 @@ sub body {
 	if ($job->fake) {
 		$job->log->debug('we would run: $api->set_metadata($job->entity, $job->metadata, $job->config)');
 	} else {
-		DBOD::Api::set_metadata($job->entity, $job->metadata, $job->config);
+		DBOD::Network::Api::set_metadata($job->entity, $job->metadata, $job->config);
 	}
 
 	$job->log->debug("Upgrade is successfully over"); 

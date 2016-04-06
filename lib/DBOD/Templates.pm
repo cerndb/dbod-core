@@ -12,7 +12,7 @@ use strict;
 
 our $VERSION = 0.67;
 
-use DBOD::Ldap;
+use DBOD::Network::Ldap;
 use Data::Dumper;
 use Template;
 use Try::Tiny;
@@ -65,7 +65,7 @@ sub create_ldap_entry {
     my ($fh, $filename) = tempfile();
     print $fh $ldap_template;
     close $fh;
-    my $entries = DBOD::Ldap::load_ldif($filename);
+    my $entries = DBOD::Network::Ldap::load_ldif($filename);
     DEBUG 'LDAP entry: ' . Dumper $entries;
     return $entries;
 }
@@ -78,7 +78,7 @@ sub create_ldap_tnsnetservice_entry {
     my ($fh, $filename) = tempfile();
     print $fh $tnsnetservice;
     close $fh;
-    my $entries = DBOD::Ldap::load_ldif($filename);
+    my $entries = DBOD::Network::Ldap::load_ldif($filename);
     DEBUG 'LDAP entry: ' . Dumper $entries;
     return $entries;
 }

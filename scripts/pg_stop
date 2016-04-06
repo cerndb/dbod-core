@@ -27,7 +27,7 @@ use strict;
 use warnings;
 
 use Log::Log4perl;
-use DBOD::Runtime;
+use DBOD::CRS;
 use DBOD::PG;
 
 # Initiates logger
@@ -36,44 +36,40 @@ BEGIN {
 }
 
 
-my $job = DBOD::PG::stop->new_with_options();
-my $runtime = DBOD::Runtime->new;
-my $pg = DBOD::PG->new;
+my $job = DBOD::Systems::PG::stop->new_with_options();
 
 sub body {
-	$job->log->info('Executing posgresql stop on '. $job->entity );
-	
-       my($rc,$entity);
-	$entity = 'dod_' . $job->entity;	
-	
-	#Check if instance is running
-	$rc=$pg->CheckPostgreSQLState($job->metadata->{'bindir'} . "/pg_ctl", $job->metadata->{'datadir'}) ;
+    # Initialize a new PG instance object with the entity details
+	my $pg = DBOD::Systems::PG->new(
+        instance => $self->entity,
+        metadata => $self->metadata,
+    );
 
-	if ($rc == 0) {
-		$job->log->debug("No instance running");
-		$job->log->debug("pg_stop is over.");
-		$job->_output(0);
-		return 0;
+	$job->log->info('Executing posgresql start-up on '. $job->entity );
+    my($rc,$entity);
+
+	#Check if instance is running
+	if ($pg->is_running()) {
+        $job->log->debug("Instance is Up");
 	} else {
-		$job->log->debug("Instance is already up. Needs to be stopped.");
+        $job->log->debug("No instance running. Nothing to do");
+        $job->_output(0);
+        return 0;
 	}
 
-	
 	#If instance is CRS
 	if ($job->metadata->{'crs_ref'}) {
-		$rc = $runtime->StopCRSResource($entity, $job->config->{'common'}->{'crsctl'});
+		$rc = DBOD::Systems::CRS::stop_resource($entity, $job->config->{'common'}->{'crsctl'});
 	} else {
-		$rc = $pg->StopPostgreSQL($entity, $job->metadata->{'bindir'} . "/pg_ctl",$job->metadata->{'datadir'});
+		$rc = $pg->stop();
 	}	
 	if ($rc) {
 		$job->log->debug("Instance is down");
 	} else	{
-		$job->log->error("Problem shutting down instance. Please check.");
+		$job->log->error("Problem shutting down instance. Please check logs");
 		$job->_output(1);
 		return 1;
 	}
-
-
 
 	# The End
 	$job->log->debug("pg_stop is over.");

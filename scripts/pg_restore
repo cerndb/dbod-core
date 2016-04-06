@@ -32,6 +32,7 @@ use DBOD::Runtime;
 use DBOD::Runtime_Zapi;
 use DBOD::PG;
 use Data::Dumper;
+use File::Copy 'cp';
 use Try::Tiny;
 
 
@@ -42,25 +43,18 @@ BEGIN {
 
 
 my $job = DBOD::PG::restore->new_with_options();
-my $runtime_zapi  = DBOD::Runtime_Zapi->new;
+my $runtime_zapi  = DBOD::Storage::NetApp::ZAPI->new;
 my $runtime = DBOD::Runtime->new;
-my $pg = DBOD::PG->new;
 
-
-
-# perl pg_restore --entity pgtest --snapshot snapscript_24062015_125419_58_5617 --pitr 2015-06-24_13:00:00
-sub CheckFileExist{
-	my($file)=@_;
-	
-	if (-e $file) {
-		$job->log->debug(" <$file> has been created!");
-		return 1; #ok
-	} 
-	return 0; #not ok
-
-}
 sub body {
-	$job->log->debug('Executing restore  on '. $job->entity . ' with snapshot ' . $job->snapshot);
+
+    # Initialize a new PG instance object with the entity details
+    my $pg = DBOD::Systems::PG->new(
+        instance => $self->entity,
+        metadata => $self->metadata,
+    );
+
+	$job->log->debug('Executing restore  on '. $job->entity . ' to snapshot ' . $job->snapshot);
 	if (defined $job->pitr) {
 		$job->log->debug('Pitr is ' . $job->pitr);
 	}
@@ -68,11 +62,13 @@ sub body {
 	my($entity,$fake,$version_pg_snap);
 	$fake=0;
 	$entity = 'dod_' . $job->entity;	
-	$runtime->CheckTimes($job->snapshot, $job->pitr,\$version_pg_snap); 
 
-       #check if trying to restore from a snapshot on a different major version
-	my($actual_version)=$runtime->GetVersionDB( $job->metadata->{'datadir'} . "/current-version");
-
+	my $actual_version = $runtime->get_instance_version($job->metadata->{'version'});
+	if (DBOD::Storage::NetApp::Snapshot::check_times($job->snapshot, $job->pitr, $actual_version )){
+		$job->debug->error('Error validating snapshot file and/or PITR time');
+		$job->_output(1);
+		return 1;
+	}
 	if (defined $actual_version) {
 		if (defined $version_pg_snap) {
 			$job->log->debug("actual PG version: $actual_version");
@@ -98,7 +94,7 @@ sub body {
 		$job->_output(1);
 		return 1;
 	}
-	my($isrunning) = $pg->CheckPostgreSQLState($job->metadata->{'bindir'} . "/pg_ctl", $job->metadata->{'datadir'});
+	my $isrunning = $pg->is_running();
 	my($cmd,@output,$user_storage,$mountpoint);
 
 	#look for mountpoints
@@ -108,7 +104,7 @@ sub body {
 	#Get information about the volume to work with. Following handles both 7-mode and C-mode use case
 
 	my($server_zapi,$volume_name);
-	my($arref)= $runtime_zapi->GetServerAndVolname($pg_datadir_nosuffix);
+	my($arref)= $runtime_zapi->get_server_and_volname($pg_datadir_nosuffix);
 	if (defined($$arref[0])) {
 		$server_zapi=$$arref[0];
 	} else {
@@ -125,12 +121,11 @@ sub body {
        }
 	
 	# stop database if running
-	my $outputline =0;
 	if ($isrunning) { #running instance
 		if ($job->metadata->{'crs_ref'}) {
-			$rc = $runtime->StopCRSResource($entity, $job->config->{'common'}->{'crsctl'});
+			$rc = DBOD::Systems::CRS::stop_resource($entity, $job->config->{'common'}->{'crsctl'});
 		} else {
-			$rc = $pg->StopPostgreSQL($entity, $job->metadata->{'bindir'} . "/pg_ctl",$job->metadata->{'datadir'});
+			$rc = $pg->stop();
 		}	
 		if ($rc) {
 			$job->log->debug("Instance is down");
@@ -145,7 +140,7 @@ sub body {
 
 	#snapshot restore 
 	
-	$rc=$runtime_zapi->SnapRestore($server_zapi,$volume_name,$job->snapshot); 
+	$rc=$runtime_zapi->snap_restore($server_zapi,$volume_name,$job->snapshot);
 	my($errorflag)=0;
 	if ($rc == 0 ) {
 		$job->log->error("Error restoring snapshot: <" . $job->snapshot . "> on volume: <$volume_name> !");
@@ -165,9 +160,9 @@ sub body {
 	} else {
 		$arr_file[1]= "recovery_target_name = '" . $job->snapshot . "'\n";
 	}
-#$arr_file[2]= "recovery_target_timeline= 'latest'\n";
+    #$arr_file[2]= "recovery_target_timeline= 'latest'\n";
 	$job->log->debug("recovery.conf will be written: " . Data::Dumper->Dump([\@arr_file],['arr_file']));
-	$runtime->WriteFileArr($job->metadata->{'datadir'} . "/recovery.conf",\@arr_file);
+	$runtime->write_file_arr($job->metadata->{'datadir'} . "/recovery.conf",\@arr_file);
 	if (! -e $job->metadata->{'datadir'}. "/recovery.conf") {
 		$job->log->error("recovery.conf file couldnt be written. Please contact dbod admins!.");
 		$job->_output(1);
@@ -177,18 +172,18 @@ sub body {
 	}
 	if (-e  $job->metadata->{'datadir'} . "/recovery.done") {
 		$job->log->debug("We are deleting previous <". $job->metadata->{'datadir'} . "/recovery.done>");
-		my(@arr_recodone)=$runtime->ReadFile($job->metadata->{'datadir'} . "/recovery.done");
+		my(@arr_recodone)=$runtime->read_file($job->metadata->{'datadir'} . "/recovery.done");
 		$job->log->debug("file <". $job->metadata->{'datadir'} . "/recovery.done> will be deleted. It contains: " . Data::Dumper->Dump([\@arr_recodone],['arr_recodone']));
 	}
 	
 	# Create pg_hba_local.conf
-	$runtime->WriteFileArr($job->metadata->{'datadir'} . "/pg_hba_local.conf",\@lines);
+	$runtime->write_file_arr($job->metadata->{'datadir'} . "/pg_hba_local.conf",\@lines);
 	if (! -e $job->metadata->{'datadir'}. "/pg_hba_local.conf") {
 		$job->log->error("pg_hba_local.conf file couldnt be written. Please contact dbod admins!.");
 		$job->_output(1);
 		return 1;
 	} else {
-		$rc=$runtime->Chmod($job->metadata->{'datadir'} . "/pg_hba_local.conf",'700');
+		$rc = chmod 0700, $job->metadata->{'datadir'} . "/pg_hba_local.conf";
 		if ($rc == 0) {
 			$job->log->error("pg_hba_local.conf permissions couldnt be set. Please contact dbod admins!.");
 			$job->_output(1);
@@ -198,7 +193,7 @@ sub body {
 	}
 	
 	# Replace pg_hba.conf file for local one
-	my $tempfile = $runtime->GetTempFileName('pg_hbaXXXXX',$job->metadata->{'datadir'},'.conf');
+	my $tempfile = $runtime->get_temp_filename('pg_hbaXXXXX',$job->metadata->{'datadir'},'.conf');
 	if (! defined ($tempfile)) {
 		$job->log->derror("we couldnt create a tempfile name");
 		$job->_output(1);
@@ -206,14 +201,14 @@ sub body {
 	}
 	$job->log->debug("tempfile is <$tempfile>");
 
-	$rc=$runtime->Copy($job->metadata->{'datadir'} . "/pg_hba.conf","$tempfile",'-p','postgres:postgres','700'); 
+	$rc= cp $job->metadata->{'datadir'} . "/pg_hba.conf", $tempfile;
 	if ($rc == 0) {
 		$job->log->debug("problem copying <" . $job->metadata->{'datadir'} . "/pg_hba.conf> into <$tempfile>");
 		$job->_output(1);
 		return 1;
 	}
 
-	$rc=$runtime->Copy($job->metadata->{'datadir'} . "/pg_hba_local.conf",$job->metadata->{'datadir'} ."/pg_hba.conf",'-p','postgres:postgres','700'); 
+	$rc = cp $job->metadata->{'datadir'} . "/pg_hba_local.conf", $job->metadata->{'datadir'} . "/pg_hba.conf";
 	if ($rc == 0) {
 		$job->log->debug("problem replacing <" . $job->metadata->{'datadir'} ."/pg_hba_local.conf> by <" . $job->metadata->{'datadir'} . "/pg_hba.conf>");
 		$job->_output(1);
@@ -224,7 +219,7 @@ sub body {
 	$cmd = $job->metadata->{'bindir'} . "/pg_ctl start -w -t 1800 -s -D ". $job->metadata->{'datadir'} ." -l " . $job->metadata->{'datadir'} . "/postgresql.log 2>&1";
 	
 	@output=();
-	$rc=$runtime->RunStr($cmd,\@output);
+	$rc=$runtime->run_str($cmd,\@output);
 	if ($rc == 0) {
 		$job->log->debug("couldnt start database. Please check:   <@output>");
 		$job->_output(1);
@@ -233,19 +228,10 @@ sub body {
 		$job->log->debug("Database has been started.");
 	}
 	
-	my($file_name)=$job->metadata->{'datadir'} . "/recovery.done";
-
-	#Timeout interval
-	my($timeout,$poll_interval);
-	$timeout=900; #15 minutes	
-	$poll_interval=1; #every second   
-
-	
-	$job->log->debug("file <$file_name> to check for.");  
-	
-	$rc=$runtime->TimeoutOneparam($timeout,$poll_interval,\&CheckFileExist,$file_name);
+	my $file_name = $job->metadata->{'datadir'} . "/recovery.done";
+	$rc = $runtime->wait_until_file_exist(900, $file_name); # Wait up to 900 seconds
 	if ($rc==0) {
-		$job->log->debug("postgress didnt recover from crashed. Please check!!!");  
+		$job->log->debug("postgress didn't recover. Please check");
 		$job->_output(1);
 		return 1;
 	} 
@@ -297,9 +283,9 @@ sub body {
 	#stop and restart the postgres server
 	$job->log->debug("Stopping instance");
 	if ($job->metadata->{'crs_ref'}) {
-		$rc = $runtime->StopCRSResource($entity, $job->config->{'common'}->{'crsctl'});
+		$rc = DBOD::Systems::CRS::stop_resource($entity, $job->config->{'common'}->{'crsctl'});
 	} else {
-		$rc = $pg->StopPostgreSQL($entity, $job->metadata->{'bindir'} . "/pg_ctl",$job->metadata->{'datadir'});
+		$rc = $pg->stop();
 	}	
 	if ($rc) {
 		$job->log->debug("Instance is down");
@@ -309,8 +295,7 @@ sub body {
 		return 1;
 	}
 
-	
-	$rc = $runtime->Copy("$tempfile",$job->metadata->{'datadir'} ."/pg_hba.conf",'-p','postgres:postgres','700'); 
+	$rc = cp $tempfile, $job->metadata->{'datadir'} . "/pg_hba.conf";
 	if ($rc == 0) {
 		$job->log->debug("problem replacing <" . $job->metadata->{'datadir'} ."/pg_hba.conf> by <$tempfile>");
 		$job->_output(1);
@@ -319,9 +304,9 @@ sub body {
 	$job->log->debug("Starting instance with network");
 
 	if ($job->metadata->{'crs_ref'}) {
-		$rc = $runtime->StartCRSResource($entity, $job->config->{'pg'}->{'oracle_crs'});
+		$rc = DBOD::Systems::CRS::start_resource($entity, $job->config->{'pg'}->{'oracle_crs'});
 	} else {
-		$rc = $pg->StartPostgreSQL($entity, $job->metadata->{'bindir'} . "/pg_ctl",$job->metadata->{'datadir'} );
+		$rc = $pg->start();
 	}	
 	if ($rc) {
 		$job->log->debug("Instance is up");
@@ -330,16 +315,9 @@ sub body {
 		$job->_output(1);
 		return 1;
 	}
-	if (-e $tempfile) {
-		$rc = $runtime->Remove($tempfile);
-		$job->log->debug("Temp file has been removed: <$tempfile>") if ($rc); 
-	}
 	$job->log->debug("restore operation is successfully over");
 	$job->_output(0);
 	return 0;
-	
-	
- 
 
 }
 

@@ -10,28 +10,41 @@ package DBOD::Job;
 use strict;
 use warnings;
 
-our $VERSION = 0.67;
+our $VERSION = 0.70;
 
 use Moose;
-with 'MooseX::Log::Log4perl';
-with 'MooseX::Getopt';
+with 'MooseX::Log::Log4perl',
+     'MooseX::Getopt::Usage';
+
+sub getopt_usage_config {
+    return (
+        format   => "Usage: %c [OPTIONS]",
+        headings => 0,
+    );
+ }
 
 use Data::Dumper;
+use Socket;
 
+use DBOD;
 use DBOD::Config;
-use DBOD::Api qw( load_cache get_entity_metadata );
+use DBOD::Network::Api qw( load_cache get_entity_metadata );
 use DBOD::DB;
+use DBOD::Runtime;
 
 # Input
-has 'entity' => ( is => 'ro', isa => 'Str', required => 1);
-has 'debug' => (is => 'ro', isa => 'Bool', default=> 0);
+has 'entity' => ( is => 'ro', isa => 'Str', required => 1,
+    documentation => 'Entity to act on');
+has 'debug' => (is => 'ro', isa => 'Bool', default=> 0,
+    documentation => 'Enables debug messages');
 
 # Internal attributes 
-has 'md_cache' => (is => 'rw', isa =>'HashRef');
-has 'config' => (is => 'rw', isa => 'HashRef');
-has 'metadata' => (is => 'rw', isa => 'HashRef');
-has 'db' => (is => 'rw', isa => 'Object');
-
+has 'md_cache' => (is => 'rw', isa =>'HashRef',
+    documentation => 'Local metadata cache');
+has 'config' => (is => 'rw', isa => 'HashRef',
+    documentation => 'General configuration (from core.conf file)');
+has 'metadata' => (is => 'rw', isa => 'HashRef',
+    documentation => 'Entity metadata (from API)');
 
 # output
 has '_output' => ( is => 'rw', isa => 'Str' );
@@ -69,46 +82,29 @@ sub BUILD {
     return;
 };
 
-# Initializes the $job->db obect with the connection parameters of the
-# job target instance
-
-sub connect_db {
-    my ($self,) = @_;
-    if (defined $self->metadata->{'subcategory'}) {
-        # Set up db connector
-        my $db_type = lc $self->metadata->{'subcategory'};
-        my $db_user = $self->config->{$db_type}->{'db_user'};
-        my $db_password = $self->config->{$db_type}->{'db_password'};
-
-        my $dsn;
-        my $db_attrs;
-        $self->log->info('Creating DB connection with instance');
-        for ($db_type) {
-            if (/^mysql$/) {
-                $dsn = "DBI:mysql:mysql_socket=" . $self->metadata->{'socket'};
-                $db_attrs = {
-                    AutoCommit => 1, 
-                    };
-            }
-            if (/^pgsql$/) {
-                $dsn = "DBI:Pg:dbname=postgres;host=" . $self->metadata->{'socket'}.
-                 ";port=" . $self->metadata->{'port'};
-                $db_attrs = {
-                    AutoCommit => 1, 
-		      RaiseError => 1,	
-                    };
-            }
-        };
-
-        $self->db(DBOD::DB->new(
-                      db_dsn  => $dsn,
-                      db_user => $db_user,
-                      db_password => $db_password,
-                      db_attrs => $db_attrs,));
+sub is_local {
+    my ($self, $ip_alias) = @_;
+    unless (defined $ip_alias) {
+        $ip_alias = 'dbod-' . lc $self->entity . ".cern.ch";
+        $ip_alias =~ s/\_/\-/g;
     }
-    else { 
-        $self->log->info('Skipping DB connection with instance');
-    }
+    $self->log->debug( 'Fetching IP address for '. $ip_alias );
+    my $nip = inet_aton($ip_alias);
+    my $host_ip;
+    if (defined $nip) {
+        $host_ip = inet_ntoa( $nip);
+        $self->log->debug( 'Host IP: '.$host_ip );
+    } else {
+        $self->log->error('Error fetching host IP');
+        return $FALSE;
+    };
+    my $host_addresses;
+    $self->log->debug( 'Fetching local addresses' );
+    DBOD::Runtime::run_cmd( cmd => 'hostname -I', output => \$host_addresses );
+    my @addresses = split / /, $host_addresses;
+    $self->log->debug($host_addresses);
+    my $res = grep {/$host_ip/} @addresses;
+    return scalar $res;
 }
 
 sub run {
@@ -122,6 +118,5 @@ after 'run' => sub {
     my $self = shift;
     $self->log->info('[' . $self->_result()  . ']');
 };
-
 
 1;

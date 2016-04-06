@@ -15,7 +15,7 @@ use Log::Log4perl;
 
 use DBOD::Job;
 use Data::Dumper;
-use DBOD::Api;
+use DBOD::Network::Api;
 use JSON; 
 
 use DBOD::IPalias;
@@ -31,16 +31,16 @@ sub body {
     $ENV{PERL_LWP_SSL_VERIFY_HOSTNAME}=0;
     
     $job->log->debug('Fetching ip alias');
-    my $result = DBOD::Api::get_ip_alias('iptest', $job->config);
+    my $result = DBOD::Network::Api::get_ip_alias('iptest', $job->config);
     print Dumper $result;
     sleep 5;
     if ($result->{'code'} eq '200') { 
         $job->log->debug('Removing ip alias');
-        $result = DBOD::IPalias::remove_alias('iptest', 'db-50019', $job->config);
+        $result = DBOD::Network::IPalias::remove_alias('iptest', 'db-50019', $job->config);
     }
     else {
         $job->log->debug('Adding ip alias');
-        $result = DBOD::IPalias::add_alias('iptest', 'db-50019', $job->config);
+        $result = DBOD::Network::IPalias::add_alias('iptest', 'db-50019', $job->config);
         print Dumper $result;
     }
     return 0;

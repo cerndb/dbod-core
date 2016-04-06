@@ -5,12 +5,16 @@ use Test::More;
 use File::ShareDir;
 use Data::Dumper;
 
-use_ok('DBOD::Network');
+use_ok('DBOD::Network::LanDB');
 
-use DBOD::Network;
+use Log::Log4perl qw(:easy);
+BEGIN { Log::Log4perl->easy_init() };
+
 use Test::MockObject;
 use Test::MockObject::Extends;
 use Test::MockModule;
+
+use DBOD;
 
 my %network = ( username => 'USER', password => 'PASSWD' );
 my %config = ();
@@ -27,56 +31,67 @@ $client->mock('dnsDelegatedAliasAdd', sub {return $call;} );
 $client->mock('dnsDelegatedAliasRemove', sub {return $call;} );
 $client->mock('dnsDelegatedAliasSearch', sub {return $call;} );
 
-my $network = Test::MockModule->new('DBOD::Network');
+my $network = Test::MockModule->new('DBOD::Network::LanDB');
 $network->mock( _get_landb_connection => sub { return ($client, $auth);} );
 
 
 subtest 'add_ip_alias' => sub {
     $call->set_false('fault');
-    is(DBOD::Network::add_ip_alias('db-dbod-000','dbod-test', \%config), 0, 'add_ip_alias OK');
+    is(DBOD::Network::LanDB::add_ip_alias('db-dbod-000','dbod-test', \%config),
+        $OK, 'add_ip_alias OK');
 
     $call->set_true('fault');
-    is(DBOD::Network::add_ip_alias('db-dbod-000','dbod-test', \%config), 1, 'add_ip_alias FAIL');
+    is(DBOD::Network::LanDB::add_ip_alias('db-dbod-000','dbod-test', \%config),
+        $ERROR, 'add_ip_alias FAIL');
 };
 
 subtest 'remove_ip_alias' => sub {
     $call->set_false('fault');
-    is(DBOD::Network::remove_ip_alias('db-dbod-000','dbod-test', \%config), 0, 'remove_ip_alias OK');
+    is(DBOD::Network::LanDB::remove_ip_alias('db-dbod-000','dbod-test', \%config),
+        $OK, 'remove_ip_alias OK');
 
     $call->set_true('fault');
-    is(DBOD::Network::remove_ip_alias('db-dbod-000','dbod-test', \%config), 1, 'remove_ip_alias FAIL');
+    is(DBOD::Network::LanDB::remove_ip_alias('db-dbod-000','dbod-test', \%config),
+        $ERROR, 'remove_ip_alias FAIL');
 };
 
 subtest 'get_ip_alias' => sub {
     $call->set_false('fault');
     $call->mock('result', sub { return 'dbod-test' });
-    is(DBOD::Network::get_ip_alias('db-dbod-000','dbod-test', \%config), 'dbod-test', 'get_ip_alias OK');
+    is(DBOD::Network::LanDB::get_ip_alias('db-dbod-000','dbod-test', \%config), 'dbod-test', 'get_ip_alias OK');
 
     $call->set_true('fault');
     $call->mock('result', sub { return undef });
-    is(DBOD::Network::get_ip_alias('db-dbod-000','dbod-test', \%config), undef, 'get_ip_alias FAIL');
+    is(DBOD::Network::LanDB::get_ip_alias('db-dbod-000','dbod-test', \%config), undef, 'get_ip_alias FAIL');
 };
 
 
 subtest 'create_ip_alias' => sub {
 
-    my $api = Test::MockModule->new('DBOD::Api');
+    my $api = Test::MockModule->new('DBOD::Network::Api');
     my %result = ( response => ['db-dbod-000', 'dbod-test'] ); 
     $api->mock('set_ip_alias', sub { return \%result; });
     
-    my $rt = Test::MockObject->new();
     my $runtime = Test::MockModule->new('DBOD::Runtime');
-    $runtime->mock('new', sub {return $rt;});
 
     my %ipalias = ( change_command => '/path/to/command' );
     $config{ipalias} = \%ipalias;
     my %input = ( hosts => ['hostname'], ip_alias => 'dbod-test', dbname => 'test' );
     
-    $rt->mock('run_cmd', sub { return 0 });
-    ok(DBOD::Network::create_alias(\%input, \%config), 'create_alias OK');
-    
-    $rt->mock('run_cmd', sub { return 1 });
-    ok(DBOD::Network::create_alias(\%input, \%config), 'create_alias FAIL');
+    $runtime->mock('run_cmd', sub {return $OK;});
+    $call->set_false('fault');
+    is(DBOD::Network::LanDB::create_alias(\%input, \%config),
+        $OK, 'create_alias OK');
+
+    $call->set_true('fault');
+    is(DBOD::Network::LanDB::create_alias(\%input, \%config),
+        $ERROR, 'create_alias FAIL at LANDB API');
+
+    $runtime->mock('run_cmd', sub {return $ERROR;});
+    is(DBOD::Network::LanDB::create_alias(\%input, \%config),
+        $ERROR, 'create_alias FAIL at dnsname change');
+
+
 
 };
 

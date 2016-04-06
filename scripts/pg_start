@@ -16,8 +16,6 @@ extends 'DBOD::Job';
 with 'MooseX::Getopt::Usage',
      'MooseX::Getopt::Usage::Role::Man';
 
-
-
 has 'help' => (is => 'ro', isa => 'Bool', documentation => qq{Print command usage} );
 
 # Main 
@@ -27,7 +25,7 @@ use strict;
 use warnings;
 
 use Log::Log4perl;
-use DBOD::Runtime;
+use DBOD::CRS;
 use DBOD::PG;
 
 # Initiates logger
@@ -36,34 +34,35 @@ BEGIN {
 }
 
 
-my $job = DBOD::PG::start->new_with_options();
-my $runtime = DBOD::Runtime->new;
-my $pg = DBOD::PG->new;
+my $job = DBOD::Systems::PG::start->new_with_options();
 
 sub body {
+
+    # Initialize a new PG instance object with the entity details
+	my $pg = DBOD::Systems::PG->new(
+        instance => $self->entity,
+        metadata => $self->metadata,
+    );
+
 	$job->log->info('Executing posgresql start-up on '. $job->entity );
 	
-       my($rc,$entity);
-	$entity = 'dod_' . $job->entity;	
-	
-	#Check if instance is running
-	$rc=$pg->CheckPostgreSQLState($job->metadata->{'bindir'} . "/pg_ctl", $job->metadata->{'datadir'}) ;
+    my($rc,$entity);
 
-	if ($rc == 0) {
-		$job->log->debug("No instance running");
+	#Check if instance is running
+	if ($pg->is_running()) {
+        $job->log->debug("Instance is already up. Nothing to be done.");
+        $job->log->debug("pg_start is over.");
+        $job->_output(0);
+        return 0;
 	} else {
-		$job->log->debug("Instance is already up. Nothing to be done.");
-		$job->log->debug("pg_start is over.");
-		$job->_output(0);
-		return 0;
+        $job->log->debug("No instance running");
 	}
 
-	
 	#If instance is CRS
 	if ($job->metadata->{'crs_ref'}) {
-		$rc = $runtime->StartCRSResource($entity, $job->config->{'pg'}->{'oracle_crs'});
+		$rc = DBOD::Systems::CRS::start_resource($entity, $job->config->{'pg'}->{'oracle_crs'});
 	} else {
-		$rc = $pg->StartPostgreSQL($entity, $job->metadata->{'bindir'} . "/pg_ctl",$job->metadata->{'datadir'} );
+		$rc = $pg->start();
 	}	
 	if ($rc) {
 		$job->log->debug("Instance is up");
@@ -72,8 +71,6 @@ sub body {
 		$job->_output(1);
 		return 1;
 	}
-
-
 
 	# The End
 	$job->log->debug("pg_start is over.");

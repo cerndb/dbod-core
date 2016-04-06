@@ -6,7 +6,6 @@
 # granted to it by virtue of its status as Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-use strict;
 use warnings;
 
 use DBOD::Job;
@@ -16,13 +15,24 @@ use Data::Dumper;
 BEGIN { 
     Log::Log4perl->easy_init() ;
 }
+
 my $job = DBOD::Job->new_with_options();
 
+use DBOD qw ($ERROR $OK);
+use DBOD::Instance;
+ 
 sub body {
-    my $params = shift;
-    my $type = lc $job->metadata->{'subcategory'};
-    $job->db->execute_sql_file($job->config->{$type}->{'helper_ping'});
-    $job->_output(0);
+    
+    my $instance = DBOD::Instance::Factory->create(
+        $job->metadata->{'subcategory'}, 
+        instance => $job->entity(),
+        metadata => $job->metadata(),
+        config => $job->config());
+
+    print Dumper $instance->metadata();
+    print Dumper ref $instance;
+
+    return $OK; 
 }
 
 $job->run(\&body);
