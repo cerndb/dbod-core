@@ -59,6 +59,7 @@ sub run_cmd {
         }
         # If the command executed succesfully we return its exit code
         DEBUG "${cmd_str} stdout: " . $$output_ref;
+        DEBUG "${cmd_str} stderr: " . $err;
         DEBUG "${cmd_str} return code: " . $?;
         $return_code = $?;
     } 
