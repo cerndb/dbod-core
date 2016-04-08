@@ -1,0 +1,49 @@
+#!/usr/bin/env perl
+# Copyright (C) 2015, CERN
+# This software is distributed under the terms of the GNU General Public
+# Licence version 3 (GPL Version 3), copied verbatim in the file "LICENSE".
+# In applying this license, CERN does not waive the privileges and immunities
+# granted to it by virtue of its status as Intergovernmental Organization
+# or submit itself to any jurisdiction.
+
+package dbod_start;
+ 
+use warnings;
+use strict;
+
+use DBOD::Job;
+use Data::Dumper;
+
+# Initiates logger
+BEGIN { 
+    Log::Log4perl->easy_init() ;
+}
+
+my $job = DBOD::Job->new_with_options();
+
+use DBOD qw ($ERROR $OK);
+use DBOD::Instance;
+ 
+sub body {
+
+    $job->log->debug('Storting' . $job->entity() . '/' . 
+        $job->metadata->{subcategory});
+    
+    my $instance = DBOD::Instance::Factory->create(
+        $job->metadata->{subcategory},
+        instance => $job->entity(),
+        metadata => $job->metadata(),
+        config => $job->config());
+    
+    if ($job->is_local()) {
+        $job->log->debug('Job running locally in database host');
+        return $instance->start();
+    } else {
+        $job->log->error('This command has to be run locally');
+        return $ERROR;
+    }
+    return $OK; 
+}
+
+$job->run(\&body);
+
