@@ -93,11 +93,12 @@ sub start {
 	if ($self->is_running() == 0) {
 		my $cmd = "/etc/init.d/pgsql_$entity start";
 		my $rc = DBOD::Runtime::run_cmd(cmd => $cmd);
-		if ($rc) {
+		if ($rc == $OK) {
 			$self->log->debug("PostgreSQL instance is up");
 			return $OK;
 		} else {
 			$self->log->error("Problem starting instance. Please check log.");
+			$self->log->error("Error code:" . $rc);
 			return $ERROR;
 		}
 	}
@@ -114,11 +115,12 @@ sub stop {
 	if ($self->is_running()) {
 		my $cmd = "/etc/init.d/pgsql_$entity stop";
 		my $rc = DBOD::Runtime::run_cmd(cmd => $cmd);
-		if ($rc) {
+		if ($rc == $OK) {
 			$self->log->debug("PostgreSQL shutdown completed");
 			return $OK;
 		} else  {
 			$self->log->error("Problem shutting down instance. Please check log.");
+			$self->log->error("Error code:" . $rc);
 			return $ERROR;
 		}
 	}
@@ -135,11 +137,11 @@ sub is_running {
 	$cmd = $self->pg_ctl() . ' status -D ' . $self->datadir() . ' -s';
 	$rc = DBOD::Runtime::run_cmd(cmd => $cmd);
 	if ($rc == 0) {
-		$self->log->info("Instance is not running");
-		return $FALSE;
-	} else { 
 		$self->log->info("Instance running.");
 		return $TRUE;
+	} else { 
+		$self->log->info("Instance is not running");
+		return $FALSE;
 	}
 }  
 

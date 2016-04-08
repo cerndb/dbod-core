@@ -43,14 +43,13 @@ my $pg = DBOD::Systems::PG->new(
 my $runtime = Test::MockModule->new('DBOD::Runtime');
 
 my @outputs = (
-    0,1, # check_State
-    0,1, # start OK
+    1,0, # check_State STOPPED/RUNNING
+    0,0, # start OK
     1, # start OK. Nothing to do
-    0,0, # start FAIL
+    1,1, # start FAIL
     0, # Stop OK. Nothing to do
-    1,1, # Stop OK
-    1,0,
-    1,0); # Stop FAIL
+    0,0, # Stop OK
+    1,1); # Stop FAIL
 
 # Check status
 $runtime->mock('run_cmd' => sub {
