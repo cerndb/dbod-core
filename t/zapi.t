@@ -9,6 +9,8 @@ require_ok( 'DBOD::Storage::NetApp::ZAPI' );
 use DBOD::Storage::NetApp::ZAPI;
 use File::ShareDir;
 
+use DBOD;
+
 BEGIN { Log::Log4perl->easy_init() };
 
 use Test::MockObject;
@@ -120,26 +122,26 @@ subtest 'check_API_call' => sub {
 
 subtest 'snap_delete' => sub {
         $na_server->mock(invoke => sub {return $na_element_ok;});
-        ok($zapi->snap_delete($na_server, 'Volume', 'delete'), 'snap_delete OK');
+        is($zapi->snap_delete($na_server, 'Volume', 'delete'), $OK, 'snap_delete OK');
         $na_server->mock(invoke => sub {return $na_element_fail;});
         $na_element_fail->mock( results_reason => sub {return "snap_delete FAIL";});
-        ok(!$zapi->snap_delete($na_server, 'Volume', 'delete'), 'snap_delete FAIL');
+        is($zapi->snap_delete($na_server, 'Volume', 'delete'), $ERROR, 'snap_delete FAIL');
     };
 
 subtest 'snap_create' => sub {
         $na_server->mock(invoke => sub {return $na_element_ok;});
-        ok($zapi->snap_create($na_server, 'Volume', 'create'), 'snap_create OK');
+        is($zapi->snap_create($na_server, 'Volume', 'create'), $OK, 'snap_create OK');
         $na_server->mock(invoke => sub {return $na_element_fail;});
         $na_element_fail->mock( results_reason => sub {return "snap_create FAIL";});
-        ok(!$zapi->snap_create($na_server, 'Volume', 'create'), 'snap_create FAIL');
+        is($zapi->snap_create($na_server, 'Volume', 'create'), $ERROR, 'snap_create FAIL');
     };
 
 subtest 'snap_restore' => sub {
         $na_server->mock(invoke => sub {return $na_element_ok;});
-        ok($zapi->snap_restore($na_server, 'Volume', 'restore'), 'snap_restore OK');
+        is($zapi->snap_restore($na_server, 'Volume', 'restore'), $OK, 'snap_restore OK');
         $na_server->mock(invoke => sub {return $na_element_fail;});
         $na_element_fail->mock( results_reason => sub {return "snap_restore FAIL";});
-        ok(!$zapi->snap_restore($na_server, 'Volume', 'restore'), 'snap_restore FAIL');
+        is($zapi->snap_restore($na_server, 'Volume', 'restore'), $ERROR, 'snap_restore FAIL');
     };
 
 subtest 'snap_prepare_snap_list' => sub {
@@ -152,16 +154,16 @@ subtest 'snap_prepare_snap_list' => sub {
         $snaplist->mock(children_get => sub {return ($snapshot, $snapshot, $snapshot);});
         $snapshot->mock(child_get_int => sub {return 1;});
         $snapshot->mock(child_get_string => sub {return "TEST";});
-        ok($zapi->snap_prepare($na_server, 'Volume', 1), 'snap_prepare OK. Multiple snapshots');
+        is($zapi->snap_prepare($na_server, 'Volume', 1), $OK, 'snap_prepare OK. Multiple snapshots');
         $snaplist->mock(children_get => sub {return ($snapshot);});
-        ok($zapi->snap_prepare($na_server, 'Volume', 1), 'snap_prepare OK. Single snapshot');
+        is($zapi->snap_prepare($na_server, 'Volume', 1), $OK, 'snap_prepare OK. Single snapshot');
         $na_server->mock(invoke => sub {return $na_element_fail;});
         $na_element_fail->mock( results_reason => sub {return "snapshot-list-info FAIL";});
-        ok($zapi->snap_prepare($na_server, 'Volume', 1), 'snap_prepare FAIL');
+        is($zapi->snap_prepare($na_server, 'Volume', 1), $ERROR, 'snap_prepare FAIL');
         $na_server->mock(invoke => sub {return $na_element_ok;});
         $snaplist->mock(children_get => sub {return 0;});
         $snaplist->mock(child_get => sub {return 0;});
-        ok($zapi->snap_prepare($na_server, 'Volume', 1), 'snap_prepare FAIL. No Snapshots');
+        is($zapi->snap_prepare($na_server, 'Volume', 1), $ERROR, 'snap_prepare FAIL. No Snapshots');
     };
 
 subtest 'snap_clone' => sub {

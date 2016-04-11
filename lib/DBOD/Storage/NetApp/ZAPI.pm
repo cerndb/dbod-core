@@ -18,7 +18,10 @@ with 'MooseX::Log::Log4perl';
 has 'config' => (is => 'ro', isa => 'HashRef');
 
 use Try::Tiny;
+
+use DBOD;
 use DBOD::Runtime qw(run_cmd read_file);
+
 use Data::Dumper;
 
 use NaServer; # uncoverable statement
@@ -380,61 +383,59 @@ sub snap_clone {
 }
 
 sub snap_create {
-    my($self,$server_zapi,$volume_name,$create)=@_;
-    $self->log->info("Parameters server_zapi: not displayed, volume_name: <$volume_name>, create: <$create>");
+    my($self, $server_zapi, $volume_name, $snapshot)=@_;
+    $self->log->info("volume_name: <$volume_name>, create: <$snapshot>");
 
     my $output = $server_zapi->invoke("snapshot-create",
             "volume", $volume_name,
-            "snapshot", $create);
+            "snapshot", $snapshot);
 
     if (defined ($self->check_API_call($output))) {
         my $r = $output->results_reason();
-        $self->log->debug("snapshot-create failed: $r");
-        return 0; #error
+        $self->log->error("snapshot-create failed: $r");
+        return $ERROR;
     } else {
-        $self->log->debug("Created!!");
-        return 1; #ok
+        $self->log->debug("Snapshot created");
+        return $OK;
     }
 }
 
 sub snap_restore {
-    my($self,$server_zapi,$volume_name,$restore)=@_;
-    $self->log->info("Parameters server_zapi: not displayed, volume_name: <$volume_name>, restore: <$restore>");
+    my($self,$server_zapi, $volume_name, $snapshot)=@_;
+    $self->log->info("volume_name: <$volume_name>, restore: <$snapshot>");
 
     my $output = $server_zapi->invoke("snapshot-restore-volume",
             "volume", $volume_name,
-            "snapshot", $restore);
+            "snapshot", $snapshot);
 
     if (defined ($self->check_API_call($output))) {
         my $r = $output->results_reason();
-        $self->log->debug("snapshot-restore-volume failed: $r");
-        return 0; #error
+        $self->log->error("snapshot-restore-volume failed: $r");
+        return $ERROR;
     } else {
-        $self->log->debug("Volume <$volume_name> has been restored using snapshot <$restore>!!");
-        return 1; #ok
+        $self->log->debug("Volume <$volume_name> has been restored using snapshot <$snapshot>!!");
+        return $OK; #ok
     }
 }
 
 sub snap_list {
-    my($self,$server_zapi,$volume_name)=@_;
+    my($self, $server_zapi, $volume_name)=@_;
     $self->log->info("Parameters server_zapi: not displayed, volume_name: <$volume_name>");
 
     my $output = $server_zapi->invoke("snapshot-list-info", "volume", $volume_name);
     my @arr_snaps=();
     if (defined ($self->check_API_call($output))) {
-        $self->log->debug("Error retrieving list info.!");
-        return @arr_snaps;
+        $self->log->error("Error retrieving snapshot list");
+        return;
     }
 
-    #
-    # get snapshot list
-    #
     my $snapshotlist = $output->child_get("snapshots");
     if (!defined($snapshotlist) || ($snapshotlist eq "")) {
         # no snapshots to report
-        $self->log->debug("No snapshots on volume $volume_name");
+        $self->log->info("No snapshots on volume $volume_name");
         return @arr_snaps;
     }
+
     my @snapshots = $snapshotlist->children_get();
     foreach my $ss (@snapshots) {
         my $accesstime = $ss->child_get_int("access-time", 0);
@@ -449,59 +450,63 @@ sub snap_list {
         my($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst)=POSIX::localtime($accesstime);
         my $date = POSIX::strftime("%a %b %e %H:%M:%S %Y",$sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst);
 
-        push @arr_snaps,[$name,$accesstime,$busy,$total,$cumtotal,$dependency];
+        push @arr_snaps, [$name, $accesstime, $busy, $total, $cumtotal, $dependency];
     }
     return @arr_snaps;
 }
 
+#TODO: Add max_num_snapshots to config file
 sub snap_prepare {
-    my($self, $server_zapi, $volume_name,$num)=@_;
-    $self->log->info("Parameters server_zapi: not displayed, volume_name: <$volume_name>, num: <$num>");
-
-    my ($rc);
-    $self->log->debug("Getting snapshots for <$volume_name>");
-    my(@arr_snaps) = $self->snap_list($server_zapi,$volume_name);
-    if (@arr_snaps == 0) {
-        $self->log->debug("Error retrieving number of snapshots for <$volume_name> or no snapshots at ll.!");
-        return 1; #ok
-    } else {
-        $self->log->debug(" There are <". scalar(@arr_snaps) . "> in this volume: <$volume_name>!");
+    my ($self, $server_zapi, $volume_name, $max_snapshots) = @_;
+    if (! defined $max_snapshots) {
+        $max_snapshots = 254;
     }
-    if (scalar(@arr_snaps) > $num) { #we need to delete some snapshots
-        my($tobedeleted) = scalar(@arr_snaps) - $num ;
-        $self->log->debug("<$tobedeleted> need to be deleted to meet threshold <$num>.");
-        for (my $i=$tobedeleted; $i > 0; $i--) {
-            my($snapinfoscalar)= shift @arr_snaps; #get the first one. it's the oldest
-            my(@snapinfo) = @$snapinfoscalar;
-            $self->log->debug("Trying to delete: < $snapinfo[0] > on volume: <$volume_name>.!");
-            $rc=$self->snap_delete($server_zapi,$volume_name ,$snapinfo[0]);
-            if ($rc == 0 ) {
-                $self->log->debug("Error deleting snapshot: <" . $snapinfo[0] . "> on volume: <$volume_name>.!");
-                return 0; #not ok
-            }  else {
-                $self->log->debug("Success deleting snapshot: <" . $snapinfo[0] . "> on volume: <$volume_name>.!");
+    $self->log->info("volume_name: <$volume_name>, num: <$max_snapshots>");
+
+    my $rc;
+    $self->log->debug("Getting snapshots for <$volume_name>");
+    my @arr_snaps = $self->snap_list($server_zapi,$volume_name);
+    if (!@arr_snaps) {
+        $self->log->debug("Error fetching # of snapshots for <$volume_name>");
+        return $ERROR;
+    } elsif (@arr_snaps == 0) {
+        $self->log->debug(" There are no snapshots in the volume");
+        return $OK;
+    } else {
+        if (scalar(@arr_snaps) > $max_snapshots) { #we need to delete some snapshots
+            my($tobedeleted) = scalar(@arr_snaps) - $max_snapshots ;
+            $self->log->debug("<$tobedeleted> need to be deleted to meet threshold <$max_snapshots>.");
+            for (my $i = $tobedeleted; $i > 0; $i--) {
+                my $snapinfoscalar = shift @arr_snaps; #get the first one. it's the oldest
+                my @snapinfo = @$snapinfoscalar;
+                $self->log->debug("Deleting: < $snapinfo[0] > on volume <$volume_name>");
+                $rc = $self->snap_delete($server_zapi,$volume_name ,$snapinfo[0]);
+                if ($rc == $ERROR ) {
+                    $self->log->debug("Error deleting snapshot");
+                    return $ERROR;
+                }
             }
         }
-    }
-    return 1; #ok
+    };
+    return $OK;
 }
 
 sub snap_delete {
-    my ($self, $server_zapi, $volume_name, $delete) = @_;
-    $self->log->info("Deleting volume_name: <$volume_name>, delete: <$delete>");
+    my ($self, $server_zapi, $volume_name, $snapshot) = @_;
+    $self->log->info("volume_name: <$volume_name>, delete: <$snapshot>");
 
     my $output = $server_zapi->invoke("snapshot-delete",
             "volume", $volume_name,
-            "snapshot", $delete);
+            "snapshot", $snapshot);
 
     if (defined ($self->check_API_call($output))) {
         my $r = $output->results_reason();
         $self->log->error("snapshot-delete failed: $r");
-        return 0; #error
+        return $ERROR;
 
     } else {
         $self->log->debug("Deleted!!");
-        return 1; #ok
+        return $OK;
     }
 }
  
