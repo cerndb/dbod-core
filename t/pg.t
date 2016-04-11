@@ -25,6 +25,7 @@ my $metadata = {
     bindir => "/tmp",
     socket => "/var/lib/pgsql",
     port => '6600',
+    version => '9.4.5'
 };
 
 my $config = {
@@ -49,8 +50,8 @@ my @outputs = (
     1,1, # start FAIL
     0, # Stop OK. Nothing to do
     0,0, # Stop OK
-    1,1); # Stop FAIL
-
+    1, # Stop FAIL
+    1,0,0,0,0,0,0); # Snapshot
 # Check status
 $runtime->mock('run_cmd' => sub {
         my $ret = shift @outputs;
@@ -86,7 +87,7 @@ is($pg->ping(), $ERROR, 'ping ERROR. Unresponsive delete');
 is($pg->ping(), $ERROR, 'ping ERROR. Unresponsive insert');
 
 $db->mock('do' => sub {
-        return undef;
+        return 0;
     });
 
 # TODO: Fix this test
@@ -97,6 +98,54 @@ SKIP: {
 
 $pg->_connect_db();
 isa_ok($pg->db(), 'DBOD::DB', 'db connection object OK');
+
+# snapshot testing
+subtest 'snapshot' => sub {
+
+        my $zapi = Test::MockModule->new('DBOD::Storage::NetApp::ZAPI');
+
+        # We start failing everything
+        $zapi->mock( 'get_server_and_volname' =>
+            sub {
+                my @buf = (undef, undef);
+                return \@buf;
+            });
+
+        $zapi->mock( 'snap_prepare' => sub { return $ERROR; });
+        $zapi->mock( 'snap_create' => sub { return $ERROR; });
+
+        is($pg->snapshot(), $ERROR, 'Snapshot ERROR. No Instance running');
+        is($pg->snapshot(), $ERROR, 'Snapshot ERROR. No ZAPI server');
+        $zapi->mock( 'get_server_and_volname' =>
+            sub {
+                my @buf = ("server_zapi", "volume_name");
+                return \@buf;
+            });
+        is($pg->snapshot(), $ERROR, 'Snapshot ERROR. Error preparing snapshot');
+        $zapi->mock( 'snap_prepare' => sub { return $OK; });
+
+        @db_do_outputs = (
+            0, # Error setting up backup mode
+            1, 1,# Error creating snapshot
+            1, 0,# Error stopping backup mode
+            1, 1, # OK
+        );
+
+        $db->mock('do' => sub {
+                my $buf = shift @db_do_outputs;
+                return $buf;
+            });
+
+        is($pg->snapshot(), $ERROR, 'Snapshot ERROR. Error setting DB in backup mode');
+
+        is($pg->snapshot(), $ERROR, 'Snapshot ERROR. Error creating snapshot');
+        $zapi->mock( 'snap_create' => sub { return $OK; });
+
+        is($pg->snapshot(), $ERROR, 'Snapshot ERROR. Error stopping backup mode');
+
+        is($pg->snapshot(), $OK, 'Snapshot OK');
+
+    };
 
 done_testing();
 

@@ -172,7 +172,9 @@ sub snapshot {
 
     # Create snapshot label
     my $timetag = strftime "%d%m%Y_%H%M%S", gmtime;
-    my $snapname = "snapscript_" . $timetag . "_" . $self->metadata->{version};
+    my $version = $self->metadata->{version};
+    $version =~ tr/\.//;
+    my $snapname = "snapscript_" . $timetag . "_" . $version;
 
     # Snapshot preparation
     my $rc = $zapi->snap_prepare($server_zapi, $volume_name);
@@ -184,12 +186,12 @@ sub snapshot {
     # Set up backup_mode
     $rc = $self->db->do("SELECT pg_start_backup(%)", $snapname);
     if ($rc != 1) {
-        $self->log->error("Error setting DB in backup mode");
+        $self->log->error("Error setting up backup mode");
         return $ERROR;
     }
 
     # Create snapshot
-    $rc = $zapi->snap_create($server_zapi,$volume_name,$snapname);
+    $rc = $zapi->snap_create($server_zapi, $volume_name, $snapname);
     my $errorflag = 0;
     if ($rc == $ERROR ) {
         $errorflag = $ERROR;
@@ -208,7 +210,7 @@ sub snapshot {
         $self->log->error("Please check: snapshot was not properly taken.");
         return $ERROR;
     } else {
-        $self->log->debug("Snapshot operation successful over");
+        $self->log->debug("Snapshot operation successful");
         return $OK;
     }
 
