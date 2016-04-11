@@ -58,14 +58,10 @@ install_script 'scripts/mysql_appdynamics';
 install_script 'scripts/mysql_restore';
 install_script 'scripts/mysql_snapclone';
 install_script 'scripts/mysql_snapshot';
-install_script 'scripts/mysql_start';
-install_script 'scripts/mysql_stop';
 install_script 'scripts/pg_appdynamics';
 install_script 'scripts/pg_restore';
 install_script 'scripts/pg_snapclone';
 install_script 'scripts/pg_snapshot';
-install_script 'scripts/pg_start';
-install_script 'scripts/pg_stop';
 install_script 'scripts/pg_upgrade';
 
 WriteAll;
