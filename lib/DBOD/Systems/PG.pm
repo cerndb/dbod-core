@@ -14,8 +14,12 @@ use Moose;
 with 'DBOD::Instance';
 
 use Data::Dumper;
+use File::Basename;
+use POSIX qw(strftime);
+
 use DBOD;
 use DBOD::Runtime;
+use DBOD::Storage::NetApp::ZAPI;
 
 has 'pg_ctl' => ( is => 'rw', isa => 'Str', required => 0);
 has 'datadir' => ( is => 'rw', isa => 'Str', required => 0);
@@ -144,6 +148,71 @@ sub is_running {
 		return $FALSE;
 	}
 }  
+
+#TODO: Move server_zapi and volume name check to ZAPI call?
+sub snapshot {
+
+    my $self = shift;
+    if (! $self->is_running()) {
+        $self->log->error("Snapshotting requires a running instance");
+        return $ERROR;
+    }
+
+    # Get ZAPI server
+    my $zapi = DBOD::Storage::NetApp::ZAPI->new(config => $self->config());
+    my $datadir_nosuffix = dirname($self->datadir());
+    my $arref = $zapi->get_server_and_volname($datadir_nosuffix);
+
+    my ($server_zapi, $volume_name) = @{$arref};
+
+    if ((! defined $server_zapi) || (! defined $volume_name)) {
+        $self->log->error("Error generating ZAPI server");
+        return $ERROR;
+        }
+
+    # Create snapshot label
+    my $timetag = strftime "%d%m%Y_%H%M%S", gmtime;
+    my $snapname = "snapscript_" . $timetag . "_" . $self->metadata->{version};
+
+    # Snapshot preparation
+    my $rc = $zapi->snap_prepare($server_zapi, $volume_name);
+    if ($rc == $ERROR) {
+        $self->log->error("Error preparing snapshot");
+        return $ERROR;
+    }
+
+    # Set up backup_mode
+    $rc = $self->db->do("SELECT pg_start_backup(%)", $snapname);
+    if ($rc != 1) {
+        $self->log->error("Error setting DB in backup mode");
+        return $ERROR;
+    }
+
+    # Create snapshot
+    $rc = $zapi->snap_create($server_zapi,$volume_name,$snapname);
+    my $errorflag = 0;
+    if ($rc == $ERROR ) {
+        $errorflag = $ERROR;
+        $self->log->error("Error creating snapshot");
+    }
+
+    # Disable backup mode
+    $rc = $self->db->do("SELECT pg_stop_backup(), pg_create_restore_point(%)",
+        $snapname);
+    if ($rc != 1) {
+        $self->log->error("Error stopping backup mode");
+        return $ERROR;
+    }
+
+    if ($errorflag) {
+        $self->log->error("Please check: snapshot was not properly taken.");
+        return $ERROR;
+    } else {
+        $self->log->debug("Snapshot operation successful over");
+        return $OK;
+    }
+
+}
 
 1;
 

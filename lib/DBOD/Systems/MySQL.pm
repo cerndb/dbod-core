@@ -14,8 +14,11 @@ use Moose;
 with 'DBOD::Instance';
 
 use Data::Dumper;
+use POSIX qw(strftime);
+
 use DBOD;
 use DBOD::Runtime;
+use DBOD::Storage::NetApp::ZAPI;
 
 # input parameters
 has 'instance' => ( is => 'ro', isa => 'Str', required => 1);
@@ -91,6 +94,23 @@ sub _parse_err_file {
         cmd => "tail $file -n $lines",
         output => \$res);
 	return $res;
+}
+
+sub _binary_log{
+    my $self = shift;
+    if (! defined $self->db()){
+        $self->_connect_db();
+    }
+    my $rows = $self->db->select("show master status");
+    if (scalar @{$rows} != 1) {
+        $self->log->error("Error querying master status");
+        return;
+    }
+    # Unpacking result
+    my @buf = @{$rows};
+    my @row = @{$buf[0]}[0];
+    $self->log->debug('Current binary log file: ' . $row[0]);
+    return $row[0];
 }
 
 sub is_running {
@@ -178,7 +198,7 @@ sub start {
 
 #Stops a MySQL database
 sub stop {
-	my ($self) = @_;
+	my $self = shift;
     my $entity = 'dod_' . $self->instance;
 	if ($self->is_running()) {
         my ($cmd, $error);
@@ -198,6 +218,81 @@ sub stop {
         $self->log->error("Nothing to do.");
         return $OK;
     }
+}
+
+sub snapshot {
+    my $self = shift;
+
+    if (! $self->is_running()) {
+        $self->log->error("Snapshotting requires a running instance");
+        return $ERROR;
+    }
+
+    # Get ZAPI server
+    my $zapi = DBOD::Storage::NetApp::ZAPI->new(config => $self->config());
+    my $datadir_nosuffix = dirname($self->datadir());
+    my $arref = $zapi->get_server_and_volname($datadir_nosuffix);
+
+    my ($server_zapi, $volume_name) = @{$arref};
+
+    if ((! defined $server_zapi) || (! defined $volume_name)) {
+        $self->log->error("Error generating ZAPI server");
+        return $ERROR;
+    }
+
+    # Snapshot preparation
+    my $rc = $zapi->snap_prepare($server_zapi, $volume_name);
+    if ($rc == $ERROR) {
+        $self->log->error("Error preparing snapshot");
+        return $ERROR;
+    }
+
+    # Pre-snapshot actions
+    $rc = $self->db->do("flush tables with read lock");
+    if ($rc != 1) {
+        $self->log->error("Error flushing tables");
+        return $ERROR;
+    }
+    $rc = $self->db->do("flush logs");
+    if ($rc != 1) {
+        $self->log->error("Error flushing logs. Aborting snapshot");
+        if ($self->db->do("unlock tables") != 1){
+            $self->log->error("Error unlocking tables! Please contact an admin");
+        };
+        return $ERROR;
+    }
+
+    my $binlog_file = $self->_binary_log();
+    my ($log_prefix, $log_sequence) = split /./, $binlog_file;
+    if (! defined $log_sequence || ! defined $log_prefix) {
+        $self->log->error("Actual log_sequence couldnt be determined. Please check.");
+        return $ERROR;
+    }
+
+    # Create snapshot label (Missing version at the end)
+    my $log_num;
+    if (int($log_sequence) > 0) {
+        $log_num = int($log_sequence) + 1;
+    }
+    my $timetag = strftime "%d%m%Y_%H%M%S", gmtime;
+    my $snapname = "snapscript_" . $timetag . "_" . $log_num . "_" .
+        $self->metadata->{version};
+
+    # Create snapshot
+    $rc = $zapi->snap_create($server_zapi, $volume_name, $snapname);
+    my $errorflag = 0;
+    if ($rc == $ERROR ) {
+        $errorflag = $ERROR;
+        $self->log->error("Error creating snapshot");
+    }
+
+    # Disable backup mode
+    $rc = $self->db->do("unlock tables");
+    if ($rc != 1) {
+        $self->log->error("Error unlocking tables! Please contact an admin");
+        return $ERROR;
+    }
+    return $OK;
 }
 
 1;
