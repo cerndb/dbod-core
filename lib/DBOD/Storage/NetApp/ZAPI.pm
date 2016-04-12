@@ -36,42 +36,31 @@ sub _host_ip {
 
 sub create_server {
     my ($self, $ipaddr, ,$username, $password, $vserver, $version) = @_;
-    $self->log->info("Parameters ipaddr: <$ipaddr> username: $username password: not displayed");
+    $self->log->info("IP: <$ipaddr> username: $username password: XXXXXX");
     $self->log->info("Parameters vserver: <$vserver>") if defined $vserver;
     $self->log->info("Parameters version: <$version>") if defined $version;
 
     if (! defined $version) {
         $version="21"; # default C-mode
-    }
+    };
+    
     my $server = NaServer->new($ipaddr, 1, $version);
-    my $resp= $server->set_style("LOGIN");
-    if ($resp->isa("NaElement") && $resp->results_errno != 0) {
-        my $r = $resp->results_reason();
-        $self->log->error("Setting LOGIN returns error: $r");
-        return 0;
-       } 
+    
+    if ($server->set_style("LOGIN")) {
+        $self->log->error("Error seting login style");
+        return $ERROR;
+       };
+   
     $server->set_port(443);
-    $resp= $server->set_admin_user($username, $password);
-
-    if ($resp->isa("NaElement") && $resp->results_errno != 0) {
-         my $r = $resp->results_reason();
-         $self->log->error("Setting username and password returns error: $r");
-        return 0;
-    }
-    $resp = $server->set_transport_type("HTTPS");
-    if ($resp->isa("NaElement") && $resp->results_errno != 0) {
-        my $r = $resp->results_reason();
-        $self->log->error("Unable to set HTTPS: $r");
-        return 0;
-    }
+    $server->set_admin_user($username, $password);
+    $server->set_transport_type("HTTPS");
     if (defined $vserver) {
-        $resp = $server->set_vserver($vserver);
-        if ($resp->isa("NaElement") && $resp->results_errno != 0) {
-            my $r = $resp->results_reason();
-            $self->log->error("Setting vserver returns error: $r");
-            return 0;
+        if (! $server->set_vserver($vserver)) {
+            $self->log->error("Error seting login style");
+            return $ERROR;
         }
-    }
+    };
+
     return $server;
 
 }    
@@ -263,7 +252,10 @@ sub get_server_and_volname {
                 return [undef,undef];
             }
 
-            $server_zapi = $self->create_server_from_mount_point($controller, $$mountpoint[0],0); # I connect to the data lif not the cluster-mgmt
+            $server_zapi = $self->create_server_from_mount_point(
+                $controller, 
+                $$mountpoint[0],
+                0); # I connect to the data lif not the cluster-mgmt
             if ($server_zapi == 0) {
                 $self->log->debug("Server Zapi was not created.");
                 return [undef,undef];
@@ -302,7 +294,12 @@ sub create_server_from_mount_point {
         return; #not ok
     }
 
-    $server = $self->create_server($ipcluster,$user_storage,$password_nas,undef,$server_version);
+    $server = $self->create_server(
+        $ipcluster,
+        $user_storage, 
+        $password_nas, 
+        undef, 
+        $server_version);
     return $server;
 }
 
