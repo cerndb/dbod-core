@@ -173,9 +173,8 @@ sub snapshot {
     # Create snapshot label
     my $timetag = strftime "%d%m%Y_%H%M%S", gmtime;
     my $version = $self->metadata->{version};
-    $version =~ tr/\.//;
+    $version =~ tr/\.//d;
     my $snapname = "snapscript_" . $timetag . "_" . $version;
-
     # Snapshot preparation
     my $rc = $zapi->snap_prepare($server_zapi, $volume_name);
     if ($rc == $ERROR) {
