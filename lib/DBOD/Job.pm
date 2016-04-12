@@ -116,7 +116,7 @@ sub run {
 
 after 'run' => sub {
     my $self = shift;
-    $self->log->info('[' . $self->_result()  . ']');
+    $self->log->info('[Job exit code][' . $self->_result()  . ']');
 };
 
 1;
