@@ -14,6 +14,7 @@ use Moose;
 with 'DBOD::Instance';
 
 use Data::Dumper;
+use File::Basename;
 use POSIX qw(strftime);
 
 use DBOD;
@@ -116,19 +117,24 @@ sub _binary_log{
 sub is_running {
 	my $self = shift;
     my ($output, @buf);
-	DBOD::Runtime::run_cmd(
+	my $error = DBOD::Runtime::run_cmd(
         cmd => "ps -u mysql -f",
         output => \$output);
-    @buf = split m{/\n/}x, $output;
-    my $datadir = $self->datadir();
-    my @search =  grep {/$datadir/} @buf;
-    if (scalar @search) {
-		$self->log->debug("Instance is running");
-		return $TRUE;
-	} else {
-		$self->log->debug("Instance not running");
-		return $FALSE;
-	}
+    if (! $error) {
+        @buf = split m{/\n/}x, $output;
+        my $datadir = $self->datadir();
+        my @search = grep {/$datadir/} @buf;
+        if (scalar @search) {
+            $self->log->debug( "Instance is running" );
+            return $TRUE;
+        } else {
+            $self->log->debug( "Instance not running" );
+            return $FALSE;
+        }
+    } else {
+        $self->log->error("Problem getting process list");
+        return $FALSE;
+    }
 }
 
 sub ping {
@@ -249,21 +255,21 @@ sub snapshot {
 
     # Pre-snapshot actions
     $rc = $self->db->do("flush tables with read lock");
-    if ($rc != 1) {
+    if ($rc != $TRUE) {
         $self->log->error("Error flushing tables");
         return $ERROR;
     }
     $rc = $self->db->do("flush logs");
-    if ($rc != 1) {
+    if ($rc != $TRUE) {
         $self->log->error("Error flushing logs. Aborting snapshot");
-        if ($self->db->do("unlock tables") != 1){
+        if ($self->db->do("unlock tables") != $TRUE){
             $self->log->error("Error unlocking tables! Please contact an admin");
         };
         return $ERROR;
     }
 
     my $binlog_file = $self->_binary_log();
-    my ($log_prefix, $log_sequence) = split /./, $binlog_file;
+    my ($log_prefix, $log_sequence) = split /\./, $binlog_file;
     if (! defined $log_sequence || ! defined $log_prefix) {
         $self->log->error("Actual log_sequence couldnt be determined. Please check.");
         return $ERROR;
@@ -275,12 +281,13 @@ sub snapshot {
         $log_num = int($log_sequence) + 1;
     }
     my $timetag = strftime "%d%m%Y_%H%M%S", gmtime;
-    my $snapname = "snapscript_" . $timetag . "_" . $log_num . "_" .
-        $self->metadata->{version};
+    my $version = $self->metadata->{version};
+    $version =~ tr/\.//d;
+    my $snapname = "snapscript_" . $timetag . "_" . $log_num . "_" . $version;
 
     # Create snapshot
     $rc = $zapi->snap_create($server_zapi, $volume_name, $snapname);
-    my $errorflag = 0;
+    my $errorflag = $OK;
     if ($rc == $ERROR ) {
         $errorflag = $ERROR;
         $self->log->error("Error creating snapshot");
@@ -288,11 +295,11 @@ sub snapshot {
 
     # Disable backup mode
     $rc = $self->db->do("unlock tables");
-    if ($rc != 1) {
+    if ($rc != $TRUE) {
         $self->log->error("Error unlocking tables! Please contact an admin");
         return $ERROR;
     }
-    return $OK;
+    return $errorflag;
 }
 
 1;

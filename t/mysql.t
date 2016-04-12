@@ -22,6 +22,7 @@ my $metadata = {
     socket => "/tmp/socket",
     subcategory => 'mysql',
     port => '5500',
+    version => '5.6.17',
 };
 
 my $config = {
@@ -70,8 +71,8 @@ $mymod->mock('_parse_err_file' => sub {
 
 is($mysql->is_running(), $TRUE, 'Instance is RUNNING');
 is($mysql->start(), $OK, 'start OK: Nothing to do');
-is($mysql->stop(), $OK, 'stop OK');
 is($mysql->stop(), $ERROR, 'stop FAIL');
+is($mysql->stop(), $OK, 'stop OK');
 
 $runtime->mock('run_cmd' =>
     sub {
@@ -123,6 +124,77 @@ diag Dumper $mtab_file;
 my $buf = $mysql->_parse_err_file('PIN', $mtab_file);
 ok(length $buf > 0, '_parse_err_file');
 
+# snapshot testing
+subtest 'snapshot' => sub {
+
+        my @outputs = (
+            $FALSE, # Error no instance running
+            $TRUE, # Error no ZAPI server
+            $TRUE, # Error preparing snapshot
+            $TRUE, # Error flushing tables
+            $TRUE, # Error flushing logs
+            $TRUE, # Error unlocking tables
+            $TRUE, # Error determining log sequence
+            $TRUE, # Error creating snapshot
+            $TRUE, # Error unlocking tables
+            $TRUE, # Succesful snapshot
+        );
+
+        $mymod->mock('is_running' => sub {
+                return shift @outputs;
+            });
+
+        $db->mock('select' => sub {
+                my @row = ("binlog.000354",);
+                my @rows = (\@row,);
+                return \@rows;
+            });
+
+        my $zapi = Test::MockModule->new('DBOD::Storage::NetApp::ZAPI');
+
+        # We start failing everything
+        $zapi->mock( 'get_server_and_volname' =>
+            sub {
+                my @buf = (undef, undef);
+                return \@buf;
+            });
+
+        $zapi->mock( 'snap_prepare' => sub { return $ERROR; });
+        $zapi->mock( 'snap_create' => sub { return $ERROR; });
+
+        is($mysql->snapshot(), $ERROR, 'Snapshot ERROR. No Instance running');
+        is($mysql->snapshot(), $ERROR, 'Snapshot ERROR. No ZAPI server');
+        $zapi->mock( 'get_server_and_volname' =>
+            sub {
+                my @buf = ("server_zapi", "volume_name");
+                return \@buf;
+            });
+        is($mysql->snapshot(), $ERROR, 'Snapshot ERROR. Error preparing snapshot');
+        $zapi->mock( 'snap_prepare' => sub { return $OK; });
+
+        @db_do_outputs = (
+            0, # Error flushing tables
+            1, 0, 0,# Error flushing logs. Unlock Error
+            1, 0, 1,# Error flushing logs. Unlock OK
+            1, 1, 1,# Error creating snapshot
+            1, 1, 0, # Error unlocking tables
+            1, 1, 1, # Succesful snapshot
+        );
+
+        $db->mock('do' => sub {
+                my $buf = shift @db_do_outputs;
+                return $buf;
+            });
+
+        is($mysql->snapshot(), $ERROR, 'Snapshot ERROR. Error flushing tables');
+        is($mysql->snapshot(), $ERROR, 'Snapshot ERROR. Error flushing logs');
+        is($mysql->snapshot(), $ERROR, 'Snapshot ERROR. Error flushing logs. Unlock OK');
+        is($mysql->snapshot(), $ERROR, 'Snapshot ERROR. Error creating snapshot');
+        $zapi->mock( 'snap_create' => sub { return $OK; });
+        is($mysql->snapshot(), $ERROR, 'Snapshot completed. Error unlocking tables');
+        is($mysql->snapshot(), $OK, 'Snapshot OK');
+
+    };
 
 done_testing();
 
