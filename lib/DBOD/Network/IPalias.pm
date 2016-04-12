@@ -26,7 +26,7 @@ sub add_alias {
 
     my ($dbname, $host, $config) = @_;
     my $ipalias = "dbod-" . $dbname;
-    $ipalias =~ s/\_/\-/g; # Substitutes underscores for dashes for ip-alias
+    $ipalias =~ s/\_/\-/gx; # Substitutes underscores for dashes for ip-alias
     DBOD::Network::Api::set_ip_alias($dbname, $ipalias, $config);
     my $result = DBOD::Network::Api::get_ip_alias($dbname, $config);
     my $dnsname;

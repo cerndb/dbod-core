@@ -255,7 +255,7 @@ sub get_server_and_volname {
     my($server_zapi,$rc,$volume_name);
     if ( scalar (keys(%$nasmounts)) == 1 ) {
         while ( my ($controller, $mountpoint) = each(%$nasmounts) ) {
-            $controller =~ s/\.cern\.ch//g;  #remove domain
+            $controller =~ s/\.cern\.ch//gx;  #remove domain
             $self->log->debug("Working with controller <$controller> and mountpoint: <@$mountpoint>");
             if (scalar(@$mountpoint) > 1) {
                 $self->log->debug("Too many mount points:");

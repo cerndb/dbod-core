@@ -31,7 +31,7 @@ sub BUILD {
     $self->pg_ctl($self->metadata->{bindir} . '/pg_ctl');
 
     my $ip_alias = 'dbod-' . lc $self->instance . ".cern.ch";
-    $ip_alias =~ s/\_/\-/g;
+    $ip_alias =~ s/\_/\-/gx;
     $self->ip_alias($ip_alias);
 
     $self->logger->debug("Instance: " . $self->instance);

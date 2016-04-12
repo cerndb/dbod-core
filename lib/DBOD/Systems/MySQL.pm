@@ -41,7 +41,7 @@ sub BUILD {
     $self->socket($self->metadata->{socket});
 
     my $ip_alias = 'dbod-' . lc $self->instance() . ".cern.ch";
-    $ip_alias =~ s/\_/\-/g;
+    $ip_alias =~ s/\_/\-/gx;
     $self->ip_alias($ip_alias);
 
     $self->logger->debug("Instance: " . $self->instance);
@@ -123,7 +123,7 @@ sub is_running {
     if (! $error) {
         @buf = split m{/\n/}x, $output;
         my $datadir = $self->datadir();
-        my @search = grep {/$datadir/} @buf;
+        my @search = grep {/$datadir/x} @buf;
         if (scalar @search) {
             $self->log->debug( "Instance is running" );
             return $TRUE;
@@ -269,7 +269,7 @@ sub snapshot {
     }
 
     my $binlog_file = $self->_binary_log();
-    my ($log_prefix, $log_sequence) = split /\./, $binlog_file;
+    my ($log_prefix, $log_sequence) = split /\./x, $binlog_file;
     if (! defined $log_sequence || ! defined $log_prefix) {
         $self->log->error("Actual log_sequence couldnt be determined. Please check.");
         return $ERROR;

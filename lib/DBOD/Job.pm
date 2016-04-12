@@ -103,7 +103,7 @@ sub is_local {
     DBOD::Runtime::run_cmd( cmd => 'hostname -I', output => \$host_addresses );
     my @addresses = split / /, $host_addresses;
     $self->log->debug($host_addresses);
-    my $res = grep {/$host_ip/} @addresses;
+    my $res = grep {/$host_ip/x} @addresses;
     return scalar $res;
 }
 
