@@ -38,6 +38,7 @@ scripts/init_instance
 scripts/dbod_ping
 scripts/dbod_start
 scripts/dbod_stop
+scripts/dbod_snapshot
 scripts/mysql_appdynamics
 scripts/mysql_restore
 scripts/mysql_snapclone
@@ -45,7 +46,6 @@ scripts/mysql_snapshot
 scripts/pg_appdynamics
 scripts/pg_restore
 scripts/pg_snapclone
-scripts/pg_snapshot
 scripts/pg_upgrade
 share/configpath.conf
 share/dbod-core.conf-template

@@ -54,6 +54,7 @@ install_script 'scripts/init_instance';
 install_script 'scripts/dbod_ping';
 install_script 'scripts/dbod_start';
 install_script 'scripts/dbod_stop';
+install_script 'scripts/dbod_snapshot';
 install_script 'scripts/mysql_appdynamics';
 install_script 'scripts/mysql_restore';
 install_script 'scripts/mysql_snapclone';
@@ -61,7 +62,6 @@ install_script 'scripts/mysql_snapshot';
 install_script 'scripts/pg_appdynamics';
 install_script 'scripts/pg_restore';
 install_script 'scripts/pg_snapclone';
-install_script 'scripts/pg_snapshot';
 install_script 'scripts/pg_upgrade';
 
 WriteAll;
