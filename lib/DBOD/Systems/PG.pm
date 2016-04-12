@@ -158,6 +158,10 @@ sub snapshot {
         return $ERROR;
     }
 
+    unless (defined $self->db()) {
+        $self->_connect_db();
+    };
+
     # Get ZAPI server
     my $zapi = DBOD::Storage::NetApp::ZAPI->new(config => $self->config());
     my $datadir_nosuffix = dirname($self->datadir());
@@ -183,8 +187,8 @@ sub snapshot {
     }
 
     # Set up backup_mode
-    $rc = $self->db->do("SELECT pg_start_backup(%)", $snapname);
-    if ($rc != 1) {
+    $rc = $self->db->do("SELECT pg_start_backup('${snapname}')");
+    if ($rc != $TRUE) {
         $self->log->error("Error setting up backup mode");
         return $ERROR;
     }
@@ -198,9 +202,8 @@ sub snapshot {
     }
 
     # Disable backup mode
-    $rc = $self->db->do("SELECT pg_stop_backup(), pg_create_restore_point(%)",
-        $snapname);
-    if ($rc != 1) {
+    $rc = $self->db->do("SELECT pg_stop_backup(), pg_create_restore_point('${snapname}')");
+    if ($rc != $TRUE) {
         $self->log->error("Error stopping backup mode");
         return $ERROR;
     }
