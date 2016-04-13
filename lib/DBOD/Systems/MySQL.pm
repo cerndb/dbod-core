@@ -233,6 +233,10 @@ sub snapshot {
         $self->log->error("Snapshotting requires a running instance");
         return $ERROR;
     }
+    
+    unless (defined $self->db()) {
+        $self->_connect_db();
+    };
 
     # Get ZAPI server
     my $zapi = DBOD::Storage::NetApp::ZAPI->new(config => $self->config());
@@ -255,14 +259,14 @@ sub snapshot {
 
     # Pre-snapshot actions
     $rc = $self->db->do("flush tables with read lock");
-    if ($rc != $TRUE) {
+    if ($rc != $OK) {
         $self->log->error("Error flushing tables");
         return $ERROR;
     }
     $rc = $self->db->do("flush logs");
-    if ($rc != $TRUE) {
+    if ($rc != $OK) {
         $self->log->error("Error flushing logs. Aborting snapshot");
-        if ($self->db->do("unlock tables") != $TRUE){
+        if ($self->db->do("unlock tables") != $OK){
             $self->log->error("Error unlocking tables! Please contact an admin");
         };
         return $ERROR;
@@ -295,7 +299,7 @@ sub snapshot {
 
     # Disable backup mode
     $rc = $self->db->do("unlock tables");
-    if ($rc != $TRUE) {
+    if ($rc != $OK) {
         $self->log->error("Error unlocking tables! Please contact an admin");
         return $ERROR;
     }
