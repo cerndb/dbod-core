@@ -72,7 +72,7 @@ sub BUILD {
     $self->config(DBOD::Config::load());
 
     # Load cache file
-    my %cache = load_cache($self->config);
+    my %cache = load_cache($self->config->{'api'}->{'cachefile'});
     $self->md_cache(\%cache);
 
     # Load entity metadata

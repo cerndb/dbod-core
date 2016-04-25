@@ -26,12 +26,16 @@ use base qw(Exporter);
 
 # Loads entity/host entities metadata from cache file
 sub load_cache {
-    my $config = shift;
-    my $filename = $config->{'api'}->{'cachefile'};
+    my ($filename)=@_;
     DEBUG 'Loading cache from ' . $filename;
     local $/ = undef;
     open(my $json_fh, "<:encoding(UTF-8)", $filename)
-        or return ();
+        or do
+    {
+        DEBUG 'File does not exist or cannot be open';
+        return ();
+    };
+
     my $json_text = <$json_fh>;
     close($json_fh);
     my $nested_array = decode_json $json_text;

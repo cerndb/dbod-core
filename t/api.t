@@ -29,7 +29,7 @@ $config{'common'} = { template_folder => "${share_dir}/templates" };
 
 # DBOD::Api::load_cache
 note( "%config is " . Dumper \%config );
-my %cache = DBOD::Network::Api::load_cache(\%config);
+my %cache = DBOD::Network::Api::load_cache($config{'api'}{'cachefile'});
 note( Dumper \%cache );
 
 isa_ok(\%cache, 'HASH');
