@@ -29,12 +29,8 @@ sub load_cache {
     my ($filename)=@_;
     DEBUG 'Loading cache from ' . $filename;
     local $/ = undef;
-    open(my $json_fh, "<:encoding(UTF-8)", $filename)
-        or do
-    {
-        DEBUG 'File does not exist or cannot be open';
-        return ();
-    };
+    open(my $json_fh, "<:encoding(UTF-8)", $filename) or do {
+        WARN 'File does not exist or cannot be open';};
 
     my $json_text = <$json_fh>;
     close($json_fh);
