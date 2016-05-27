@@ -6,13 +6,18 @@ use File::ShareDir;
 use File::Temp qw/ tempfile /;
 use Data::Dumper;
 use Net::LDAP::LDIF;
+use Log::Log4perl;
+
+
 
 use_ok('DBOD::Templates');
 use DBOD::Templates;
 
 use JSON;
 
-my $share_dir = File::ShareDir::dist_dir('DBOD');
+use DBOD::Config;
+
+my $share_dir = DBOD::Config::get_share_dir();
 my %config = ();
 $config{'common'} = { template_folder => "${share_dir}/templates" };
 

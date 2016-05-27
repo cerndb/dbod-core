@@ -12,7 +12,10 @@ use Test::MockModule;
 
 use JSON;
 
-my $share_dir = File::ShareDir::dist_dir('DBOD');
+use DBOD::Config;
+
+
+my $share_dir = DBOD::Config::get_share_dir();
 my $filename = "$share_dir/test.json";
 my %config = ();
 my %api = ();

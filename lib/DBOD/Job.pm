@@ -69,7 +69,7 @@ sub BUILD {
     $ENV{ENTITY} = $self->entity;
 
     # Load General Configuration from file
-    $self->config(DBOD::Config::load());
+    $self->config(DBOD::Config::load()); #load from default share dir
 
     # Load cache file
     my %cache = load_cache($self->config->{'api'}->{'cachefile'});

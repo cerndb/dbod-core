@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 use strict;
 use warnings;
+use DBOD::Config;
 use Test::More;
 use Data::Dumper;
 
@@ -102,7 +103,7 @@ subtest 'create_server' => sub {
     };
 
 subtest 'get_mount_point_NAS_regex' => sub {
-        my $mtab_file = File::ShareDir::dist_dir('DBOD') . '/sample_mtab';
+        my $mtab_file = DBOD::Config::get_share_dir() . '/sample_mtab';
         my $mntpoint = '/ORA/dbs03/PINOCHO';
         my $regex = "^(.*?dbnas[\\w-]+):(.*?)\\s+($mntpoint)\\s+nfs";
         my $pairs = $zapi->get_mount_point_NAS_regex($regex, undef, $mtab_file);
@@ -181,7 +182,7 @@ subtest 'create_server_from_mount_point' => sub {
     };
 
 subtest 'get_server_and_volname' => sub {
-        my $mtab_file = File::ShareDir::dist_dir('DBOD') . '/sample_mtab';
+        my $mtab_file = DBOD::Config::get_share_dir() . '/sample_mtab';
         my $mntpoint = '/ORA/dbs03/PINOCHO';
         # Underlying get_volinfo call requirements
         $na_element->mock( child_add => sub {return;});

@@ -157,5 +157,10 @@ sub stop {
     }
 }
 
+# This function is being implemented by Jon
+sub snapshot {
+    ...
+}
+
 1;
 

@@ -3,27 +3,26 @@ use strict;
 use warnings;
 use Log::Log4perl qw(:easy);
 use Data::Dumper;
-use Test::More tests => 14;
+use Test::More;
 use Test::MockModule;
 use DBOD;
 use Path::Class qw( file );
 use File::ShareDir;
-use Log::Log4perl qw(:easy);
+use Getopt::Long;
 
 
-use_ok( 'DBOD::Systems::InfluxDB' );
+use_ok('DBOD::Systems::InfluxDB');
 use_ok('DBOD::Network::Api');
+use_ok('DBOD::Config');
 
 # Initiates logger
 BEGIN { Log::Log4perl->easy_init( {
         level    => $DEBUG,
         layout   => "%d %p (%c:%L)> %m%n"
-    }) };
+    });
+};
 
-# try to load the example from share. If it fails, try to load from relative path.
-# This fixes problems with Travis CI and local testing.
-my $filename = File::ShareDir::dist_dir("DBOD") . "/influxdb_entity_example.json";
-if ($filename == "") {$filename = file($0)->absolute->dir . "/../share/influxdb_entity_example.json";}
+my $filename = DBOD::Config::get_share_dir() . "/influxdb_entity_example.json";
 
 my %cache = DBOD::Network::Api::load_cache($filename);
 note( Dumper \%cache );
@@ -211,6 +210,7 @@ $useragent->mock('get' =>
         return HTTP::Response->new('200', 'OK');
     });
 is($influxdb->ping(), $ERROR, 'Tets ping with write=error');
+
 
 done_testing();
 

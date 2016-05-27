@@ -22,16 +22,11 @@ $VERSION     = 0.67;
 use base qw(Exporter);
 @EXPORT_OK   = qw( load );
 
-# Initializes Log4Perl 
-BEGIN {
-    my $share_dir = File::ShareDir::dist_dir('DBOD');
-    Log::Log4perl::init( "${share_dir}/logger.conf" );
-}
-
 sub load {
     # Loads configuration file and returns a reference to a configuration
     # hash
-    my $share_dir = File::ShareDir::dist_dir('DBOD');
+    my $share_dir = get_share_dir();
+
     my $filename = LoadFile( "$share_dir/configpath.conf" );
    
     my $config_file;
@@ -50,6 +45,15 @@ sub load {
     
     my %cfg = $config_file->getall();
     return \%cfg; 
+}
+
+
+sub get_share_dir {
+    if (defined $ENV{DBOD_SHARE_DIR}){
+        return $ENV{DBOD_SHARE_DIR};
+    } else {
+        return File::ShareDir::dist_dir('DBOD');
+    }
 }
 
 1;
