@@ -9,6 +9,7 @@ use_ok('DBOD::Job');
 
 use File::ShareDir;
 use Test::MockModule;
+use Config;
 
 use DBOD;
 
@@ -44,6 +45,7 @@ subtest 'Job execution' => sub {
 };
 
 subtest 'is_local' => sub {
+        plan 'skip_all' if ($Config{osname} == 'darwin'); #skip tests if running in osx
         my $job = DBOD::Job->new_with_options(
             entity => 'test',
             debug => 1,
