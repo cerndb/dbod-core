@@ -27,6 +27,7 @@ lib/DBOD/Network/LanDB.pm
 lib/DBOD/Systems/CRS.pm
 lib/DBOD/Systems/MySQL.pm
 lib/DBOD/Systems/PG.pm
+lib/DBOD/Systems/InfluxDB.pm
 lib/DBOD/Storage/NetApp/Snapshot.pm
 lib/DBOD/Storage/NetApp/ZAPI.pm
 LICENSE
@@ -59,6 +60,7 @@ share/templates/ldap/pg
 share/templates/ldap/tnsnetservice
 share/test.json
 share/sample_mtab
+share/influxdb_entity_example.json
 t/api.t
 t/config.t
 t/db.t
@@ -70,3 +72,4 @@ t/network.t
 t/pg.t
 t/runtime.t
 t/templates.t
+t/influxdb.t

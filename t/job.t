@@ -4,22 +4,25 @@ use strict;
 use warnings;
 use Log::Log4perl qw(:easy);
 use Test::More;
-
+use Data::Dumper;
 use_ok('DBOD::Job');
 
-use Data::Dumper;
 use File::ShareDir;
 use Test::MockModule;
+use Config;
 
 use DBOD;
 
 # Initiates logger
-BEGIN { Log::Log4perl->easy_init() };
+BEGIN {
+    Log::Log4perl->easy_init();
+};
 
 my $runtime = Test::MockModule->new('DBOD::Runtime');
 
 # Check class parameters
 subtest 'Class parameters' => sub {
+
     use DBOD::Job;
     my $job = DBOD::Job->new_with_options( entity => 'test', debug => '1' );
 
@@ -42,6 +45,7 @@ subtest 'Job execution' => sub {
 };
 
 subtest 'is_local' => sub {
+        plan 'skip_all' if ($Config{osname} == 'darwin'); #skip tests if running in osx
         my $job = DBOD::Job->new_with_options(
             entity => 'test',
             debug => 1,
@@ -64,4 +68,4 @@ subtest 'is_local' => sub {
         is($job->is_local(), $FALSE, 'Remote Job');
     };
 
-done_testing;
+done_testing();

@@ -1,5 +1,6 @@
 use strict;
 use warnings;
+use DBOD::Config;
 
 use Test::More;
 use File::ShareDir;
@@ -48,7 +49,7 @@ $client->mock('dnsDelegatedAliasSearch', sub {return $call;} );
 my $network = Test::MockModule->new('DBOD::Network::LanDB');
 $network->mock( _get_landb_connection => sub { return ($client, $auth);} );
 
-my $share_dir = File::ShareDir::dist_dir('DBOD');
+my $share_dir = DBOD::Config::get_share_dir();
 my %config = ();
 my %api = ();
 $api{'cachefile'} = "$share_dir/test.json";

@@ -24,14 +24,16 @@ $VERSION     = 0.67;
 use base qw(Exporter);
 @EXPORT_OK   = qw( load_cache get_entity_metadata );
 
-# Loads entity/host entities metadata from cache file
+# Loads entity/host entities metadata from cache file. Returns empty if the cache does not exists.
 sub load_cache {
-    my $config = shift;
-    my $filename = $config->{'api'}->{'cachefile'};
+    my ($filename)=@_;
     DEBUG 'Loading cache from ' . $filename;
     local $/ = undef;
-    open(my $json_fh, "<:encoding(UTF-8)", $filename)
-        or return ();
+    open(my $json_fh, "<:encoding(UTF-8)", $filename) or do {
+        WARN 'File does not exist or cannot be open';
+        return ();
+    };
+
     my $json_text = <$json_fh>;
     close($json_fh);
     my $nested_array = decode_json $json_text;

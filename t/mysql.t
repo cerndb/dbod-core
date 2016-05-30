@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-
+use DBOD::Config;
 use Test::More;
 use File::ShareDir;
 use Data::Dumper;
@@ -119,7 +119,7 @@ isa_ok( $mysql->db(), 'DBOD::DB', 'db connection object OK' );
 $mymod->unmock('_parse_err_file');
 $runtime->unmock('run_cmd');
 
-my $mtab_file = File::ShareDir::dist_dir('DBOD') . '/sample_mtab';
+my $mtab_file = DBOD::Config::get_share_dir() . '/sample_mtab';
 diag Dumper $mtab_file;
 my $buf = $mysql->_parse_err_file('PIN', $mtab_file);
 ok(length $buf > 0, '_parse_err_file');
