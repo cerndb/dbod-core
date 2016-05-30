@@ -49,8 +49,9 @@ sub load {
 
 
 sub get_share_dir {
-    if (defined $ENV{DBOD_SHARE_DIR}){
-        return $ENV{DBOD_SHARE_DIR};
+    # Added for local testing purposes, it allows to override the share dir default location
+    if (defined $ENV{DBOD_TEST_SHARE_DIR}){
+        return $ENV{DBOD_TEST_SHARE_DIR};
     } else {
         return File::ShareDir::dist_dir('DBOD');
     }
