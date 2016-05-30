@@ -34,7 +34,7 @@ sub load_cache {
         return ();
     };
 
-    my $json_text = <$json_fh>;return ();
+    my $json_text = <$json_fh>;
     close($json_fh);
     my $nested_array = decode_json $json_text;
     my @flat_array = map{@$_} @$nested_array;
