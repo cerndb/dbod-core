@@ -6,7 +6,6 @@ use Data::Dumper;
 use Test::More;
 use Test::MockModule;
 use DBOD;
-use Path::Class qw( file );
 use File::ShareDir;
 use Getopt::Long;
 
