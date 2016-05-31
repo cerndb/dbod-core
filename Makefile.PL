@@ -38,6 +38,7 @@ requires    'Readonly' => 0;
 requires    'Readonly::XS' => 0;
 requires    'SOAP::Lite' => 0;
 requires    'XML::Parser' => 0;
+requires    'Path::Class' => 0;
 
 test_requires 'Test::More' => 0;
 test_requires 'Test::MockModule' => 0;
