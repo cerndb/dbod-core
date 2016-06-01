@@ -24,10 +24,10 @@ $na_element->set_isa('NaElement');
 
 my $na_element_ok = Test::MockObject->new();
 $na_element_ok->set_isa('NaElement');
-$na_element_ok->mock( results_errno => sub {return 0;});
+$na_element_ok->mock( results_errno => sub {return $OK;});
 my $na_element_fail = Test::MockObject->new();
 $na_element_fail->set_isa('NaElement');
-$na_element_fail->mock( results_errno => sub {return 1;});
+$na_element_fail->mock( results_errno => sub {return $ERROR;});
 
 my $na_server_mod = Test::MockModule->new('NaServer');
 $na_server_mod->mock( new => $na_server );
@@ -48,7 +48,7 @@ my $zapi = DBOD::Storage::NetApp::ZAPI->new( config => \%config );
 
 subtest 'create_server' => sub {
         $na_server->mock(new => sub {return $na_element_ok;});
-        $na_server->mock(set_style => sub {return $na_element_ok;});
+        $na_server->mock(set_style => sub {return $OK;});
         $na_server->mock(set_port => sub {return $na_element_ok;});
         $na_server->mock(set_admin_user => sub {return $na_element_ok;});
         $na_server->mock(set_transport_type => sub {return $na_element_ok;});
@@ -59,7 +59,7 @@ subtest 'create_server' => sub {
             'password',
             'vserver',
             'version');
-        ok($res, 'create_server style ok');
+        isa_ok($res, 'HASH', 'create_server OK');
 
         $na_server->mock(set_style => sub {return $na_element_fail;});
         $na_element_fail->mock( results_reason => sub {return "Unable to set login style";});
@@ -69,7 +69,7 @@ subtest 'create_server' => sub {
             'password',
             'vserver',
             'version');
-        ok(!$res, 'create_server style fail');
+        is($res, $ERROR, 'create_server style fail');
 
         $na_server->mock(set_style => sub {return $na_element_ok;});
         $na_server->mock(set_admin_user => sub {return $na_element_fail;});
@@ -79,7 +79,7 @@ subtest 'create_server' => sub {
             'username',
             'password',
             'vserver');
-        ok(!$res, 'create_server username error');
+        is($res, $ERROR, 'create_server username error');
 
         $na_server->mock(set_admin_user => sub {return $na_element_ok;});
         $na_server->mock(set_transport_type => sub {return $na_element_fail;});
@@ -89,7 +89,7 @@ subtest 'create_server' => sub {
             'username',
             'password',
             'vserver');
-        ok(!$res, 'create_server transport error');
+        is($res, $ERROR, 'create_server transport error');
 
         $na_server->mock(set_transport_type => sub {return $na_element_ok;});
         $na_server->mock(set_vserver => sub {return $na_element_fail;});
@@ -99,7 +99,7 @@ subtest 'create_server' => sub {
             'username',
             'password',
             'vserver');
-        ok(!$res, 'create_server transport error');
+        is($res, $ERROR, 'create_server error');
     };
 
 subtest 'get_mount_point_NAS_regex' => sub {
@@ -179,25 +179,6 @@ subtest 'create_server_from_mount_point' => sub {
         $na_element->mock( results_errno => sub {return 0;});
         ok($zapi->create_server_from_mount_point('localhost', 'mount_point'),
             'create_server_from_mount_point OK');
-    };
-
-subtest 'get_server_and_volname' => sub {
-        my $mtab_file = DBOD::Config::get_share_dir() . '/sample_mtab';
-        my $mntpoint = '/ORA/dbs03/PINOCHO';
-        # Underlying get_volinfo call requirements
-        $na_element->mock( child_add => sub {return;});
-        $na_element->mock( sprintf => sub {return "sprintf string";});
-        $na_element->mock( children_get => sub {return $na_element;});
-        $na_element->mock( child_get_string => sub {return "child_string";});
-        $na_element->mock( children_get => sub {return $na_element;});
-        $na_element->mock( child_get => sub {return ($na_element, $na_element, $na_element);});
-        # Tests
-        ok($zapi->get_server_and_volname($mntpoint, $mtab_file),
-            'get_server_and_volname OK');
-        $na_element->mock( results_errno => sub {return 1;});
-        isa_ok($zapi->get_server_and_volname('nothing_to_find', $mtab_file),
-            'ARRAY',
-            'get_server_and_volname FAIL. No NAS mounts');
     };
 
 subtest 'get_volinfo' => sub {
