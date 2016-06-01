@@ -173,16 +173,17 @@ subtest 'snapshot' => sub {
         $zapi->mock( 'snap_prepare' => sub { return $OK; });
 
         @db_do_outputs = (
-            0, # Error flushing tables
-            1, 0, 0,# Error flushing logs. Unlock Error
-            1, 0, 1,# Error flushing logs. Unlock OK
-            1, 1, 1,# Error creating snapshot
-            1, 1, 0, # Error unlocking tables
-            1, 1, 1, # Succesful snapshot
+            $ERROR, # Error flushing tables
+            $OK, $ERROR, $ERROR,# Error flushing logs. Unlock Error
+            $OK, $ERROR, $OK,# Error flushing logs. Unlock OK
+            $OK, $OK, $OK,# Error creating snapshot
+            $OK, $OK, $ERROR, # Error unlocking tables
+            $OK, $OK, $OK, # Succesful snapshot
         );
 
         $db->mock('do' => sub {
                 my $buf = shift @db_do_outputs;
+				diag 'do: ' .  $buf;
                 return $buf;
             });
 

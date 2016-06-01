@@ -258,15 +258,18 @@ sub snapshot {
     }
 
     # Pre-snapshot actions
+    $self->log->debug("Flushing tables");
     $rc = $self->db->do("flush tables with read lock");
-    if ($rc != $OK) {
+    if ($rc == $ERROR) {
         $self->log->error("Error flushing tables");
         return $ERROR;
     }
+    $self->log->debug("Flushing logs");
     $rc = $self->db->do("flush logs");
-    if ($rc != $OK) {
+    if ($rc == $ERROR) {
         $self->log->error("Error flushing logs. Aborting snapshot");
-        if ($self->db->do("unlock tables") != $OK){
+		$self->log->debug("Unlocking tables");
+        if ($self->db->do("unlock tables") == $ERROR){
             $self->log->error("Error unlocking tables! Please contact an admin");
         };
         return $ERROR;
@@ -298,6 +301,7 @@ sub snapshot {
     }
 
     # Disable backup mode
+	$self->log->debug("Unlocking tables");
     $rc = $self->db->do("unlock tables");
     if ($rc != $OK) {
         $self->log->error("Error unlocking tables! Please contact an admin");
