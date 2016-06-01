@@ -29,9 +29,17 @@ note( Dumper \%cache );
 my $instancename = "my_influx";
 my $metadata = $cache{$instancename};
 
+my $config = {
+    influxdb => {
+        host => 'db-test',
+        port => '8886',
+    },
+};
+
 my $influxdb = DBOD::Systems::InfluxDB->new({
         instance => $instancename,
-        metadata => $metadata
+        metadata => $metadata,
+        config => $config,
     });
 
 my $runtime = Test::MockModule->new('DBOD::Runtime');
@@ -210,6 +218,47 @@ $useragent->mock('get' =>
     });
 is($influxdb->ping(), $ERROR, 'Tets ping with write=error');
 
+$runtime->mock('run_cmd' =>
+    sub {
+        my %args = @_;
+        my $output_ref = $args{output};
+        if ($args{cmd} =~ /status/i) {
+            $$output_ref = "Process is running [ OK ]";
+            return $OK;
+        }
+    });
+
+# snapshot testing
+subtest 'snapshot' => sub {
+
+        my $zapi = Test::MockModule->new('DBOD::Storage::NetApp::ZAPI');
+
+        # We start failing everything
+        $zapi->mock( 'get_server_and_volname' =>
+            sub {
+                my @buf = (undef, undef);
+                return \@buf;
+            });
+
+        $zapi->mock( 'snap_prepare' => sub { return $ERROR; });
+        $zapi->mock( 'snap_create' => sub { return $ERROR; });
+        is($influxdb->snapshot(), $ERROR, 'Snapshot ERROR. No Instance running');
+        is($influxdb->snapshot(), $ERROR, 'Snapshot ERROR. No ZAPI server');
+        
+        $zapi->mock( 'get_server_and_volname' =>
+            sub {
+                my @buf = ("server_zapi", "volume_name");
+                return \@buf;
+            });
+        is($influxdb->snapshot(), $ERROR, 'Snapshot ERROR. Error preparing snapshot');
+        
+        $zapi->mock( 'snap_prepare' => sub { return $OK; });
+        is($influxdb->snapshot(), $ERROR, 'Snapshot ERROR. Error creating snapshot');
+        
+        $zapi->mock( 'snap_create' => sub { return $OK; });
+        is($influxdb->snapshot(), $OK, 'Snapshot OK');
+
+    };
 
 done_testing();
 
