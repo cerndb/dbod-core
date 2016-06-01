@@ -9,12 +9,18 @@ package DBOD::Systems::InfluxDB;
 
 use strict;
 use warnings;
+
 use Moose;
 with 'DBOD::Instance';
 
 use Data::Dumper;
+use File::Basename;
+use POSIX qw(strftime);
+
 use DBOD;
 use DBOD::Runtime;
+use DBOD::Storage::NetApp::ZAPI;
+
 use LWP::UserAgent;
 use REST::Client;
 use JSON;
@@ -159,8 +165,54 @@ sub stop {
 
 # This function is being implemented by Jon
 sub snapshot {
-    ...
+    my $self = shift;
+
+    if (! $self->is_running()) {
+        $self->log->error("Snapshotting requires a running instance");
+        return $ERROR;
+    }
+    
+    # Get ZAPI server
+    my $zapi = DBOD::Storage::NetApp::ZAPI->new(config => $self->config());
+
+    my $datadir_nosuffix = dirname($self->metadata->{datadir});
+    my $arref = $zapi->get_server_and_volname($datadir_nosuffix);
+
+    my ($server_zapi, $volume_name) = @{$arref};
+
+    if ((! defined $server_zapi) || (! defined $volume_name)) {
+        $self->log->error("Error generating ZAPI server");
+        return $ERROR;
+    }
+
+    # Snapshot preparation
+    my $rc = $zapi->snap_prepare($server_zapi, $volume_name);
+    if ($rc == $ERROR) {
+        $self->log->error("Error preparing snapshot");
+        return $ERROR;
+    }
+
+    # Create name tag
+    my $timetag = strftime "%d%m%Y_%H%M%S", gmtime;
+    my $version = $self->metadata->{version};
+    $version =~ tr/\.//d;
+    my $snapname = "snapscript_" . $timetag . "_" . $version;
+
+    # Create snapshot
+    $rc = $zapi->snap_create($server_zapi, $volume_name, $snapname);
+    my $errorflag = 0;
+    if ($rc == $ERROR ) {
+        $errorflag = $ERROR;
+        $self->log->error("Error creating snapshot");
+    }
+
+    if ($errorflag) {
+        $self->log->error("Please check: snapshot was not properly taken.");
+        return $ERROR;
+    } else {
+        $self->log->debug("Snapshot operation successful");
+        return $OK;
+    }
 }
 
 1;
-
