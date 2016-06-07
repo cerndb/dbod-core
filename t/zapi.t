@@ -195,4 +195,22 @@ subtest 'get_volinfo' => sub {
 
     };
 
+subtest 'get_server_and_volname' => sub {
+	my $mtab_file = DBOD::Config::get_share_dir() . '/sample_mtab';
+	my $mntpoint = '/ORA/dbs03/PINOCHO';
+	my $zapi_mock = Test::MockModule->new('DBOD::Storage::NetApp::ZAPI');
+    is($zapi->get_server_and_volname($mntpoint), undef,
+		'get_server_and_volname: No mount points returned');
+	$zapi_mock->mock('get_volinfo' => sub { return; });
+    is($zapi->get_server_and_volname($mntpoint, $mtab_file), undef,
+		'get_server_and_volname: Error in get_volinfo');
+	$zapi_mock->mock('get_volinfo' => 
+		sub { my %buf = ( 
+				name => '/ORA/dbs03/PINOCHO',
+				body => 'body');
+			 return \%buf;
+		});
+	isa_ok($zapi->get_server_and_volname($mntpoint, $mtab_file), 'ARRAY', 'get_volinfo OK');
+    };
+
 done_testing();
