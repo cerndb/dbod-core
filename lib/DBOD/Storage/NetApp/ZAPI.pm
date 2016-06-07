@@ -239,7 +239,7 @@ sub get_server_and_volname {
     }
     if (! scalar keys %$nasmounts) { #we should get 1 entry
         $self->log->debug("No mount points return. This makes no sense. We cant proceed.");
-        return [undef,undef];
+        return;
     }
     my($server_zapi,$rc,$volume_name);
     if ( scalar (keys(%$nasmounts)) == 1 ) {
@@ -249,7 +249,7 @@ sub get_server_and_volname {
             if (scalar(@$mountpoint) > 1) {
                 $self->log->debug("Too many mount points:");
                 $self->log->debug("Values of mountpoint variable: " . Data::Dumper->Dump($mountpoint));
-                return [undef,undef];
+                return;
             }
 
             $server_zapi = $self->create_server_from_mount_point(
@@ -258,19 +258,19 @@ sub get_server_and_volname {
                 0); # I connect to the data lif not the cluster-mgmt
             if ($server_zapi == 0) {
                 $self->log->debug("Server Zapi was not created.");
-                return [undef,undef];
+                return;
             }
             $volume_name = $$mountpoint[0];
         }
     } else {
         $self->log->debug("Too many mount points return < " . scalar (keys(%$nasmounts)) . ">. This makes no sense. We cant proceed.");
-        return [undef,undef];
+        return;
     }
 
     $rc = $self->get_volinfo($server_zapi, $volume_name, 0);  # last parameter is 0 as we cant get access to aggregate information
-    if ($rc==0) {
+    if (!defined $rc) {
         $self->log->debug("Error retrieving info.!");
-        return [undef,undef];
+        return;
     }
     $volume_name = $rc->{"name"};
     $self->log->debug("Working with C-mode volume: <$volume_name>");
