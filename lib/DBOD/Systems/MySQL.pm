@@ -226,6 +226,20 @@ sub stop {
     }
 }
 
+sub _get_ZAPI_server_and_volume {
+    my $self = shift;
+    # Get ZAPI server
+    my $zapi = DBOD::Storage::NetApp::ZAPI->new( config => $self->config() );
+    my $datadir_nosuffix = dirname( $self->datadir() );
+    my $arref = $zapi->get_server_and_volname( $datadir_nosuffix );
+    my ($server_zapi, $volume_name) = @{$arref};
+    if ((!defined $server_zapi) || (!defined $volume_name)) {
+        $self->log->error( "Error generating ZAPI server" );
+        return;
+    }
+    return ($server_zapi, $volume_name);
+}
+
 sub snapshot {
     my $self = shift;
 
@@ -238,20 +252,11 @@ sub snapshot {
         $self->_connect_db();
     };
 
-    # Get ZAPI server
-    my $zapi = DBOD::Storage::NetApp::ZAPI->new(config => $self->config());
-    my $datadir_nosuffix = dirname($self->datadir());
-    my $arref = $zapi->get_server_and_volname($datadir_nosuffix);
-
-    my ($server_zapi, $volume_name) = @{$arref};
-
-    if ((! defined $server_zapi) || (! defined $volume_name)) {
-        $self->log->error("Error generating ZAPI server");
-        return $ERROR;
-    }
+    my $zapi = DBOD::Storage::NetApp::ZAPI->new( config => $self->config() );
+    my ($server_zapi, $volume) = $self->_get_ZAPI_server_and_volume();
 
     # Snapshot preparation
-    my $rc = $zapi->snap_prepare($server_zapi, $volume_name);
+    my $rc = $zapi->snap_prepare($server_zapi, $volume);
     if ($rc == $ERROR) {
         $self->log->error("Error preparing snapshot");
         return $ERROR;
@@ -293,7 +298,7 @@ sub snapshot {
     my $snapname = "snapscript_" . $timetag . "_" . $log_num . "_" . $version;
 
     # Create snapshot
-    $rc = $zapi->snap_create($server_zapi, $volume_name, $snapname);
+    $rc = $zapi->snap_create($server_zapi, $volume, $snapname);
     my $errorflag = $OK;
     if ($rc == $ERROR ) {
         $errorflag = $ERROR;
@@ -309,6 +314,97 @@ sub snapshot {
     }
     return $errorflag;
 }
+
+sub _list_binary_logs {
+    my ( $self, $pattern ) = @_;
+    my $dir = $self->metadata->{binlogdir};
+    $self->log->debug("Reading <$dir> for binary logs: <$pattern>");
+
+    my (@files);
+    opendir( D, $dir ) || $self->log->debug("Cannot read directory $dir : $!");
+    if ( defined $pattern ) {
+        @files = grep { /$pattern/ } readdir(D);
+    }
+    else {
+        @files = grep { !/^\.\.?$/ } readdir(D);
+    }
+    closedir(D);
+    return @files;
+}
+
+sub restore {
+    my $self = shift;
+    my ($snapshot, $pit) = @_;
+    return $ERROR unless (defined $snapshot);
+
+    $self->log->debug('Restoring database to ' . $snapshot );
+    $self->log->debug('Using ' . $pit) if (defined $pit);
+
+    # Get ZAPI server controller object
+    my $zapi = DBOD::Storage::NetApp::ZAPI->new( config => $self->config() );
+    my ($zapi_server, $volume) = $self->_get_ZAPI_server_and_volume();
+    return $ERROR unless ((defined $zapi_server) and (defined $volume));
+
+    # Validate parameters validity
+    my $actual_version =
+        DBOD::Runtime::get_instance_version( $self->metadata->{'version'} );
+    if (
+        DBOD::Storage::NetApp::Snapshot::is_valid(
+            $snapshot, $pit, $actual_version
+        ) == $FALSE
+    )
+    {
+        $self->log->error( 'Error validating snapshot file and/or PITR time' );
+        return $ERROR;
+    }
+
+    # Fetch list of available binary log files
+    my @binlogs = $self->list_binary_logs("^binlog\\.\\d+");
+    @binlogs = sort(@binlogs);
+    $self->log->debug('Found binary logs:' . Dumper \@binlogs);
+    # Create list of binary log files to use in crash recovery
+    my $fromsnap = $snapshot =~ /snapscript_.*_(\d+)_$actual_version+$/;
+    $self->log->debug('fromsnap ' . $fromsnap );
+
+    my ($pitrlogs);
+    for ( my ($i) = 0 ; $i < scalar(@binlogs) ; $i++ ) {
+        if ( $binlogs[$i] =~ /binlog\..*?$fromsnap$/ ) {
+            $pitrlogs = join( " ", @binlogs[ $i .. scalar(@binlogs) - 1 ] );
+            $self->log->debug("Binary logs to be used if PITR: <$pitrlogs>");
+        }
+    }
+    if ( !defined $pitrlogs || !length($pitrlogs) > 0 ) {
+        $self->log->error(
+            "Crash recovery will not be possible binary logs are missing!");
+        return $ERROR;
+    }
+
+    # Stop database
+    if ($self->is_running()) {
+        return $ERROR if ($self->stop());
+    }
+
+    # Restore snapshot;
+    my $rc = $zapi->snap_restore($zapi_server, $volume, $snapshot);
+    if ($rc == $ERROR) {
+        $self->log->error('Error restoring snapshot: ' . $snapshot);
+        $self->log->error('Affected volume: ' . $volume);
+        return $ERROR;
+    }
+    $self->log->debug('Successfully restored snapshot ' . $snapshot);
+    $self->log->debug('Affected volume: ' . $volume);
+
+    # Re-start the database with disabled networking to perform
+    # Crash recovery
+    return $ERROR if $self->start( skip_networking => $TRUE);
+    # Restart normally
+    return $ERROR if ($self->stop());
+    return $ERROR if ($self->start());
+
+    # TODO: Implement PITR
+    return $OK;
+}
+
 
 1;
 
