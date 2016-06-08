@@ -38,6 +38,7 @@ requires    'Readonly' => 0;
 requires    'Readonly::XS' => 0;
 requires    'SOAP::Lite' => 0;
 requires    'XML::Parser' => 0;
+requires    'LWP::UserAgent' => 0;
 
 test_requires 'Test::More' => 0;
 test_requires 'Test::MockModule' => 0;
@@ -50,18 +51,10 @@ use File::ShareDir;
 install_share;
 
 # Install executables
-install_script 'scripts/init_instance';
-install_script 'scripts/dbod_ping';
-install_script 'scripts/dbod_start';
-install_script 'scripts/dbod_stop';
-install_script 'scripts/dbod_snapshot';
-install_script 'scripts/mysql_appdynamics';
-install_script 'scripts/mysql_restore';
-install_script 'scripts/mysql_snapclone';
-install_script 'scripts/mysql_snapshot';
-install_script 'scripts/pg_appdynamics';
-install_script 'scripts/pg_restore';
-install_script 'scripts/pg_snapclone';
-install_script 'scripts/pg_upgrade';
+install_script 'scripts/dbod-backup';
+install_script 'scripts/dbod-init';
+install_script 'scripts/dbod-ping';
+install_script 'scripts/dbod-start';
+install_script 'scripts/dbod-stop';
 
 WriteAll;
