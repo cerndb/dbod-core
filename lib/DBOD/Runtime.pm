@@ -147,7 +147,7 @@ sub run_str {
 sub get_instance_version {
     my $version = shift;
     $version =~ tr/\.//d;
-    DEBUG 'Processed version' . $version;
+    DEBUG 'Processed version ' . $version;
     return $version;
 }
 
