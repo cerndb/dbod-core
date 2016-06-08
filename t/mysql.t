@@ -197,6 +197,14 @@ subtest 'snapshot' => sub {
 
     };
 
+subtest 'restore' => sub {
+        is($mysql->restore(), $ERROR, 'Restore without snapshot ERROR');
+        my $snapshot = 'test_snap';
+        my $pit = 'pit date';
+        is($mysql->restore($snapshot), $OK);
+        is($mysql->restore($snapshot, $pit), $OK);
+};
+
 done_testing();
 
 
