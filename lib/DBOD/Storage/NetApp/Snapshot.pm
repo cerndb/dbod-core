@@ -19,7 +19,7 @@ sub is_valid {
     # Expected to return the snapshot version
     my ($snapshot, $pitr, $current_version) = @_;
     my ($numsecs, $version) = validate_snapshot($snapshot);
-    my $numsecs_pitr = validate_PITR($pitr);
+    my $numsecs_pitr = validate_PITR($pitr) if defined($pitr);
     if ($version != $current_version){
         ERROR "Snapshot version missmatch";
         return 0;
