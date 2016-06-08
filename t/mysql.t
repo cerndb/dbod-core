@@ -198,11 +198,32 @@ subtest 'snapshot' => sub {
     };
 
 subtest 'restore' => sub {
-        is($mysql->restore(), $ERROR, 'Restore without snapshot ERROR');
-        my $snapshot = 'test_snap';
-        my $pit = 'pit date';
-        is($mysql->restore($snapshot), $OK);
-        is($mysql->restore($snapshot, $pit), $OK);
+		use Test::MockObject;
+		my $snapshot =  'snapscript_03122015_174427_222_5617';
+		my $pit = '2016-02-13_09:23:34';
+        
+		is($mysql->restore(), $ERROR, 'Restore without snapshot ERROR');
+        my $mtab_file = DBOD::Config::get_share_dir() . '/sample_mtab';
+        my $mntpoint = '/ORA/dbs03/PINOCHO';
+        my $regex = "^(.*?dbnas[\\w-]+):(.*?)\\s+($mntpoint)\\s+nfs";
+		# Mocking ZAPI methods
+		my $zapi_mock = Test::MockModule->new('DBOD::Storage::NetApp::ZAPI');
+		my $server_zapi = Test::MockObject->new();
+		$zapi_mock->mock('get_server_and_volname' => sub { 
+				my @array = ($server_zapi, $mntpoint);
+				return \@array;
+			});
+        is($mysql->restore($snapshot), $ERROR, 'Restore missing binary logs');
+		# Mock list of binary logs
+		$mymod->mock('_list_binary_logs' => sub {
+				my @array = ('binlog.000222', 'binlog.000223', 'binlog.000224');
+				return \@array;
+			});
+		$zapi_mock->mock('snap_restore' => sub { return $ERROR } );
+        is($mysql->restore($snapshot), $ERROR, 'snap_estore fail');
+		$zapi_mock->mock('snap_restore' => sub { return $OK } );
+		# Succesful restore
+        is($mysql->restore($snapshot), $OK, 'Restore successful');
 };
 
 done_testing();

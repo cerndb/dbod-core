@@ -20,6 +20,7 @@ use POSIX qw(strftime);
 use DBOD;
 use DBOD::Runtime;
 use DBOD::Storage::NetApp::ZAPI;
+use DBOD::Storage::NetApp::Snapshot;
 
 # input parameters
 has 'instance' => ( is => 'ro', isa => 'Str', required => 1);
@@ -320,7 +321,7 @@ sub _list_binary_logs {
     my $dir = $self->metadata->{binlogdir};
     $self->log->debug("Reading <$dir> for binary logs: <$pattern>");
 
-    my (@files);
+    my @files;
     opendir( D, $dir ) || $self->log->debug("Cannot read directory $dir : $!");
     if ( defined $pattern ) {
         @files = grep { /$pattern/ } readdir(D);
@@ -329,7 +330,7 @@ sub _list_binary_logs {
         @files = grep { !/^\.\.?$/ } readdir(D);
     }
     closedir(D);
-    return @files;
+    return \@files;
 }
 
 sub restore {
@@ -359,25 +360,31 @@ sub restore {
     }
 
     # Fetch list of available binary log files
-    my @binlogs = $self->list_binary_logs("^binlog\\.\\d+");
-    @binlogs = sort(@binlogs);
+    my $binlogs = $self->_list_binary_logs("^binlog\\.\\d+");
+    my @binlogs = sort(@{$binlogs});
     $self->log->debug('Found binary logs:' . Dumper \@binlogs);
     # Create list of binary log files to use in crash recovery
-    my $fromsnap = $snapshot =~ /snapscript_.*_(\d+)_$actual_version+$/;
-    $self->log->debug('fromsnap ' . $fromsnap );
+	my $fromsnap;
+	if ($snapshot =~ /snapscript_.*_(\d+)_$actual_version+$/) {$fromsnap = $1};
+    $self->log->debug('Binlog #'. $fromsnap . ' at time of snapshot');
 
+	my @pitrlogs = @binlogs;
     my ($pitrlogs);
-    for ( my ($i) = 0 ; $i < scalar(@binlogs) ; $i++ ) {
-        if ( $binlogs[$i] =~ /binlog\..*?$fromsnap$/ ) {
-            $pitrlogs = join( " ", @binlogs[ $i .. scalar(@binlogs) - 1 ] );
-            $self->log->debug("Binary logs to be used if PITR: <$pitrlogs>");
-        }
-    }
-    if ( !defined $pitrlogs || !length($pitrlogs) > 0 ) {
+	foreach my $binlog (\@binlogs) {
+		$self->log->debug('binlog: ' . $binlog);
+        unless ( $binlog =~ /binlog\..*?$fromsnap$/ ) {
+			shift @pitrlogs;
+		} else {
+			last;
+		}
+	}
+    if (scalar(@pitrlogs) == 0 ) {
         $self->log->error(
             "Crash recovery will not be possible binary logs are missing!");
         return $ERROR;
     }
+	$pitrlogs = join( " ", @pitrlogs);
+    $self->log->debug("Binary logs available for PITR: <$pitrlogs>");
 
     # Stop database
     if ($self->is_running()) {
