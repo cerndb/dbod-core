@@ -150,7 +150,11 @@ subtest 'snapshot' => sub {
 subtest 'restore' => sub {
 		use Test::MockObject;
 		use DBOD::Config;
-		my $snapshot =  'snapscript_03122015_174427_222_5617';
+		my $pgmod = Test::MockModule->new('DBOD::Systems::PG');
+		$pgmod->mock('is_running' => sub { return $TRUE });
+		$pgmod->mock('stop' => sub { return $OK });
+		$pgmod->mock('start' => sub { return $OK });
+		my $snapshot =  'snapscript_03122015_174427_222_945';
 		my $pit = '2016-02-13_09:23:34';
         
 		is($pg->restore(), $ERROR, 'Restore without snapshot ERROR');
@@ -162,13 +166,6 @@ subtest 'restore' => sub {
 		my $server_zapi = Test::MockObject->new();
 		$zapi_mock->mock('get_server_and_volname' => sub { 
 				my @array = ($server_zapi, $mntpoint);
-				return \@array;
-			});
-        is($pg->restore($snapshot), $ERROR, 'Restore missing binary logs');
-		# Mock list of binary logs
-		my $pgmod = Test::MockModule->new('DBOD::Systems::MySQL');
-		$pgmod->mock('_list_binary_logs' => sub {
-				my @array = ('binlog.000222', 'binlog.000223', 'binlog.000224');
 				return \@array;
 			});
 		$zapi_mock->mock('snap_restore' => sub { return $ERROR } );

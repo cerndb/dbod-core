@@ -252,33 +252,6 @@ sub restore {
         return $ERROR;
     }
 
-    # Fetch list of available binary log files
-    my $binlogs = $self->_list_binary_logs("^binlog\\.\\d+");
-    my @binlogs = sort(@{$binlogs});
-    $self->log->debug('Found binary logs:' . Dumper \@binlogs);
-    # Create list of binary log files to use in crash recovery
-	my $fromsnap;
-	if ($snapshot =~ /snapscript_.*_(\d+)_$actual_version+$/) {$fromsnap = $1};
-    $self->log->debug('Binlog #'. $fromsnap . ' at time of snapshot');
-
-	my @pitrlogs = @binlogs;
-    my ($pitrlogs);
-	foreach my $binlog (\@binlogs) {
-		$self->log->debug('binlog: ' . $binlog);
-        unless ( $binlog =~ /binlog\..*?$fromsnap$/ ) {
-			shift @pitrlogs;
-		} else {
-			last;
-		}
-	}
-    if (scalar(@pitrlogs) == 0 ) {
-        $self->log->error(
-            "Crash recovery will not be possible binary logs are missing!");
-        return $ERROR;
-    }
-	$pitrlogs = join( " ", @pitrlogs);
-    $self->log->debug("Binary logs available for PITR: <$pitrlogs>");
-
     # Stop database
     if ($self->is_running()) {
         return $ERROR if ($self->stop());
@@ -297,11 +270,13 @@ sub restore {
     # Re-start the database with disabled networking to perform
     # Crash recovery
     return $ERROR if $self->start( skip_networking => $TRUE);
+	# TODO perform crash recovery
+    # TODO: Implement PITR
+	
     # Restart normally
     return $ERROR if ($self->stop());
     return $ERROR if ($self->start());
 
-    # TODO: Implement PITR
     return $OK;
 }
 
