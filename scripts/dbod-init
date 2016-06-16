@@ -21,7 +21,7 @@ has 'subcategory' => (
     is => 'ro', 
     isa => 'Str', 
     required => 1, 
-    documentation => qq{Database server: MYSQL/PG/ORACLE} );
+    documentation => qq{Database server: MYSQL/PG/ORACLE/INFLUXDB} );
 has 'type' => (
     is => 'ro', 
     isa => 'Str', 
@@ -162,7 +162,6 @@ sub body {
 			$job->config(), 
 			$job->metadata());
 	}
-
     # Job done!
     $job->_result(0);
 }
