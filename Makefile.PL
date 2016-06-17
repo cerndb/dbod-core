@@ -39,6 +39,9 @@ requires    'Readonly::XS' => 0;
 requires    'SOAP::Lite' => 0;
 requires    'XML::Parser' => 0;
 requires    'LWP::UserAgent' => 0;
+requires    'autodie' => 0;
+# Dependency of MooseX::Getopt::Usage not being installed
+requires    'Pod::Select' => 0;
 
 test_requires 'Test::More' => 0;
 test_requires 'Test::MockModule' => 0;
