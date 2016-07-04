@@ -158,7 +158,7 @@ sub body {
 		# Create metadata entry and register using the API
 		DBOD::LDAP::create_instance($input, $job->config);
 		# Register entity in Appdynamics
-		DBOD::Monitoring::Appdynamics::enable($job->hosts[0], 
+		DBOD::Monitoring::Appdynamics::enable($job->hosts->[0], 
 			$job->config(), 
 			$job->metadata());
 	}
