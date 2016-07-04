@@ -76,9 +76,10 @@ use warnings;
 
 use Log::Log4perl;
 use Data::Dumper;
-use DBOD::Api;
+use DBOD;
 use DBOD::Runtime;
-use DBOD::Network;
+use DBOD::Network::Api;
+use DBOD::Network::IPalias;
 use DBOD::Templates;
 use DBOD::Monitoring::Appdynamics;
 
@@ -114,14 +115,12 @@ sub body {
     $input->{hosts} = \@hosts;
 
     # If volumes are to be created
-    my $rt = DBOD::Runtime->new();
-
     unless ($job->skip_volumes_creation()) {
 
         my $cmd = "/etc/init.d/syscontrol -i dfm.db-cmode DFM_create_dod_volumes_Cmode -name $input->{dbname} -size $input->{size} -server $input->{hosts}->[0]  -type $input->{subcategory} -debug";
         $job->log->debug( "Executing: $cmd" );
         my $vol_creation_output = `$cmd`;
-        if ($rt->result_code($vol_creation_output)) {
+        if (DBOD::Runtime->result_code($vol_creation_output)) {
             $job->log->error( "An error ocurred creating volumes:" );
             $job->log->error( $vol_creation_output );
             $job->_output(-1);
@@ -130,8 +129,8 @@ sub body {
 
         # Fetch volumes mounting details. Will wait until details are available
         $job->log->debug("Fetching volumes server information");
-        my $datavol = $rt->mywait(\&RunTime_Zapi::GetDODMountpoint, ("dod$input->{dbname}03", $hosts[0]));
-        my $logvol = $rt->mywait(\&RunTime_Zapi::GetDODMountpoint, ("dod$input->{dbname}02", $hosts[0]));
+        my $datavol = DBOD::Runtime->mywait(\&RunTime_Zapi::GetDODMountpoint, ("dod$input->{dbname}03", $hosts[0]));
+        my $logvol = DBOD::Runtime->mywait(\&RunTime_Zapi::GetDODMountpoint, ("dod$input->{dbname}02", $hosts[0]));
         my ($serverdata, $data_mounting_path) = split ':', $datavol;
         my ($serverlogs, $logs_mounting_path) = split ':', $logvol;
 
@@ -143,27 +142,30 @@ sub body {
     }
 
     # Create metadata entry and register using the API
-    DBOD::Network::Api::create_entity($input, $job->config);
-    
-    # Network registration
-    DBOD::Network::LanDB::create_alias($input, $job->config);
-
-	if ($job->subcategory() eq 'MYSQL' or $job->subcategory() eq 'PG') {
-		# Create LDAP entry. All this needs to be migrated to use templates
-		# like we do for the metadata entries
-		$input->{entity} = 'dod_' . $job->entity;
-		$input->{ip_alias} =~ s/\_/\-/g;
-		$input->{ip_alias} = 'dbod-' . $input->{dbname};
-		$input->{ip_alias} =~ s/\_/\-/g;
-		# Create metadata entry and register using the API
-		DBOD::LDAP::create_instance($input, $job->config);
-		# Register entity in Appdynamics
-		DBOD::Monitoring::Appdynamics::enable($job->hosts->[0], 
-			$job->config(), 
-			$job->metadata());
+    if (DBOD::Network::Api::create_entity($input, $job->config) == $OK) {
+		# Network registration 
+		DBOD::Network::IPalias::add_alias($input, $job->config);
+		if ($job->subcategory() eq 'MYSQL' or $job->subcategory() eq 'PG') {
+			# Create LDAP entry. All this needs to be migrated to use templates
+			# like we do for the metadata entries
+			$input->{entity} = 'dod_' . $job->entity;
+			$input->{ip_alias} =~ s/\_/\-/g;
+			$input->{ip_alias} = 'dbod-' . $input->{dbname};
+			$input->{ip_alias} =~ s/\_/\-/g;
+			# Create metadata entry and register using the API
+			DBOD::LDAP::create_instance($input, $job->config);
+			# Register entity in Appdynamics
+			DBOD::Monitoring::Appdynamics::enable($job->hosts->[0], 
+				$job->config(), 
+				$job->metadata());
+		}
+		# Job done!
+		$job->_result($OK);
+	} else {
+		$job->log->error("Error egistering the entity in the API");	
+		$job->_result($ERROR);
 	}
-    # Job done!
-    $job->_result(0);
 }
 
 $job->run(\&body, );
+exit $job->_result();
