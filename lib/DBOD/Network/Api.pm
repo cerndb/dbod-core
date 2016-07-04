@@ -17,6 +17,7 @@ use MIME::Base64;
 use JSON;
 use Data::Dumper;
 use DBOD::Templates;
+use DBOD;
 
 our ($VERSION, @EXPORT_OK);
 
@@ -187,10 +188,11 @@ sub create_entity {
         } else {
             ERROR 'Error creating entity: ' . $entity; 
         }
-        return \%result;
+		DEBUG Dumper \%result;
+        return $OK;
     } else {
         ERROR "Entity metadata not valid. Aborting operation";
-        return;
+        return $ERROR;
     }
 }
 
