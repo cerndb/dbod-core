@@ -15,20 +15,30 @@ use DBOD;
 use DBOD::Runtime;
 use DBOD::Network::Api;
 use DBOD::Network::LanDB;
+use Data::Dumper;
 
 sub add_alias {
     # Registers ip alias for the dbname
     # 1. Register the ip-alias to the next free dnsname using the DBOD Api
     # 2. Add the ip-alias to the dnsname on LANDB
     # 3. Performs DNS change 
-    #
-    # Returns false if it fails, true if it succeeds
 
-    my ($dbname, $host, $config) = @_;
+    my ($input, $config) = @_;
+	my $dbname = $input->{dbname};
+	my $host = $input->{hosts}->[0];
     my $ipalias = "dbod-" . $dbname;
     $ipalias =~ s/\_/\-/gx; # Substitutes underscores for dashes for ip-alias
-    DBOD::Network::Api::set_ip_alias($dbname, $ipalias, $config);
     my $result = DBOD::Network::Api::get_ip_alias($dbname, $config);
+	if (defined $result->{response}) {
+		INFO "IP Alias already exists, nothing to do";
+		INFO " DNS name: " . $result->{response}->[0];
+		INFO " IP Alias: " . $result->{response}->[1];
+		return scalar $OK;
+	} else {
+		# Register a dns-name to the instance IP alias
+	    DBOD::Network::Api::set_ip_alias($dbname, $ipalias, $config);
+		$result = DBOD::Network::Api::get_ip_alias($dbname, $config);
+	}
     my $dnsname;
     if (defined $result) {
         ($dnsname, $ipalias) = @{$result->{'response'}};
@@ -54,7 +64,7 @@ sub add_alias {
     else { 
         # An error occurred getting a free dnsname. Either the DB is down
         # or there are no more dnsnames free
-        ERROR "Error adding alias %s to host: %s", $ipalias, $host;
+        ERROR "Error registering alias %s to host: %s", $ipalias, $host;
         return scalar $ERROR;
     }
 }
