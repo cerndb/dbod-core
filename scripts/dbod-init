@@ -143,8 +143,11 @@ sub body {
 
     # Create metadata entry and register using the API
     if (DBOD::Network::Api::create_entity($input, $job->config) == $OK) {
-		# Network registration 
-		DBOD::Network::IPalias::add_alias($input, $job->config);
+		# Network registration
+		if (DBOD::Network::IPalias::add_alias($input, $job->config) == $ERROR) {
+			$job->log->error("Please verify IP Alias assignment");
+			$job->_result($ERROR);
+		}
 		if ($job->subcategory() eq 'MYSQL' or $job->subcategory() eq 'PG') {
 			# Create LDAP entry. All this needs to be migrated to use templates
 			# like we do for the metadata entries
@@ -160,7 +163,9 @@ sub body {
 				$job->metadata());
 		}
 		# Job done!
-		$job->_result($OK);
+		unless (defined $job->_result()){
+			$job->_result($OK);
+		} # Else there was a previous non-fatal error
 	} else {
 		$job->log->error("Error egistering the entity in the API");	
 		$job->_result($ERROR);
