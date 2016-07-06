@@ -183,12 +183,13 @@ sub create_entity {
         );
         my %result;
         $result{'code'} = $client->responseCode();
+		DEBUG "result: ", Dumper \%result;
         if ($result{'code'} eq '201') {
             INFO 'Entity created: ' . $entity;
         } else {
             ERROR 'Error creating entity: ' . $entity; 
+			return $ERROR;
         }
-		DEBUG Dumper \%result;
         return $OK;
     } else {
         ERROR "Entity metadata not valid. Aborting operation";
