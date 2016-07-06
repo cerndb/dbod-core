@@ -34,7 +34,7 @@ sub _get_landb_connection {
     my $auth = $call->result;
     if ($call->fault) {
         ERROR "FAILED: " . $call->faultstring;
-        return;
+		die "Aborting execution";
     }
     my $authHeader = SOAP::Header->name('Auth' => { "token" => $auth });
     return ($client, $authHeader);
