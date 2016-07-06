@@ -21,6 +21,9 @@ use Data::Dumper;
 
 use base qw(Exporter);
 
+use DBOD;
+use DBOD::Templates;
+
 
 sub load_ldif {
     # Loads contents from an LDIF file and returns a reference to an array
@@ -67,6 +70,7 @@ sub timestamp_entity {
     my ($conn, $entity) = @_;
     my $entity_name = "dod_" . lc $entity->{dbname};
     my $base = "SC-ENTITY=$entity_name,SC-CATEGORY=entities,ou=syscontrol,dc=cern,dc=ch";
+	DEBUG "Adding Timestamp to $base";
     DBOD::Network::Ldap::modify_attributes($conn, $base,
         ['SC-COMMENT' => 'Entity Modified @(' . localtime(time) . ')']);
     return;
@@ -126,20 +130,36 @@ sub create_instance {
 
     if (defined $conn) {
         for my $subtree (@{$entry}) {
-            $subtree->add($conn);
+			DEBUG "Adding" . Dumper $subtree;
+			#$subtree->add($conn);
+            my $response = $conn->add($subtree);
+			if ($response->code) {
+				ERROR Dumper $response;
+				ERROR $response->error;
+				return scalar $ERROR;
+			}
+		
         }
+		DEBUG "TNS";
         for my $subtree (@{$tns}) {
-            $subtree->add($conn);
+			DEBUG "Adding" . Dumper $subtree;
+			#$subtree->add($conn);
+            my $response = $conn->add($subtree);
+			if ($response->code) {
+				ERROR Dumper $response;
+				ERROR $response->error;
+				return scalar $ERROR;
+			}
         }
         timestamp_entity($conn, $new_instance);
         $conn->unbind();
         $conn->disconnect();
     } else {
         ERROR "Couldn\'t connect to LDAP server. Aborting instance registration";
-        return scalar 1;
+        return scalar $ERROR;
     }
 
-    return scalar 0;
+    return scalar $OK;
 
 }
 
