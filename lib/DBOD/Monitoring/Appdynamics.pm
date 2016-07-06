@@ -18,7 +18,7 @@ sub enable {
     my $drivername;
 
     # Argument unpacking
-    my $hostname = $metadata->{host}[0]; # Functional alias
+    my $hostname = $metadata->{hosts}[0]; # Functional alias
     my $dbport = $metadata->{port};
     my $dbtype = lc $metadata->{subcategory};
     $username = $config->{$dbtype}->{db_user};
@@ -56,11 +56,14 @@ sub enable {
         db_dsn  => $dsn,
         db_user => $appduser,
         db_password => $appdpassword,
-        db_attrs => {RaiseError => 0, Autocommit => 1},
+        db_attrs => {RaiseError => 0, AutoCommit => 1},
     );
 
     $servername = lc $servername;
     $dbtype = uc $dbtype;
+	if ($dbtype eq 'PGSQL') {
+		$dbtype = 'POSTGRES';
+	}
     $ostype = uc $ostype;
 
     my $affected_rows;
