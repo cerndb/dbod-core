@@ -31,7 +31,7 @@ has 'version' => (
     is => 'ro', 
     isa => 'Str', 
     required => 1, 
-    documentation => qq{Database server version: (e.g: 5.6.17, 9.4.4, ...)} );
+    documentation => qq{Database server version: (e.g: 5.6.17, 9.4.5, ...)} );
 has 'port' => (
     is => 'ro', 
     isa => 'Str', 
@@ -58,6 +58,11 @@ has 'crs' => (
     is => 'ro', 
     isa => 'Str', 
     documentation => qq{Optional: CRS reference} );
+has 'new_templates' => (
+    is => 'ro',
+    isa => 'Bool',
+    default => '0',
+    documentation => qq{Optional: If set, use new LDAP entity templates} );
 has 'skip_volumes_creation' => (
     is => 'ro', 
     isa => 'Bool',
@@ -152,15 +157,17 @@ sub body {
 			# Create LDAP entry. All this needs to be migrated to use templates
 			# like we do for the metadata entries
 			$input->{entity} = 'dod_' . $job->entity;
-			$input->{ip_alias} =~ s/\_/\-/g;
-			$input->{ip_alias} = 'dbod-' . $input->{dbname};
-			$input->{ip_alias} =~ s/\_/\-/g;
+			my $result = DBOD::Network::Api::get_ip_alias($job->entity, $job->config);
+			my ($dnsname, $ipalias) = @{$result->{'response'}};
+			$input->{ip_alias} = $ipalias;
 			# Create metadata entry and register using the API
-			DBOD::LDAP::create_instance($input, $job->config);
+			DBOD::Network::Ldap::create_instance($input, $job->config, $job->new_templates());
 			# Register entity in Appdynamics
-			DBOD::Monitoring::Appdynamics::enable($job->hosts->[0], 
+			my $metadata = DBOD::Network::Api::get_entity_metadata($job->entity(), undef, $job->config); 
+			$job->log->debug( Dumper $metadata );
+			DBOD::Monitoring::Appdynamics::enable($job->entity, 
 				$job->config(), 
-				$job->metadata());
+				$metadata);
 		}
 		# Job done!
 		unless (defined $job->_result()){

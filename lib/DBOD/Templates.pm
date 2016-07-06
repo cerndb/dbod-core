@@ -10,8 +10,6 @@ package DBOD::Templates;
 use warnings;
 use strict;
 
-our $VERSION = 0.67;
-
 use DBOD::Network::Ldap;
 use Data::Dumper;
 use Template;
@@ -57,11 +55,15 @@ sub create_metadata {
 
 sub create_ldap_entry {
     # Creates a new metadata object.
-    my ($new_entity, $config) = @_;
+    my ($new_entity, $config, $new_templates) = @_;
     DEBUG 'Creating Metadata object for entity: ' . Dumper $new_entity;
     my $type = lc $new_entity->{subcategory};
     my $ldap_template;
-    load_template 'ldap', $type, $new_entity, $config, \$ldap_template;
+    if ($new_templates) {
+        load_template 'ldap', $type . '_new', $new_entity, $config, \$ldap_template;
+    } else {
+        load_template 'ldap', $type, $new_entity, $config, \$ldap_template;
+    }
     my ($fh, $filename) = tempfile();
     print $fh $ldap_template;
     close $fh;
@@ -71,9 +73,13 @@ sub create_ldap_entry {
 }
 
 sub create_ldap_tnsnetservice_entry {
-    my ($new_entity, $config) = @_;
+    my ($new_entity, $config, $new_templates) = @_;
     my $tnsnetservice;
-    load_template 'ldap', 'tnsnetservice', $new_entity, $config, \$tnsnetservice;
+    if ($new_templates) {
+        load_template 'ldap', 'tnsnetservice' . '_new', $new_entity, $config, \$tnsnetservice;
+    } else {
+        load_template 'ldap', 'tnsnetservice', $new_entity, $config, \$tnsnetservice;
+    }
     DEBUG 'Metadata: ' . Dumper $tnsnetservice;
     my ($fh, $filename) = tempfile();
     print $fh $tnsnetservice;

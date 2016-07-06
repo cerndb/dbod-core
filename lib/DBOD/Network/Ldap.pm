@@ -117,14 +117,13 @@ sub modify_attributes {
     return $result->code;
 }
 
-
 sub create_instance {
     
-    my ($new_instance, $config) = @_;
+    my ($new_instance, $config, $new_templates) = @_;
     DEBUG 'Creating LDAP entity: ' . Dumper $new_instance;
 
-    my $entry = DBOD::Templates::create_ldap_entry($new_instance, $config);
-    my $tns = DBOD::Templates::create_ldap_tnsnetservice_entry($new_instance, $config);
+    my $entry = DBOD::Templates::create_ldap_entry($new_instance, $config, $new_templates);
+    my $tns = DBOD::Templates::create_ldap_tnsnetservice_entry($new_instance, $config, $new_templates);
  
     my $conn = get_connection($config);
 
