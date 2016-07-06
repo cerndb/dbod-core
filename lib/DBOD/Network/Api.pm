@@ -125,7 +125,7 @@ sub get_ip_alias {
         INFO 'IP Alias fetched for ' . $entity;
         $result{'response'} = decode_json $client->responseContent();
     } else {
-        ERROR 'IP alias does not exist for ' . $entity;
+        WARN 'IP alias does not exist for ' . $entity;
         $result{'response'} = undef;
     }
     return \%result;
@@ -186,10 +186,12 @@ sub create_entity {
 		DEBUG "result: ", Dumper \%result;
         if ($result{'code'} eq '201') {
             INFO 'Entity created: ' . $entity;
+        } elsif ($result{code} eq '200') {
+			INFO 'Entity already present in database';
         } else {
             ERROR 'Error creating entity: ' . $entity; 
 			return $ERROR;
-        }
+		}
         return $OK;
     } else {
         ERROR "Entity metadata not valid. Aborting operation";
