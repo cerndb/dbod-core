@@ -118,6 +118,11 @@ sub body {
     $input->{buffer} = $job->buffer();
     my @hosts = split /,/ , $job->hosts();
     $input->{hosts} = \@hosts;
+    if ($job->subcategory() eq 'MYSQL') {
+        $input->{socket} = '/var/lib/mysql/mysql.socket.' . $input->{dbname} . '.' . $input->{port};
+    } elsif ($job->subcategory() eq 'PG') {
+        $input->{socket} = '/var/lib/pgsql/';
+    }
 
     # If volumes are to be created
     unless ($job->skip_volumes_creation()) {
@@ -159,7 +164,7 @@ sub body {
 			$input->{entity} = 'dod_' . $job->entity;
 			my $result = DBOD::Network::Api::get_ip_alias($job->entity, $job->config);
 			my ($dnsname, $ipalias) = @{$result->{'response'}};
-			$input->{ip_alias} = $ipalias;
+			$input->{ipalias} = $ipalias;
 			# Create metadata entry and register using the API
 			DBOD::Network::Ldap::create_instance($input, $job->config, $job->new_templates());
 			# Register entity in Appdynamics
