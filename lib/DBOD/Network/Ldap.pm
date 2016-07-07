@@ -126,28 +126,29 @@ sub create_instance {
     my $tns = DBOD::Templates::create_ldap_tnsnetservice_entry($new_instance, $config, $new_templates);
  
     my $conn = get_connection($config);
+    my $result;
 
     if (defined $conn) {
         for my $subtree (@{$entry}) {
-			DEBUG "Adding" . Dumper $subtree;
-			#$subtree->add($conn);
+			DEBUG "Adding " . $subtree;
             my $response = $conn->add($subtree);
 			if ($response->code) {
-				ERROR Dumper $response;
+                DEBUG "subtree: " . Dumper $subtree;
+				ERROR "response: " . Dumper $response;
 				ERROR $response->error;
-				return scalar $ERROR;
+                $result = $ERROR;
 			}
 		
         }
 		DEBUG "TNS";
         for my $subtree (@{$tns}) {
-			DEBUG "Adding" . Dumper $subtree;
-			#$subtree->add($conn);
+            DEBUG "Adding " . $subtree;
             my $response = $conn->add($subtree);
 			if ($response->code) {
-				ERROR Dumper $response;
+                DEBUG "subtree: " . Dumper $subtree;
+                ERROR "response: " . Dumper $response;
 				ERROR $response->error;
-				return scalar $ERROR;
+                $result = $ERROR;
 			}
         }
         timestamp_entity($conn, $new_instance);
@@ -157,8 +158,11 @@ sub create_instance {
         ERROR "Couldn\'t connect to LDAP server. Aborting instance registration";
         return scalar $ERROR;
     }
-
-    return scalar $OK;
+    if (defined $result) {
+        return scalar $result;
+    } else {
+        return scalar $OK;
+    }
 
 }
 
