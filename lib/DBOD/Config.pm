@@ -18,9 +18,21 @@ use Log::Log4perl;
 
 our ($VERSION, @EXPORT_OK);
 
-$VERSION     = 0.67;
 use base qw(Exporter);
 @EXPORT_OK   = qw( load );
+
+BEGIN {
+	sub get_share_dir {
+		# Added for local testing purposes, it allows to override the share dir default location
+		if (defined $ENV{DBOD_TEST_SHARE_DIR}){
+			return $ENV{DBOD_TEST_SHARE_DIR};
+		} else {
+			return File::ShareDir::dist_dir('DBOD');
+		}
+	}
+	my $share_dir = get_share_dir();
+	Log::Log4perl::init( "${share_dir}/logger.conf" );
+}
 
 sub load {
     # Loads configuration file and returns a reference to a configuration
@@ -48,13 +60,5 @@ sub load {
 }
 
 
-sub get_share_dir {
-    # Added for local testing purposes, it allows to override the share dir default location
-    if (defined $ENV{DBOD_TEST_SHARE_DIR}){
-        return $ENV{DBOD_TEST_SHARE_DIR};
-    } else {
-        return File::ShareDir::dist_dir('DBOD');
-    }
-}
 
 1;
