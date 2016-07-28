@@ -6,6 +6,7 @@ use Log::Log4perl qw(:easy);
 
 use Socket;
 
+use DBOD;
 use DBOD::DB;
 
 sub enable {
@@ -94,9 +95,9 @@ sub enable {
     }
 
     if ($affected_rows != 1) {
-        return 0; #some error
+        return $ERROR; #some error
     } else {
-        return 1; #ok
+        return $OK; #ok
     }
 }
 
@@ -120,10 +121,10 @@ sub is_enabled {
     my $rows = $db->do("select 1 from monitoredservers where servername=?", \@bind_params);
     if ($rows == 1) {
         INFO "<$servername> is already defined";
-        return 1; #ok
+        return $TRUE;
     } else {
         ERROR "<$servername> is found <$rows> not enabled";
-        return 0; #error
+        return $FALSE;
     }
 
 }
@@ -147,10 +148,10 @@ sub disable {
     my @bind_params = ($servername);
     my $rows = $db->do("DELETE FROM monitoredservers WHERE servername=?", \@bind_params);
     if ($rows != 1) {
-        ERROR "Couldnt delete <$servername>";
-        return 0; # error
+        ERROR "Couldn't delete <$servername>";
+        return $ERROR; # error
     }
-    return 1; # ok
+    return $OK; # ok
 }
 
 # TODO: Is this method actually required if aliases follow convention?
@@ -166,7 +167,7 @@ sub get_active_alias {
     } else {
         return $entity;
     }
-    return 0;
+    return;
 }
 
 1;

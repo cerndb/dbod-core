@@ -12,6 +12,7 @@ BEGIN { Log::Log4perl->easy_init() };
 use Test::MockObject;
 use Test::MockModule;
 
+use DBOD;
 use DBOD::Runtime;
 my $mock_db = Test::MockModule->new('DBOD::DB');
 
@@ -33,7 +34,7 @@ $config{appdynamics} = \%appdynamics;
 my $conf = \%config;
 
 my %metadata = ();
-$metadata{host} = ['hostname'];
+$metadata{hosts} = ['hostname'];
 $metadata{port} = '1234';
 $metadata{subcategory} = 'MYSQL';
 
@@ -41,29 +42,29 @@ my $data = \%metadata;
 
 subtest 'is_enabled' => sub {
         $mock_db->mock('do', sub {return 1;});
-        ok(DBOD::Monitoring::Appdynamics::is_enabled('testserver', $conf->{appdynamics}),
+        is(DBOD::Monitoring::Appdynamics::is_enabled('testserver', $conf->{appdynamics}), $TRUE,
             'is_enabled: true');
         $mock_db->mock('do', sub {return 0;});
-        ok(!DBOD::Monitoring::Appdynamics::is_enabled('testserver', $conf->{appdynamics}),
+        is(DBOD::Monitoring::Appdynamics::is_enabled('testserver', $conf->{appdynamics}), $FALSE,
             'is_enabled: false');
     };
 
 subtest 'disable' => sub {
         $mock_db->mock('do', sub {return 1;});
-        ok(DBOD::Monitoring::Appdynamics::disable('testserver', $conf->{appdynamics}),
+        is(DBOD::Monitoring::Appdynamics::disable('testserver', $conf->{appdynamics}), $OK,
             'disable: SUCCESS');
         $mock_db->mock('do', sub {return 0;});
-        ok(!DBOD::Monitoring::Appdynamics::disable('testserver', $conf->{appdynamics}),
+        is(DBOD::Monitoring::Appdynamics::disable('testserver', $conf->{appdynamics}), $ERROR,
             'disable: FAIL');
     };
 
 subtest 'enable' => sub {
         print Dumper $data;
         $mock_db->mock('do', sub {return 1;});
-        ok(DBOD::Monitoring::Appdynamics::enable('testserver', $conf, $data),
+        is(DBOD::Monitoring::Appdynamics::enable('testserver', $conf, $data), $OK,
             'enable: SUCCESS');
         $mock_db->mock('do', sub {return 0;});
-        ok(!DBOD::Monitoring::Appdynamics::enable('testserver', $conf, $data),
+        is(DBOD::Monitoring::Appdynamics::enable('testserver', $conf, $data), $ERROR,
             'enable: FAIL');
     };
 done_testing();
