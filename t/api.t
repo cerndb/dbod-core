@@ -12,6 +12,7 @@ use Test::MockModule;
 
 use JSON;
 
+use DBOD;
 use DBOD::Config;
 
 
@@ -180,18 +181,14 @@ subtest 'create_entity' => sub {
 
     $rest_client->mock('responseCode', sub { return "201" } );
     $rest_client->mock('responseContent', sub { return "" } );
-    ok(DBOD::Network::Api::create_entity($input, \%config), "Method call");
     my $result = DBOD::Network::Api::create_entity($input, \%config);
-    note (Dumper $result);
-    ok(exists $result->{code}, 'Result has code field');
+    is($result, $OK, 'Entity created');
     
     # Test failure
     $rest_client->mock('responseCode', sub { return "404" } );
     $rest_client->mock('responseContent', sub { return "" } );
-    ok(DBOD::Network::Api::create_entity($input, \%config), "set_metadata: error");
     $result = DBOD::Network::Api::create_entity($input, \%config);
-    note (Dumper $result);
-    ok(exists $result->{code}, 'Result has code field');
+    is($result, $ERROR, 'Result has code field');
 
 };
 
