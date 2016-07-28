@@ -1,7 +1,7 @@
 # This Makefile is for the DBOD extension to perl.
 #
 # It was generated automatically by MakeMaker version
-# 7.0401 (Revision: 70401) from the contents of
+# 7.04 (Revision: 70400) from the contents of
 # Makefile.PL. Don't edit this file, edit Makefile.PL instead.
 #
 #       ANY CHANGES MADE HERE WILL BE LOST!
@@ -15,13 +15,13 @@
 #     BUILD_REQUIRES => { Data::Handle=>q[0], ExtUtils::MakeMaker=>q[6.36], File::ShareDir=>q[0], Test::MockModule=>q[0], Test::MockObject=>q[0], Test::MockObject::Extends=>q[0], Test::More=>q[0], inc::Module::Install=>q[0] }
 #     CONFIGURE_REQUIRES => {  }
 #     DISTNAME => q[DBOD]
-#     EXE_FILES => [q[scripts/init_instance], q[scripts/dbod_ping], q[scripts/dbod_start], q[scripts/dbod_stop], q[scripts/dbod_snapshot], q[scripts/mysql_appdynamics], q[scripts/mysql_restore], q[scripts/mysql_snapclone], q[scripts/mysql_snapshot], q[scripts/pg_appdynamics], q[scripts/pg_restore], q[scripts/pg_snapclone], q[scripts/pg_upgrade]]
+#     EXE_FILES => [q[scripts/dbod-backup], q[scripts/dbod-init], q[scripts/dbod-ping], q[scripts/dbod-start], q[scripts/dbod-stop]]
 #     LICENSE => q[gplv3]
 #     NAME => q[DBOD]
 #     NO_META => q[1]
-#     PREREQ_PM => { Config::General=>q[0], DBD::Pg=>q[0], DBD::mysql=>q[0], DBI=>q[0], Data::Handle=>q[0], ExtUtils::MakeMaker=>q[6.36], File::ShareDir=>q[0], IPC::Run=>q[0], JSON=>q[0], Log::Dispatch::FileRotate=>q[0], Log::Dispatch::Syslog=>q[0], Log::Log4perl=>q[0], Moose=>q[0], MooseX::AbstractFactory=>q[0], MooseX::Getopt::Usage=>q[0], MooseX::Log::Log4perl=>q[0], MooseX::Role::DBIx::Connector=>q[0], Net::LDAP=>q[0], Net::OpenSSH=>q[0], REST::Client=>q[0], Readonly=>q[0], Readonly::XS=>q[0], SOAP::Lite=>q[0], Template=>q[0], Test::MockModule=>q[0], Test::MockObject=>q[0], Test::MockObject::Extends=>q[0], Test::More=>q[0], Try::Tiny=>q[0], XML::Parser=>q[0], YAML::Syck=>q[0], inc::Module::Install=>q[0] }
+#     PREREQ_PM => { Config::General=>q[0], DBD::Pg=>q[0], DBD::mysql=>q[0], DBI=>q[0], Data::Handle=>q[0], ExtUtils::MakeMaker=>q[6.36], File::ShareDir=>q[0], IPC::Run=>q[0], JSON=>q[0], LWP::UserAgent=>q[0], Log::Dispatch::FileRotate=>q[0], Log::Dispatch::Syslog=>q[0], Log::Log4perl=>q[0], Moose=>q[0], MooseX::AbstractFactory=>q[0], MooseX::Getopt::Usage=>q[0], MooseX::Log::Log4perl=>q[0], MooseX::Role::DBIx::Connector=>q[0], Net::LDAP=>q[0], Net::OpenSSH=>q[0], Pod::Select=>q[0], REST::Client=>q[0], Readonly=>q[0], Readonly::XS=>q[0], SOAP::Lite=>q[0], Template=>q[0], Test::MockModule=>q[0], Test::MockObject=>q[0], Test::MockObject::Extends=>q[0], Test::More=>q[0], Try::Tiny=>q[0], XML::Parser=>q[0], YAML::Syck=>q[0], autodie=>q[0], inc::Module::Install=>q[0] }
 #     TEST_REQUIRES => {  }
-#     VERSION => q[0.68]
+#     VERSION => q[0.70]
 #     dist => { PREOP=>q[$(PERL) -I. "-MModule::Install::Admin" -e "dist_preop(q($(DISTVNAME)))"] }
 #     realclean => { FILES=>q[MYMETA.yml] }
 
@@ -30,30 +30,30 @@
 
 # --- MakeMaker const_config section:
 
-# These definitions are from config.sh (via /usr/lib/x86_64-linux-gnu/perl/5.22/Config.pm).
+# These definitions are from config.sh (via /home/icoteril/perl5/perlbrew/perls/perl-5.20.2/lib/5.20.2/x86_64-linux/Config.pm).
 # They may have been overridden via Makefile.PL or on the command line.
 AR = ar
-CC = x86_64-linux-gnu-gcc
+CC = cc
 CCCDLFLAGS = -fPIC
 CCDLFLAGS = -Wl,-E
 DLEXT = so
 DLSRC = dl_dlopen.xs
 EXE_EXT = 
 FULL_AR = /usr/bin/ar
-LD = x86_64-linux-gnu-gcc
-LDDLFLAGS = -shared -L/usr/local/lib -fstack-protector-strong
-LDFLAGS =  -fstack-protector-strong -L/usr/local/lib
-LIBC = libc-2.22.so
+LD = cc
+LDDLFLAGS = -shared -O2 -L/usr/local/lib -fstack-protector
+LDFLAGS =  -fstack-protector -L/usr/local/lib
+LIBC = libc-2.19.so
 LIB_EXT = .a
 OBJ_EXT = .o
 OSNAME = linux
-OSVERS = 3.16.0
+OSVERS = 3.16.0-4-amd64
 RANLIB = :
-SITELIBEXP = /usr/local/share/perl/5.22.2
-SITEARCHEXP = /usr/local/lib/x86_64-linux-gnu/perl/5.22.2
+SITELIBEXP = /home/icoteril/perl5/perlbrew/perls/perl-5.20.2/lib/site_perl/5.20.2
+SITEARCHEXP = /home/icoteril/perl5/perlbrew/perls/perl-5.20.2/lib/site_perl/5.20.2/x86_64-linux
 SO = so
-VENDORARCHEXP = /usr/lib/x86_64-linux-gnu/perl5/5.22
-VENDORLIBEXP = /usr/share/perl5
+VENDORARCHEXP = 
+VENDORLIBEXP = 
 
 
 # --- MakeMaker constants section:
@@ -62,11 +62,11 @@ DIRFILESEP = /
 DFSEP = $(DIRFILESEP)
 NAME = DBOD
 NAME_SYM = DBOD
-VERSION = 0.68
+VERSION = 0.70
 VERSION_MACRO = VERSION
-VERSION_SYM = 0_68
+VERSION_SYM = 0_70
 DEFINE_VERSION = -D$(VERSION_MACRO)=\"$(VERSION)\"
-XS_VERSION = 0.68
+XS_VERSION = 0.70
 XS_VERSION_MACRO = XS_VERSION
 XS_DEFINE_VERSION = -D$(XS_VERSION_MACRO)=\"$(XS_VERSION)\"
 INST_ARCHLIB = blib/arch
@@ -75,62 +75,60 @@ INST_BIN = blib/bin
 INST_LIB = blib/lib
 INST_MAN1DIR = blib/man1
 INST_MAN3DIR = blib/man3
-MAN1EXT = 1p
-MAN3EXT = 3pm
+MAN1EXT = 1
+MAN3EXT = 3
 INSTALLDIRS = site
+INSTALL_BASE = /home/icoteril/perl5
 DESTDIR = 
-PREFIX = $(SITEPREFIX)
-PERLPREFIX = /usr
-SITEPREFIX = /usr/local
-VENDORPREFIX = /usr
-INSTALLPRIVLIB = /usr/share/perl/5.22
+PREFIX = $(INSTALL_BASE)
+INSTALLPRIVLIB = $(INSTALL_BASE)/lib/perl5
 DESTINSTALLPRIVLIB = $(DESTDIR)$(INSTALLPRIVLIB)
-INSTALLSITELIB = /usr/local/share/perl/5.22.2
+INSTALLSITELIB = $(INSTALL_BASE)/lib/perl5
 DESTINSTALLSITELIB = $(DESTDIR)$(INSTALLSITELIB)
-INSTALLVENDORLIB = /usr/share/perl5
+INSTALLVENDORLIB = $(INSTALL_BASE)/lib/perl5
 DESTINSTALLVENDORLIB = $(DESTDIR)$(INSTALLVENDORLIB)
-INSTALLARCHLIB = /usr/lib/x86_64-linux-gnu/perl/5.22
+INSTALLARCHLIB = $(INSTALL_BASE)/lib/perl5/x86_64-linux
 DESTINSTALLARCHLIB = $(DESTDIR)$(INSTALLARCHLIB)
-INSTALLSITEARCH = /usr/local/lib/x86_64-linux-gnu/perl/5.22.2
+INSTALLSITEARCH = $(INSTALL_BASE)/lib/perl5/x86_64-linux
 DESTINSTALLSITEARCH = $(DESTDIR)$(INSTALLSITEARCH)
-INSTALLVENDORARCH = /usr/lib/x86_64-linux-gnu/perl5/5.22
+INSTALLVENDORARCH = $(INSTALL_BASE)/lib/perl5/x86_64-linux
 DESTINSTALLVENDORARCH = $(DESTDIR)$(INSTALLVENDORARCH)
-INSTALLBIN = /usr/bin
+INSTALLBIN = $(INSTALL_BASE)/bin
 DESTINSTALLBIN = $(DESTDIR)$(INSTALLBIN)
-INSTALLSITEBIN = /usr/local/bin
+INSTALLSITEBIN = $(INSTALL_BASE)/bin
 DESTINSTALLSITEBIN = $(DESTDIR)$(INSTALLSITEBIN)
-INSTALLVENDORBIN = /usr/bin
+INSTALLVENDORBIN = $(INSTALL_BASE)/bin
 DESTINSTALLVENDORBIN = $(DESTDIR)$(INSTALLVENDORBIN)
-INSTALLSCRIPT = /usr/bin
+INSTALLSCRIPT = $(INSTALL_BASE)/bin
 DESTINSTALLSCRIPT = $(DESTDIR)$(INSTALLSCRIPT)
-INSTALLSITESCRIPT = /usr/local/bin
+INSTALLSITESCRIPT = $(INSTALL_BASE)/bin
 DESTINSTALLSITESCRIPT = $(DESTDIR)$(INSTALLSITESCRIPT)
-INSTALLVENDORSCRIPT = /usr/bin
+INSTALLVENDORSCRIPT = $(INSTALL_BASE)/bin
 DESTINSTALLVENDORSCRIPT = $(DESTDIR)$(INSTALLVENDORSCRIPT)
-INSTALLMAN1DIR = /usr/share/man/man1
+INSTALLMAN1DIR = $(INSTALL_BASE)/man/man1
 DESTINSTALLMAN1DIR = $(DESTDIR)$(INSTALLMAN1DIR)
-INSTALLSITEMAN1DIR = /usr/local/man/man1
+INSTALLSITEMAN1DIR = $(INSTALL_BASE)/man/man1
 DESTINSTALLSITEMAN1DIR = $(DESTDIR)$(INSTALLSITEMAN1DIR)
-INSTALLVENDORMAN1DIR = /usr/share/man/man1
+INSTALLVENDORMAN1DIR = $(INSTALL_BASE)/man/man1
 DESTINSTALLVENDORMAN1DIR = $(DESTDIR)$(INSTALLVENDORMAN1DIR)
-INSTALLMAN3DIR = /usr/share/man/man3
+INSTALLMAN3DIR = $(INSTALL_BASE)/man/man3
 DESTINSTALLMAN3DIR = $(DESTDIR)$(INSTALLMAN3DIR)
-INSTALLSITEMAN3DIR = /usr/local/man/man3
+INSTALLSITEMAN3DIR = $(INSTALL_BASE)/man/man3
 DESTINSTALLSITEMAN3DIR = $(DESTDIR)$(INSTALLSITEMAN3DIR)
-INSTALLVENDORMAN3DIR = /usr/share/man/man3
+INSTALLVENDORMAN3DIR = $(INSTALL_BASE)/man/man3
 DESTINSTALLVENDORMAN3DIR = $(DESTDIR)$(INSTALLVENDORMAN3DIR)
 PERL_LIB =
-PERL_ARCHLIB = /usr/lib/x86_64-linux-gnu/perl/5.22
-PERL_ARCHLIBDEP = /usr/lib/x86_64-linux-gnu/perl/5.22
+PERL_ARCHLIB = /home/icoteril/perl5/perlbrew/perls/perl-5.20.2/lib/5.20.2/x86_64-linux
+PERL_ARCHLIBDEP = /home/icoteril/perl5/perlbrew/perls/perl-5.20.2/lib/5.20.2/x86_64-linux
 LIBPERL_A = libperl.a
 FIRST_MAKEFILE = Makefile
 MAKEFILE_OLD = Makefile.old
 MAKE_APERL_FILE = Makefile.aperl
 PERLMAINCC = $(CC)
-PERL_INC = /usr/lib/x86_64-linux-gnu/perl/5.22/CORE
-PERL_INCDEP = /usr/lib/x86_64-linux-gnu/perl/5.22/CORE
-PERL = "/usr/bin/perl" "-Iinc"
-FULLPERL = "/usr/bin/perl" "-Iinc"
+PERL_INC = /home/icoteril/perl5/perlbrew/perls/perl-5.20.2/lib/5.20.2/x86_64-linux/CORE
+PERL_INCDEP = /home/icoteril/perl5/perlbrew/perls/perl-5.20.2/lib/5.20.2/x86_64-linux/CORE
+PERL = "/home/icoteril/perl5/perlbrew/perls/perl-5.20.2/bin/perl" "-Iinc"
+FULLPERL = "/home/icoteril/perl5/perlbrew/perls/perl-5.20.2/bin/perl" "-Iinc"
 ABSPERL = $(PERL)
 PERLRUN = $(PERL)
 FULLPERLRUN = $(FULLPERL)
@@ -143,9 +141,9 @@ PERM_DIR = 755
 PERM_RW = 644
 PERM_RWX = 755
 
-MAKEMAKER   = /usr/share/perl/5.22/ExtUtils/MakeMaker.pm
-MM_VERSION  = 7.0401
-MM_REVISION = 70401
+MAKEMAKER   = /home/icoteril/perl5/lib/perl5/ExtUtils/MakeMaker.pm
+MM_VERSION  = 7.04
+MM_REVISION = 70400
 
 # FULLEXT = Pathname for extension directory (eg Foo/Bar/Oracle).
 # BASEEXT = Basename part of FULLEXT. May be just equal FULLEXT. (eg Oracle)
@@ -249,7 +247,7 @@ PM_TO_BLIB = lib/DBOD.pm \
 
 
 # --- MakeMaker platform_constants section:
-MM_Unix_VERSION = 7.0401
+MM_Unix_VERSION = 7.04
 PERL_MALLOC_DEF = -DPERL_EXTMALLOC_DEF -Dmalloc=Perl_malloc -Dfree=Perl_mfree -Drealloc=Perl_realloc -Dcalloc=Perl_calloc
 
 
@@ -315,7 +313,7 @@ RCS_LABEL = rcs -Nv$(VERSION_SYM): -q
 DIST_CP = best
 DIST_DEFAULT = tardist
 DISTNAME = DBOD
-DISTVNAME = DBOD-0.68
+DISTVNAME = DBOD-0.70
 
 
 # --- MakeMaker macro section:
@@ -340,8 +338,8 @@ DISTVNAME = DBOD-0.68
 
 PASTHRU = LIBPERL_A="$(LIBPERL_A)"\
 	LINKTYPE="$(LINKTYPE)"\
-	LD="$(LD)"\
-	PREFIX="$(PREFIX)"
+	PREFIX="$(PREFIX)"\
+	INSTALL_BASE="$(INSTALL_BASE)"
 
 
 # --- MakeMaker special_targets section:
@@ -479,98 +477,46 @@ manifypods : pure_all
 
 # --- MakeMaker installbin section:
 
-EXE_FILES = scripts/init_instance scripts/dbod_ping scripts/dbod_start scripts/dbod_stop scripts/dbod_snapshot scripts/mysql_appdynamics scripts/mysql_restore scripts/mysql_snapclone scripts/mysql_snapshot scripts/pg_appdynamics scripts/pg_restore scripts/pg_snapclone scripts/pg_upgrade
+EXE_FILES = scripts/dbod-backup scripts/dbod-init scripts/dbod-ping scripts/dbod-start scripts/dbod-stop
 
-pure_all :: $(INST_SCRIPT)/mysql_appdynamics $(INST_SCRIPT)/init_instance $(INST_SCRIPT)/dbod_start $(INST_SCRIPT)/mysql_snapshot $(INST_SCRIPT)/pg_appdynamics $(INST_SCRIPT)/pg_snapclone $(INST_SCRIPT)/dbod_stop $(INST_SCRIPT)/pg_upgrade $(INST_SCRIPT)/pg_restore $(INST_SCRIPT)/dbod_ping $(INST_SCRIPT)/dbod_snapshot $(INST_SCRIPT)/mysql_snapclone $(INST_SCRIPT)/mysql_restore
+pure_all :: $(INST_SCRIPT)/dbod-backup $(INST_SCRIPT)/dbod-init $(INST_SCRIPT)/dbod-stop $(INST_SCRIPT)/dbod-ping $(INST_SCRIPT)/dbod-start
 	$(NOECHO) $(NOOP)
 
 realclean ::
 	$(RM_F) \
-	  $(INST_SCRIPT)/mysql_appdynamics $(INST_SCRIPT)/init_instance \
-	  $(INST_SCRIPT)/dbod_start $(INST_SCRIPT)/mysql_snapshot \
-	  $(INST_SCRIPT)/pg_appdynamics $(INST_SCRIPT)/pg_snapclone \
-	  $(INST_SCRIPT)/dbod_stop $(INST_SCRIPT)/pg_upgrade \
-	  $(INST_SCRIPT)/pg_restore $(INST_SCRIPT)/dbod_ping \
-	  $(INST_SCRIPT)/dbod_snapshot $(INST_SCRIPT)/mysql_snapclone \
-	  $(INST_SCRIPT)/mysql_restore 
+	  $(INST_SCRIPT)/dbod-backup $(INST_SCRIPT)/dbod-init \
+	  $(INST_SCRIPT)/dbod-stop $(INST_SCRIPT)/dbod-ping \
+	  $(INST_SCRIPT)/dbod-start 
 
-$(INST_SCRIPT)/mysql_appdynamics : scripts/mysql_appdynamics $(FIRST_MAKEFILE) $(INST_SCRIPT)$(DFSEP).exists $(INST_BIN)$(DFSEP).exists
-	$(NOECHO) $(RM_F) $(INST_SCRIPT)/mysql_appdynamics
-	$(CP) scripts/mysql_appdynamics $(INST_SCRIPT)/mysql_appdynamics
-	$(FIXIN) $(INST_SCRIPT)/mysql_appdynamics
-	-$(NOECHO) $(CHMOD) $(PERM_RWX) $(INST_SCRIPT)/mysql_appdynamics
+$(INST_SCRIPT)/dbod-backup : scripts/dbod-backup $(FIRST_MAKEFILE) $(INST_SCRIPT)$(DFSEP).exists $(INST_BIN)$(DFSEP).exists
+	$(NOECHO) $(RM_F) $(INST_SCRIPT)/dbod-backup
+	$(CP) scripts/dbod-backup $(INST_SCRIPT)/dbod-backup
+	$(FIXIN) $(INST_SCRIPT)/dbod-backup
+	-$(NOECHO) $(CHMOD) $(PERM_RWX) $(INST_SCRIPT)/dbod-backup
 
-$(INST_SCRIPT)/init_instance : scripts/init_instance $(FIRST_MAKEFILE) $(INST_SCRIPT)$(DFSEP).exists $(INST_BIN)$(DFSEP).exists
-	$(NOECHO) $(RM_F) $(INST_SCRIPT)/init_instance
-	$(CP) scripts/init_instance $(INST_SCRIPT)/init_instance
-	$(FIXIN) $(INST_SCRIPT)/init_instance
-	-$(NOECHO) $(CHMOD) $(PERM_RWX) $(INST_SCRIPT)/init_instance
+$(INST_SCRIPT)/dbod-init : scripts/dbod-init $(FIRST_MAKEFILE) $(INST_SCRIPT)$(DFSEP).exists $(INST_BIN)$(DFSEP).exists
+	$(NOECHO) $(RM_F) $(INST_SCRIPT)/dbod-init
+	$(CP) scripts/dbod-init $(INST_SCRIPT)/dbod-init
+	$(FIXIN) $(INST_SCRIPT)/dbod-init
+	-$(NOECHO) $(CHMOD) $(PERM_RWX) $(INST_SCRIPT)/dbod-init
 
-$(INST_SCRIPT)/dbod_start : scripts/dbod_start $(FIRST_MAKEFILE) $(INST_SCRIPT)$(DFSEP).exists $(INST_BIN)$(DFSEP).exists
-	$(NOECHO) $(RM_F) $(INST_SCRIPT)/dbod_start
-	$(CP) scripts/dbod_start $(INST_SCRIPT)/dbod_start
-	$(FIXIN) $(INST_SCRIPT)/dbod_start
-	-$(NOECHO) $(CHMOD) $(PERM_RWX) $(INST_SCRIPT)/dbod_start
+$(INST_SCRIPT)/dbod-stop : scripts/dbod-stop $(FIRST_MAKEFILE) $(INST_SCRIPT)$(DFSEP).exists $(INST_BIN)$(DFSEP).exists
+	$(NOECHO) $(RM_F) $(INST_SCRIPT)/dbod-stop
+	$(CP) scripts/dbod-stop $(INST_SCRIPT)/dbod-stop
+	$(FIXIN) $(INST_SCRIPT)/dbod-stop
+	-$(NOECHO) $(CHMOD) $(PERM_RWX) $(INST_SCRIPT)/dbod-stop
 
-$(INST_SCRIPT)/mysql_snapshot : scripts/mysql_snapshot $(FIRST_MAKEFILE) $(INST_SCRIPT)$(DFSEP).exists $(INST_BIN)$(DFSEP).exists
-	$(NOECHO) $(RM_F) $(INST_SCRIPT)/mysql_snapshot
-	$(CP) scripts/mysql_snapshot $(INST_SCRIPT)/mysql_snapshot
-	$(FIXIN) $(INST_SCRIPT)/mysql_snapshot
-	-$(NOECHO) $(CHMOD) $(PERM_RWX) $(INST_SCRIPT)/mysql_snapshot
+$(INST_SCRIPT)/dbod-ping : scripts/dbod-ping $(FIRST_MAKEFILE) $(INST_SCRIPT)$(DFSEP).exists $(INST_BIN)$(DFSEP).exists
+	$(NOECHO) $(RM_F) $(INST_SCRIPT)/dbod-ping
+	$(CP) scripts/dbod-ping $(INST_SCRIPT)/dbod-ping
+	$(FIXIN) $(INST_SCRIPT)/dbod-ping
+	-$(NOECHO) $(CHMOD) $(PERM_RWX) $(INST_SCRIPT)/dbod-ping
 
-$(INST_SCRIPT)/pg_appdynamics : scripts/pg_appdynamics $(FIRST_MAKEFILE) $(INST_SCRIPT)$(DFSEP).exists $(INST_BIN)$(DFSEP).exists
-	$(NOECHO) $(RM_F) $(INST_SCRIPT)/pg_appdynamics
-	$(CP) scripts/pg_appdynamics $(INST_SCRIPT)/pg_appdynamics
-	$(FIXIN) $(INST_SCRIPT)/pg_appdynamics
-	-$(NOECHO) $(CHMOD) $(PERM_RWX) $(INST_SCRIPT)/pg_appdynamics
-
-$(INST_SCRIPT)/pg_snapclone : scripts/pg_snapclone $(FIRST_MAKEFILE) $(INST_SCRIPT)$(DFSEP).exists $(INST_BIN)$(DFSEP).exists
-	$(NOECHO) $(RM_F) $(INST_SCRIPT)/pg_snapclone
-	$(CP) scripts/pg_snapclone $(INST_SCRIPT)/pg_snapclone
-	$(FIXIN) $(INST_SCRIPT)/pg_snapclone
-	-$(NOECHO) $(CHMOD) $(PERM_RWX) $(INST_SCRIPT)/pg_snapclone
-
-$(INST_SCRIPT)/dbod_stop : scripts/dbod_stop $(FIRST_MAKEFILE) $(INST_SCRIPT)$(DFSEP).exists $(INST_BIN)$(DFSEP).exists
-	$(NOECHO) $(RM_F) $(INST_SCRIPT)/dbod_stop
-	$(CP) scripts/dbod_stop $(INST_SCRIPT)/dbod_stop
-	$(FIXIN) $(INST_SCRIPT)/dbod_stop
-	-$(NOECHO) $(CHMOD) $(PERM_RWX) $(INST_SCRIPT)/dbod_stop
-
-$(INST_SCRIPT)/pg_upgrade : scripts/pg_upgrade $(FIRST_MAKEFILE) $(INST_SCRIPT)$(DFSEP).exists $(INST_BIN)$(DFSEP).exists
-	$(NOECHO) $(RM_F) $(INST_SCRIPT)/pg_upgrade
-	$(CP) scripts/pg_upgrade $(INST_SCRIPT)/pg_upgrade
-	$(FIXIN) $(INST_SCRIPT)/pg_upgrade
-	-$(NOECHO) $(CHMOD) $(PERM_RWX) $(INST_SCRIPT)/pg_upgrade
-
-$(INST_SCRIPT)/pg_restore : scripts/pg_restore $(FIRST_MAKEFILE) $(INST_SCRIPT)$(DFSEP).exists $(INST_BIN)$(DFSEP).exists
-	$(NOECHO) $(RM_F) $(INST_SCRIPT)/pg_restore
-	$(CP) scripts/pg_restore $(INST_SCRIPT)/pg_restore
-	$(FIXIN) $(INST_SCRIPT)/pg_restore
-	-$(NOECHO) $(CHMOD) $(PERM_RWX) $(INST_SCRIPT)/pg_restore
-
-$(INST_SCRIPT)/dbod_ping : scripts/dbod_ping $(FIRST_MAKEFILE) $(INST_SCRIPT)$(DFSEP).exists $(INST_BIN)$(DFSEP).exists
-	$(NOECHO) $(RM_F) $(INST_SCRIPT)/dbod_ping
-	$(CP) scripts/dbod_ping $(INST_SCRIPT)/dbod_ping
-	$(FIXIN) $(INST_SCRIPT)/dbod_ping
-	-$(NOECHO) $(CHMOD) $(PERM_RWX) $(INST_SCRIPT)/dbod_ping
-
-$(INST_SCRIPT)/dbod_snapshot : scripts/dbod_snapshot $(FIRST_MAKEFILE) $(INST_SCRIPT)$(DFSEP).exists $(INST_BIN)$(DFSEP).exists
-	$(NOECHO) $(RM_F) $(INST_SCRIPT)/dbod_snapshot
-	$(CP) scripts/dbod_snapshot $(INST_SCRIPT)/dbod_snapshot
-	$(FIXIN) $(INST_SCRIPT)/dbod_snapshot
-	-$(NOECHO) $(CHMOD) $(PERM_RWX) $(INST_SCRIPT)/dbod_snapshot
-
-$(INST_SCRIPT)/mysql_snapclone : scripts/mysql_snapclone $(FIRST_MAKEFILE) $(INST_SCRIPT)$(DFSEP).exists $(INST_BIN)$(DFSEP).exists
-	$(NOECHO) $(RM_F) $(INST_SCRIPT)/mysql_snapclone
-	$(CP) scripts/mysql_snapclone $(INST_SCRIPT)/mysql_snapclone
-	$(FIXIN) $(INST_SCRIPT)/mysql_snapclone
-	-$(NOECHO) $(CHMOD) $(PERM_RWX) $(INST_SCRIPT)/mysql_snapclone
-
-$(INST_SCRIPT)/mysql_restore : scripts/mysql_restore $(FIRST_MAKEFILE) $(INST_SCRIPT)$(DFSEP).exists $(INST_BIN)$(DFSEP).exists
-	$(NOECHO) $(RM_F) $(INST_SCRIPT)/mysql_restore
-	$(CP) scripts/mysql_restore $(INST_SCRIPT)/mysql_restore
-	$(FIXIN) $(INST_SCRIPT)/mysql_restore
-	-$(NOECHO) $(CHMOD) $(PERM_RWX) $(INST_SCRIPT)/mysql_restore
+$(INST_SCRIPT)/dbod-start : scripts/dbod-start $(FIRST_MAKEFILE) $(INST_SCRIPT)$(DFSEP).exists $(INST_BIN)$(DFSEP).exists
+	$(NOECHO) $(RM_F) $(INST_SCRIPT)/dbod-start
+	$(CP) scripts/dbod-start $(INST_SCRIPT)/dbod-start
+	$(FIXIN) $(INST_SCRIPT)/dbod-start
+	-$(NOECHO) $(CHMOD) $(PERM_RWX) $(INST_SCRIPT)/dbod-start
 
 
 
@@ -623,7 +569,7 @@ realclean purge ::  clean realclean_subdirs
 	- $(RM_F) \
 	  $(FIRST_MAKEFILE) $(MAKEFILE_OLD) 
 	- $(RM_RF) \
-	  $(DISTVNAME) MYMETA.yml 
+	  MYMETA.yml $(DISTVNAME) 
 
 
 # --- MakeMaker metafile section:
@@ -769,7 +715,9 @@ doc__install : doc_site_install
 	$(NOECHO) $(ECHO) INSTALLDIRS not defined, defaulting to INSTALLDIRS=site
 
 pure_perl_install :: all
-	$(NOECHO) umask 022; $(MOD_INSTALL) \
+	$(NOECHO) $(MOD_INSTALL) \
+		read "$(PERL_ARCHLIB)/auto/$(FULLEXT)/.packlist" \
+		write "$(DESTINSTALLARCHLIB)/auto/$(FULLEXT)/.packlist" \
 		"$(INST_LIB)" "$(DESTINSTALLPRIVLIB)" \
 		"$(INST_ARCHLIB)" "$(DESTINSTALLARCHLIB)" \
 		"$(INST_BIN)" "$(DESTINSTALLBIN)" \
@@ -781,7 +729,7 @@ pure_perl_install :: all
 
 
 pure_site_install :: all
-	$(NOECHO) umask 02; $(MOD_INSTALL) \
+	$(NOECHO) $(MOD_INSTALL) \
 		read "$(SITEARCHEXP)/auto/$(FULLEXT)/.packlist" \
 		write "$(DESTINSTALLSITEARCH)/auto/$(FULLEXT)/.packlist" \
 		"$(INST_LIB)" "$(DESTINSTALLSITELIB)" \
@@ -794,7 +742,9 @@ pure_site_install :: all
 		"$(PERL_ARCHLIB)/auto/$(FULLEXT)"
 
 pure_vendor_install :: all
-	$(NOECHO) umask 022; $(MOD_INSTALL) \
+	$(NOECHO) $(MOD_INSTALL) \
+		read "$(VENDORARCHEXP)/auto/$(FULLEXT)/.packlist" \
+		write "$(DESTINSTALLVENDORARCH)/auto/$(FULLEXT)/.packlist" \
 		"$(INST_LIB)" "$(DESTINSTALLVENDORLIB)" \
 		"$(INST_ARCHLIB)" "$(DESTINSTALLVENDORARCH)" \
 		"$(INST_BIN)" "$(DESTINSTALLVENDORBIN)" \
@@ -804,30 +754,50 @@ pure_vendor_install :: all
 
 
 doc_perl_install :: all
+	$(NOECHO) $(ECHO) Appending installation info to "$(DESTINSTALLARCHLIB)/perllocal.pod"
+	-$(NOECHO) $(MKPATH) "$(DESTINSTALLARCHLIB)"
+	-$(NOECHO) $(DOC_INSTALL) \
+		"Module" "$(NAME)" \
+		"installed into" $(INSTALLPRIVLIB) \
+		LINKTYPE "$(LINKTYPE)" \
+		VERSION "$(VERSION)" \
+		EXE_FILES "$(EXE_FILES)" \
+		>> "$(DESTINSTALLARCHLIB)/perllocal.pod"
 
 doc_site_install :: all
-	$(NOECHO) $(ECHO) Appending installation info to "$(DESTINSTALLSITEARCH)/perllocal.pod"
-	-$(NOECHO) umask 02; $(MKPATH) "$(DESTINSTALLSITEARCH)"
-	-$(NOECHO) umask 02; $(DOC_INSTALL) \
+	$(NOECHO) $(ECHO) Appending installation info to "$(DESTINSTALLARCHLIB)/perllocal.pod"
+	-$(NOECHO) $(MKPATH) "$(DESTINSTALLARCHLIB)"
+	-$(NOECHO) $(DOC_INSTALL) \
 		"Module" "$(NAME)" \
 		"installed into" $(INSTALLSITELIB) \
 		LINKTYPE "$(LINKTYPE)" \
 		VERSION "$(VERSION)" \
 		EXE_FILES "$(EXE_FILES)" \
-		>> "$(DESTINSTALLSITEARCH)/perllocal.pod"
+		>> "$(DESTINSTALLARCHLIB)/perllocal.pod"
 
 doc_vendor_install :: all
+	$(NOECHO) $(ECHO) Appending installation info to "$(DESTINSTALLARCHLIB)/perllocal.pod"
+	-$(NOECHO) $(MKPATH) "$(DESTINSTALLARCHLIB)"
+	-$(NOECHO) $(DOC_INSTALL) \
+		"Module" "$(NAME)" \
+		"installed into" $(INSTALLVENDORLIB) \
+		LINKTYPE "$(LINKTYPE)" \
+		VERSION "$(VERSION)" \
+		EXE_FILES "$(EXE_FILES)" \
+		>> "$(DESTINSTALLARCHLIB)/perllocal.pod"
 
 
 uninstall :: uninstall_from_$(INSTALLDIRS)dirs
 	$(NOECHO) $(NOOP)
 
 uninstall_from_perldirs ::
+	$(NOECHO) $(UNINSTALL) "$(PERL_ARCHLIB)/auto/$(FULLEXT)/.packlist"
 
 uninstall_from_sitedirs ::
 	$(NOECHO) $(UNINSTALL) "$(SITEARCHEXP)/auto/$(FULLEXT)/.packlist"
 
 uninstall_from_vendordirs ::
+	$(NOECHO) $(UNINSTALL) "$(VENDORARCHEXP)/auto/$(FULLEXT)/.packlist"
 
 
 # --- MakeMaker force section:
@@ -859,7 +829,7 @@ $(FIRST_MAKEFILE) : Makefile.PL $(CONFIGDEP)
 
 # --- MakeMaker makeaperl section ---
 MAP_TARGET    = perl
-FULLPERL      = "/usr/bin/perl"
+FULLPERL      = "/home/icoteril/perl5/perlbrew/perls/perl-5.20.2/bin/perl"
 
 $(MAP_TARGET) :: static $(MAKE_APERL_FILE)
 	$(MAKE) $(USEMAKEFILE) $(MAKE_APERL_FILE) $@
@@ -914,6 +884,7 @@ ppd :
 	$(NOECHO) $(ECHO) '        <REQUIRE NAME="File::ShareDir" />' >> $(DISTNAME).ppd
 	$(NOECHO) $(ECHO) '        <REQUIRE NAME="IPC::Run" />' >> $(DISTNAME).ppd
 	$(NOECHO) $(ECHO) '        <REQUIRE NAME="JSON::" />' >> $(DISTNAME).ppd
+	$(NOECHO) $(ECHO) '        <REQUIRE NAME="LWP::UserAgent" />' >> $(DISTNAME).ppd
 	$(NOECHO) $(ECHO) '        <REQUIRE NAME="Log::Dispatch::FileRotate" />' >> $(DISTNAME).ppd
 	$(NOECHO) $(ECHO) '        <REQUIRE NAME="Log::Dispatch::Syslog" />' >> $(DISTNAME).ppd
 	$(NOECHO) $(ECHO) '        <REQUIRE NAME="Log::Log4perl" />' >> $(DISTNAME).ppd
@@ -924,6 +895,7 @@ ppd :
 	$(NOECHO) $(ECHO) '        <REQUIRE NAME="MooseX::Role::DBIx::Connector" />' >> $(DISTNAME).ppd
 	$(NOECHO) $(ECHO) '        <REQUIRE NAME="Net::LDAP" />' >> $(DISTNAME).ppd
 	$(NOECHO) $(ECHO) '        <REQUIRE NAME="Net::OpenSSH" />' >> $(DISTNAME).ppd
+	$(NOECHO) $(ECHO) '        <REQUIRE NAME="Pod::Select" />' >> $(DISTNAME).ppd
 	$(NOECHO) $(ECHO) '        <REQUIRE NAME="REST::Client" />' >> $(DISTNAME).ppd
 	$(NOECHO) $(ECHO) '        <REQUIRE NAME="Readonly::" />' >> $(DISTNAME).ppd
 	$(NOECHO) $(ECHO) '        <REQUIRE NAME="Readonly::XS" />' >> $(DISTNAME).ppd
@@ -932,7 +904,8 @@ ppd :
 	$(NOECHO) $(ECHO) '        <REQUIRE NAME="Try::Tiny" />' >> $(DISTNAME).ppd
 	$(NOECHO) $(ECHO) '        <REQUIRE NAME="XML::Parser" />' >> $(DISTNAME).ppd
 	$(NOECHO) $(ECHO) '        <REQUIRE NAME="YAML::Syck" />' >> $(DISTNAME).ppd
-	$(NOECHO) $(ECHO) '        <ARCHITECTURE NAME="x86_64-linux-gnu-thread-multi-5.22" />' >> $(DISTNAME).ppd
+	$(NOECHO) $(ECHO) '        <REQUIRE NAME="autodie::" />' >> $(DISTNAME).ppd
+	$(NOECHO) $(ECHO) '        <ARCHITECTURE NAME="x86_64-linux-5.20" />' >> $(DISTNAME).ppd
 	$(NOECHO) $(ECHO) '        <CODEBASE HREF="" />' >> $(DISTNAME).ppd
 	$(NOECHO) $(ECHO) '    </IMPLEMENTATION>' >> $(DISTNAME).ppd
 	$(NOECHO) $(ECHO) '</SOFTPKG>' >> $(DISTNAME).ppd
@@ -993,13 +966,13 @@ distsign ::
 config ::
 	$(NOECHO) $(MKPATH) "$(INST_LIB)/auto/share/dist/$(DISTNAME)/."
 	$(NOECHO) $(CHMOD) $(PERM_DIR) "$(INST_LIB)/auto/share/dist/$(DISTNAME)/."
-	$(NOECHO) $(CP) "share/influxdb_entity_example.json" "$(INST_LIB)/auto/share/dist/$(DISTNAME)/influxdb_entity_example.json"
+	$(NOECHO) $(CP) "share/entities.json" "$(INST_LIB)/auto/share/dist/$(DISTNAME)/entities.json"
+	$(NOECHO) $(CP) "share/sample_mtab" "$(INST_LIB)/auto/share/dist/$(DISTNAME)/sample_mtab"
 	$(NOECHO) $(CP) "share/logger.conf" "$(INST_LIB)/auto/share/dist/$(DISTNAME)/logger.conf"
 	$(NOECHO) $(CP) "share/test.json" "$(INST_LIB)/auto/share/dist/$(DISTNAME)/test.json"
-	$(NOECHO) $(CP) "share/sample_mtab" "$(INST_LIB)/auto/share/dist/$(DISTNAME)/sample_mtab"
-	$(NOECHO) $(CP) "share/dbod-core.conf-template" "$(INST_LIB)/auto/share/dist/$(DISTNAME)/dbod-core.conf-template"
-	$(NOECHO) $(CP) "share/entities.json" "$(INST_LIB)/auto/share/dist/$(DISTNAME)/entities.json"
 	$(NOECHO) $(CP) "share/configpath.conf" "$(INST_LIB)/auto/share/dist/$(DISTNAME)/configpath.conf"
+	$(NOECHO) $(CP) "share/dbod-core.conf-template" "$(INST_LIB)/auto/share/dist/$(DISTNAME)/dbod-core.conf-template"
+	$(NOECHO) $(CP) "share/influxdb_entity_example.json" "$(INST_LIB)/auto/share/dist/$(DISTNAME)/influxdb_entity_example.json"
 	$(NOECHO) $(MKPATH) "$(INST_LIB)/auto/share/dist/$(DISTNAME)/templates"
 	$(NOECHO) $(CHMOD) $(PERM_DIR) "$(INST_LIB)/auto/share/dist/$(DISTNAME)/templates"
 	$(NOECHO) $(MKPATH) "$(INST_LIB)/auto/share/dist/$(DISTNAME)/templates/ldap"
@@ -1009,8 +982,8 @@ config ::
 	$(NOECHO) $(CP) "share/templates/ldap/tnsnetservice" "$(INST_LIB)/auto/share/dist/$(DISTNAME)/templates/ldap/tnsnetservice"
 	$(NOECHO) $(MKPATH) "$(INST_LIB)/auto/share/dist/$(DISTNAME)/templates/json"
 	$(NOECHO) $(CHMOD) $(PERM_DIR) "$(INST_LIB)/auto/share/dist/$(DISTNAME)/templates/json"
-	$(NOECHO) $(CP) "share/templates/json/oracle" "$(INST_LIB)/auto/share/dist/$(DISTNAME)/templates/json/oracle"
 	$(NOECHO) $(CP) "share/templates/json/pg" "$(INST_LIB)/auto/share/dist/$(DISTNAME)/templates/json/pg"
+	$(NOECHO) $(CP) "share/templates/json/oracle" "$(INST_LIB)/auto/share/dist/$(DISTNAME)/templates/json/oracle"
 	$(NOECHO) $(CP) "share/templates/json/mysql" "$(INST_LIB)/auto/share/dist/$(DISTNAME)/templates/json/mysql"
 
 
