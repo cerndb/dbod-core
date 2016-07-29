@@ -50,7 +50,7 @@ sub add_alias {
         my $command = $cmd . " --dnsname=" . $dnsname . " --add_ip=" . $host;
         DEBUG 'Executing ' . $command;
         my $return_code = DBOD::Runtime::run_cmd(cmd => $command);
-        if ($return_code) {
+        if ($return_code == $ERROR) {
             # An error ocurred executing external command
             ERROR 'An error occurred creating DNS entry for ip-alias';
             return scalar $ERROR;
@@ -64,7 +64,7 @@ sub add_alias {
     else { 
         # An error occurred getting a free dnsname. Either the DB is down
         # or there are no more dnsnames free
-        ERROR "Error registering alias %s to host: %s", $ipalias, $host;
+        ERROR sprintf("Error registering alias %s to host: %s", $ipalias, $host);
         return scalar $ERROR;
     }
 }
@@ -77,7 +77,9 @@ sub remove_alias {
     #
     # Returns false if it fails, true if it succeeds
     
-    my ($dbname, $host, $config) = @_;
+    my ($input, $config) = @_;
+	my $dbname = $input->{dbname};
+	my $host = $input->{hosts}->[0];
     my $result = DBOD::Network::Api::get_ip_alias($dbname, $config);
     DBOD::Network::Api::remove_ip_alias($dbname, $config);
     if (defined $result) {
@@ -90,7 +92,7 @@ sub remove_alias {
         my $command = $cmd . " --dnsname=" . $dnsname . " --rm_ip=" . $host;
         DEBUG 'Executing ' . $command;
         my $return_code = DBOD::Runtime::run_cmd(cmd => $command);
-        if ($return_code) {
+        if ($return_code == $ERROR) {
             # An error ocurred executing external command
             ERROR 'An error occurred creating DNS entry for ip-alias';
             return scalar $ERROR;
