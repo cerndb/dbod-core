@@ -127,7 +127,14 @@ sub body {
     # If volumes are to be created
     unless ($job->skip_volumes_creation()) {
 
-        my $cmd = "/etc/init.d/syscontrol -i dfm.db-cmode DFM_create_dod_volumes_Cmode -name $input->{dbname} -size $input->{size} -server $input->{hosts}->[0]  -type $input->{subcategory} -debug";
+        # TODO InfluxDb type is not supported in volume creation. Temporal mask. Revert when it is supported
+        my $volume_type = $input->{subcategory};
+        if ($volume_type == "InfluxDB"){
+            $volume_type = "PG";
+        }
+
+        my $cmd = "/etc/init.d/syscontrol -i dfm.db-cmode DFM_create_dod_volumes_Cmode -name $input->{dbname} -size $input->{size} -server $input->{hosts}->[0]  -type ${volume_type} -debug";
+
         $job->log->debug( "Executing: $cmd" );
         my $vol_creation_output = `$cmd`;
         if (DBOD::Runtime->result_code($vol_creation_output)) {
