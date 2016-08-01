@@ -479,14 +479,26 @@ manifypods : pure_all
 
 EXE_FILES = scripts/dbod-backup scripts/dbod-init scripts/dbod-ping scripts/dbod-start scripts/dbod-stop
 
-pure_all :: $(INST_SCRIPT)/dbod-backup $(INST_SCRIPT)/dbod-init $(INST_SCRIPT)/dbod-stop $(INST_SCRIPT)/dbod-ping $(INST_SCRIPT)/dbod-start
+pure_all :: $(INST_SCRIPT)/dbod-ping $(INST_SCRIPT)/dbod-stop $(INST_SCRIPT)/dbod-backup $(INST_SCRIPT)/dbod-init $(INST_SCRIPT)/dbod-start
 	$(NOECHO) $(NOOP)
 
 realclean ::
 	$(RM_F) \
+	  $(INST_SCRIPT)/dbod-ping $(INST_SCRIPT)/dbod-stop \
 	  $(INST_SCRIPT)/dbod-backup $(INST_SCRIPT)/dbod-init \
-	  $(INST_SCRIPT)/dbod-stop $(INST_SCRIPT)/dbod-ping \
 	  $(INST_SCRIPT)/dbod-start 
+
+$(INST_SCRIPT)/dbod-ping : scripts/dbod-ping $(FIRST_MAKEFILE) $(INST_SCRIPT)$(DFSEP).exists $(INST_BIN)$(DFSEP).exists
+	$(NOECHO) $(RM_F) $(INST_SCRIPT)/dbod-ping
+	$(CP) scripts/dbod-ping $(INST_SCRIPT)/dbod-ping
+	$(FIXIN) $(INST_SCRIPT)/dbod-ping
+	-$(NOECHO) $(CHMOD) $(PERM_RWX) $(INST_SCRIPT)/dbod-ping
+
+$(INST_SCRIPT)/dbod-stop : scripts/dbod-stop $(FIRST_MAKEFILE) $(INST_SCRIPT)$(DFSEP).exists $(INST_BIN)$(DFSEP).exists
+	$(NOECHO) $(RM_F) $(INST_SCRIPT)/dbod-stop
+	$(CP) scripts/dbod-stop $(INST_SCRIPT)/dbod-stop
+	$(FIXIN) $(INST_SCRIPT)/dbod-stop
+	-$(NOECHO) $(CHMOD) $(PERM_RWX) $(INST_SCRIPT)/dbod-stop
 
 $(INST_SCRIPT)/dbod-backup : scripts/dbod-backup $(FIRST_MAKEFILE) $(INST_SCRIPT)$(DFSEP).exists $(INST_BIN)$(DFSEP).exists
 	$(NOECHO) $(RM_F) $(INST_SCRIPT)/dbod-backup
@@ -499,18 +511,6 @@ $(INST_SCRIPT)/dbod-init : scripts/dbod-init $(FIRST_MAKEFILE) $(INST_SCRIPT)$(D
 	$(CP) scripts/dbod-init $(INST_SCRIPT)/dbod-init
 	$(FIXIN) $(INST_SCRIPT)/dbod-init
 	-$(NOECHO) $(CHMOD) $(PERM_RWX) $(INST_SCRIPT)/dbod-init
-
-$(INST_SCRIPT)/dbod-stop : scripts/dbod-stop $(FIRST_MAKEFILE) $(INST_SCRIPT)$(DFSEP).exists $(INST_BIN)$(DFSEP).exists
-	$(NOECHO) $(RM_F) $(INST_SCRIPT)/dbod-stop
-	$(CP) scripts/dbod-stop $(INST_SCRIPT)/dbod-stop
-	$(FIXIN) $(INST_SCRIPT)/dbod-stop
-	-$(NOECHO) $(CHMOD) $(PERM_RWX) $(INST_SCRIPT)/dbod-stop
-
-$(INST_SCRIPT)/dbod-ping : scripts/dbod-ping $(FIRST_MAKEFILE) $(INST_SCRIPT)$(DFSEP).exists $(INST_BIN)$(DFSEP).exists
-	$(NOECHO) $(RM_F) $(INST_SCRIPT)/dbod-ping
-	$(CP) scripts/dbod-ping $(INST_SCRIPT)/dbod-ping
-	$(FIXIN) $(INST_SCRIPT)/dbod-ping
-	-$(NOECHO) $(CHMOD) $(PERM_RWX) $(INST_SCRIPT)/dbod-ping
 
 $(INST_SCRIPT)/dbod-start : scripts/dbod-start $(FIRST_MAKEFILE) $(INST_SCRIPT)$(DFSEP).exists $(INST_BIN)$(DFSEP).exists
 	$(NOECHO) $(RM_F) $(INST_SCRIPT)/dbod-start
@@ -567,9 +567,9 @@ realclean_subdirs :
 # Delete temporary files (via clean) and also delete dist files
 realclean purge ::  clean realclean_subdirs
 	- $(RM_F) \
-	  $(FIRST_MAKEFILE) $(MAKEFILE_OLD) 
+	  $(MAKEFILE_OLD) $(FIRST_MAKEFILE) 
 	- $(RM_RF) \
-	  MYMETA.yml $(DISTVNAME) 
+	  $(DISTVNAME) MYMETA.yml 
 
 
 # --- MakeMaker metafile section:
@@ -966,13 +966,13 @@ distsign ::
 config ::
 	$(NOECHO) $(MKPATH) "$(INST_LIB)/auto/share/dist/$(DISTNAME)/."
 	$(NOECHO) $(CHMOD) $(PERM_DIR) "$(INST_LIB)/auto/share/dist/$(DISTNAME)/."
-	$(NOECHO) $(CP) "share/entities.json" "$(INST_LIB)/auto/share/dist/$(DISTNAME)/entities.json"
-	$(NOECHO) $(CP) "share/sample_mtab" "$(INST_LIB)/auto/share/dist/$(DISTNAME)/sample_mtab"
-	$(NOECHO) $(CP) "share/logger.conf" "$(INST_LIB)/auto/share/dist/$(DISTNAME)/logger.conf"
-	$(NOECHO) $(CP) "share/test.json" "$(INST_LIB)/auto/share/dist/$(DISTNAME)/test.json"
 	$(NOECHO) $(CP) "share/configpath.conf" "$(INST_LIB)/auto/share/dist/$(DISTNAME)/configpath.conf"
+	$(NOECHO) $(CP) "share/sample_mtab" "$(INST_LIB)/auto/share/dist/$(DISTNAME)/sample_mtab"
 	$(NOECHO) $(CP) "share/dbod-core.conf-template" "$(INST_LIB)/auto/share/dist/$(DISTNAME)/dbod-core.conf-template"
 	$(NOECHO) $(CP) "share/influxdb_entity_example.json" "$(INST_LIB)/auto/share/dist/$(DISTNAME)/influxdb_entity_example.json"
+	$(NOECHO) $(CP) "share/entities.json" "$(INST_LIB)/auto/share/dist/$(DISTNAME)/entities.json"
+	$(NOECHO) $(CP) "share/test.json" "$(INST_LIB)/auto/share/dist/$(DISTNAME)/test.json"
+	$(NOECHO) $(CP) "share/logger.conf" "$(INST_LIB)/auto/share/dist/$(DISTNAME)/logger.conf"
 	$(NOECHO) $(MKPATH) "$(INST_LIB)/auto/share/dist/$(DISTNAME)/templates"
 	$(NOECHO) $(CHMOD) $(PERM_DIR) "$(INST_LIB)/auto/share/dist/$(DISTNAME)/templates"
 	$(NOECHO) $(MKPATH) "$(INST_LIB)/auto/share/dist/$(DISTNAME)/templates/ldap"

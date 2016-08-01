@@ -36,6 +36,12 @@
       "hosts": [
         "localhost"
       ],
+      "udp": [
+        {
+          "bind-address": 8099,
+          "database": "gitlab"
+        }
+      ],
       "type": "DEV",
       "port": "8086",
       "bindir": "/usr/bin",
