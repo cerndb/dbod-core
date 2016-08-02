@@ -36,7 +36,7 @@ my $conf = \%config;
 my %metadata = ();
 $metadata{hosts} = ['hostname'];
 $metadata{port} = '1234';
-$metadata{subcategory} = 'MYSQL';
+$metadata{subcategory} = $DBOD::SUBCATEGORY_MYSQL;
 
 my $data = \%metadata;
 
