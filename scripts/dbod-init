@@ -21,7 +21,7 @@ has 'subcategory' => (
     is => 'ro', 
     isa => 'Str', 
     required => 1, 
-    documentation => qq{Database server: MYSQL/PG/ORACLE/INFLUXDB} );
+    documentation => qq{Database server: MYSQL/PG/ORACLE/InfluxDB} );
 has 'type' => (
     is => 'ro', 
     isa => 'Str', 
@@ -129,7 +129,7 @@ sub body {
 
         # TODO InfluxDb type is not supported in volume creation. Temporal mask. Revert when it is supported
         my $volume_type = $input->{subcategory};
-        if ($volume_type == "InfluxDB"){
+        if ($volume_type eq "InfluxDB"){
             $volume_type = "PG";
         }
 
@@ -137,17 +137,17 @@ sub body {
 
         $job->log->debug( "Executing: $cmd" );
         my $vol_creation_output = `$cmd`;
-        if (DBOD::Runtime->result_code($vol_creation_output)) {
+        if (DBOD::Runtime::result_code($vol_creation_output)) {
             $job->log->error( "An error ocurred creating volumes:" );
             $job->log->error( $vol_creation_output );
-            $job->_output(-1);
+            $job->_output($ERROR);
             return;
         }
 
         # Fetch volumes mounting details. Will wait until details are available
         $job->log->debug("Fetching volumes server information");
-        my $datavol = DBOD::Runtime->mywait(\&RunTime_Zapi::GetDODMountpoint, ("dod$input->{dbname}03", $hosts[0]));
-        my $logvol = DBOD::Runtime->mywait(\&RunTime_Zapi::GetDODMountpoint, ("dod$input->{dbname}02", $hosts[0]));
+        my $datavol = DBOD::Runtime::mywait(\&RunTime_Zapi::GetDODMountpoint, ("dod$input->{dbname}03", $hosts[0]));
+        my $logvol = DBOD::Runtime::mywait(\&RunTime_Zapi::GetDODMountpoint, ("dod$input->{dbname}02", $hosts[0]));
         my ($serverdata, $data_mounting_path) = split ':', $datavol;
         my ($serverlogs, $logs_mounting_path) = split ':', $logvol;
 
