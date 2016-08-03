@@ -118,9 +118,9 @@ sub body {
     $input->{buffer} = $job->buffer();
     my @hosts = split /,/ , $job->hosts();
     $input->{hosts} = \@hosts;
-    if ($job->subcategory() eq 'MYSQL') {
+    if ($job->subcategory() eq $DBOD::SUBCATEGORY_MYSQL) {
         $input->{socket} = '/var/lib/mysql/mysql.socket.' . $input->{dbname} . '.' . $input->{port};
-    } elsif ($job->subcategory() eq 'PG') {
+    } elsif ($job->subcategory() eq $DBOD::SUBCATEGORY_POSTGRESQL) {
         $input->{socket} = '/var/lib/pgsql/';
     }
 
@@ -129,8 +129,8 @@ sub body {
 
         # TODO InfluxDb type is not supported in volume creation. Temporal mask. Revert when it is supported
         my $volume_type = $input->{subcategory};
-        if ($volume_type eq "InfluxDB"){
-            $volume_type = "PG";
+        if ($volume_type eq $DBOD::SUBCATEGORY_INFLUXDB){
+            $volume_type = $DBOD::SUBCATEGORY_POSTGRESQL;
         }
 
         my $cmd = "/etc/init.d/syscontrol -i dfm.db-cmode DFM_create_dod_volumes_Cmode -name $input->{dbname} -size $input->{size} -server $input->{hosts}->[0]  -type ${volume_type} -debug";
@@ -165,7 +165,7 @@ sub body {
 			$job->log->error("Please verify IP Alias assignment");
 			$job->_result($ERROR);
 		}
-		if ($job->subcategory() eq 'MYSQL' or $job->subcategory() eq 'PG') {
+		if ($job->subcategory() eq $DBOD::SUBCATEGORY_MYSQL or $job->subcategory() eq $DBOD::SUBCATEGORY_POSTGRESQL) {
 			# Create LDAP entry. All this needs to be migrated to use templates
 			# like we do for the metadata entries
 			$input->{entity} = 'dod_' . $job->entity;

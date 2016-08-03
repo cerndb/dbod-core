@@ -34,11 +34,11 @@ subtest "load_template" => sub {
 subtest "create_metadata" => sub {
 
     my %input = ();
-    $input{subcategory} = 'MYSQL';
+    $input{subcategory} = $DBOD::SUBCATEGORY_MYSQL;
     my $template = DBOD::Templates::create_metadata(\%input, \%config);
     ok(decode_json $template, 'mysql metadata template is valid JSON');
    
-    $input{subcategory} = 'PG';
+    $input{subcategory} = $DBOD::SUBCATEGORY_POSTGRESQL;
     $template = DBOD::Templates::create_metadata(\%input, \%config);
     ok(decode_json $template, 'pg metadata template is valid JSON');
    

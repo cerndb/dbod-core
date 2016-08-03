@@ -21,6 +21,11 @@ Readonly $OK => 0;
 Readonly $TRUE => 1;
 Readonly $FALSE => 0;
 
+our Readonly $SUBCATEGORY_INFLUXDB = 'InfluxDB';
+our Readonly $SUBCATEGORY_MYSQL = 'MYSQL';
+our Readonly $SUBCATEGORY_POSTGRESQL = 'PG';
+
+
 @EXPORT = qw( $ERROR $OK $TRUE $FALSE );
 
 1;
