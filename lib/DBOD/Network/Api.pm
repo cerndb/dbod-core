@@ -70,6 +70,7 @@ sub _api_get_entity_metadata {
     $client->GET(join '/', 
         $config->{'api'}->{'entity_metadata_endpoint'}, $entity);
     my %result;
+	DEBUG "API call returns " . $client->responseCode();
     $result{'code'} = $client->responseCode();
     if ($result{'code'} eq '200') {
         $result{'response'} = decode_json $client->responseContent();
@@ -120,15 +121,14 @@ sub get_ip_alias {
     $client->GET(join '/', 
         $config->{'api'}->{'entity_ipalias_endpoint'}, $entity);
     my %result;
-    $result{'code'} = $client->responseCode();
-    if ($result{'code'} eq '200') {
+	DEBUG "API call returns " . $client->responseCode();
+    if ($client->responseCode() eq '200') {
         INFO 'IP Alias fetched for ' . $entity;
-        $result{'response'} = decode_json $client->responseContent();
+        return decode_json $client->responseContent();
     } else {
         WARN 'IP alias does not exist for ' . $entity;
-        $result{'response'} = undef;
+		return;
     }
-    return \%result;
 }
 
 sub remove_ip_alias {
@@ -175,7 +175,7 @@ sub create_entity {
     if (defined $metadata) { 
         my $client = _api_client($config, 1);
         $client->POST(
-            join('/', $config->{'api'}->{'entity_metadata_endpoint'}, $entity),
+            join('/', $config->{'api'}->{'entity_endpoint'}, $entity),
             "metadata=$metadata",
             {
                 Content_Type => 'application/x-www-form-urlencoded',
