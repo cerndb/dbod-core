@@ -12,7 +12,7 @@ use warnings;
 use base 'Exporter';
 use Readonly;
 
-our ($VERSION, @EXPORT, $ERROR, $OK, $TRUE, $FALSE);
+our ($VERSION, @EXPORT, $ERROR, $OK, $TRUE, $FALSE, %db_type, $db_type);
 
 $VERSION = 0.70;
 
@@ -21,6 +21,14 @@ Readonly $OK => 0;
 Readonly $TRUE => 1;
 Readonly $FALSE => 0;
 
-@EXPORT = qw( $ERROR $OK $TRUE $FALSE );
+Readonly %db_type => (
+    MYSQL => 'MySQL',
+    PGSQL => 'PG',
+    InfluxDB => 'InfluxDB',
+);
+
+$db_type = \%db_type;
+
+@EXPORT = qw( $ERROR $OK $TRUE $FALSE $db_type);
 
 1;
