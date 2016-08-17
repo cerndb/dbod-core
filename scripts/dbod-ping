@@ -16,16 +16,15 @@ use Data::Dumper;
 
 my $job = DBOD::Job->new_with_options();
 
-use DBOD qw ($ERROR $OK);
+use DBOD qw ($ERROR $OK $db_type);
 use DBOD::Instance;
- 
 sub body {
 
     $job->log->debug('Pinging ' . $job->entity() . '/' . 
         $job->metadata->{subcategory});
     
     my $instance = DBOD::Instance::Factory->create(
-        $job->metadata->{subcategory},
+        $db_type->{$job->metadata->{subcategory}},
         instance => $job->entity(),
         metadata => $job->metadata(),
         config => $job->config());
