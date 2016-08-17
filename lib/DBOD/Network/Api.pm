@@ -140,10 +140,11 @@ sub remove_ip_alias {
     $result{'code'} = $client->responseCode();
     if ($result{'code'} eq '204') {
         INFO 'IP Alias removed for ' . $entity;
+		return $OK;
     } else {
         ERROR 'IP alias could not be removed for ' . $entity;
+		return $ERROR;
     }
-    return \%result;
 }
 
 sub set_metadata { 

@@ -27,6 +27,7 @@ $api{'user'} = "API-USER";
 $api{'password'} = "XXXXXXXXX";
 $api{'entity_metadata_endpoint'} = "api/v1/metadata/instance";
 $api{'entity_ipalias_endpoint'} = "api/v1/instance/alias";
+$api{'entity_endpoint'} = "api/v1/instance";
 
 $config{'api'} = \%api;
 $config{'common'} = { template_folder => "${share_dir}/templates" };
@@ -123,20 +124,12 @@ subtest 'remove_ip_alias' => sub {
     
     $rest_client->mock('responseCode', sub { return "204" } );
     $rest_client->mock('responseContent', sub { return "" } );
-    ok(DBOD::Network::Api::remove_ip_alias($entity, \%config), "Method call");
-    my $result = DBOD::Network::Api::remove_ip_alias($entity, \%config);
-    note (Dumper $result);
-    ok(exists $result->{code}, 'Result has code field');
-    ok(!exists $result->{response}, 'Result has not response field');
+    is(DBOD::Network::Api::remove_ip_alias($entity, \%config), $OK, "Method call");
     
     # Test failure
     $rest_client->mock('responseCode', sub { return "404" } );
     $rest_client->mock('responseContent', sub { return "" } );
-    ok(DBOD::Network::Api::remove_ip_alias($entity, \%config), "Method call: error");
-    $result = DBOD::Network::Api::remove_ip_alias($entity, \%config);
-    note (Dumper $result);
-    ok(exists $result->{code}, 'Result has code fieldd');
-    ok(!exists $result->{response}, 'Result has not response field');
+    is(DBOD::Network::Api::remove_ip_alias($entity, \%config), $ERROR, "Method call: error");
 
 };
 

@@ -28,26 +28,28 @@ sub add_alias {
 	my $host = $input->{hosts}->[0];
     my $ipalias = "dbod-" . $dbname;
     $ipalias =~ s/\_/\-/gx; # Substitutes underscores for dashes for ip-alias
-    my $result = DBOD::Network::Api::get_ip_alias($dbname, $config);
-	if (defined $result->{response}) {
+    my $response = DBOD::Network::Api::get_ip_alias($dbname, $config);
+    my $resp;
+    DEBUG 'get_ip_alias API Response: ' . Dumper $response;
+	if (defined $response) {
+        $resp = shift @{$response->{'response'}};
 		INFO "IP Alias already exists, nothing to do";
-		INFO " DNS name: " . $result->{response}->[0];
-		INFO " IP Alias: " . $result->{response}->[1];
+		INFO " DNS name: " . $resp->{dnsname};
+		INFO " IP Alias: " . $resp->{alias};
 		return scalar $OK;
 	} else {
 		# Register a dns-name to the instance IP alias
-	    DBOD::Network::Api::set_ip_alias($dbname, $ipalias, $config);
-		$result = DBOD::Network::Api::get_ip_alias($dbname, $config);
+	    $response = DBOD::Network::Api::set_ip_alias($dbname, $ipalias, $config);
+        DEBUG 'set_ip_alias API response: ' . Dumper $response;
 	}
-    my $dnsname;
-    if (defined $result) {
-        ($dnsname, $ipalias) = @{$result->{'response'}};
-        # Extract dnsname and alias from JSON result of Api call
+    if (defined $response) {
+        $resp = shift @{$response->{'response'}};
+        # Extract dnsname and alias from JSON response of Api call
         # Register ip alias to dns name on the CERN Network service
-        DBOD::Network::LanDB::add_ip_alias($dnsname, $ipalias, $config);
+        DBOD::Network::LanDB::add_ip_alias($resp->{dnsname}, $resp->{alias}, $config);
         # Generates DNS entry
         my $cmd = $config->{'ipalias'}->{'change_command'};
-        my $command = $cmd . " --dnsname=" . $dnsname . " --add_ip=" . $host;
+        my $command = $cmd . " --dnsname=" . $resp->{dnsname} . " --add_ip=" . $host;
         DEBUG 'Executing ' . $command;
         my $return_code = DBOD::Runtime::run_cmd(cmd => $command);
         if ($return_code == $ERROR) {
@@ -57,7 +59,7 @@ sub add_alias {
         }
         else { 
             INFO sprintf("Registerd alias: %s to dnsname: %s, host: %s",
-                $ipalias, $dnsname, $host);
+                $resp->{ipalias}, $resp->{dnsname}, $host);
             return scalar $OK;
         }
     }
@@ -80,16 +82,17 @@ sub remove_alias {
     my ($input, $config) = @_;
 	my $dbname = $input->{dbname};
 	my $host = $input->{hosts}->[0];
-    my $result = DBOD::Network::Api::get_ip_alias($dbname, $config);
-    DBOD::Network::Api::remove_ip_alias($dbname, $config);
-    if (defined $result) {
-        my ($dnsname, $ipalias) = @{$result->{'response'}};
-        # Extract dnsname and alias from JSON result of Api call
+    my $response = DBOD::Network::Api::get_ip_alias($dbname, $config);
+	DEBUG 'get_ip_alias API response: ' . Dumper $response;
+
+    my $res = DBOD::Network::Api::remove_ip_alias($dbname, $config);
+    if (( defined $res) && ( $res == $OK)) {
+        my $resp = shift @{$response->{'response'}};
         # Register ip alias to dns name on the CERN Network service
-        DBOD::Network::LanDB::remove_ip_alias($dnsname, $ipalias, $config);
+        DBOD::Network::LanDB::remove_ip_alias($resp->{dnsname}, $resp->{alias}, $config);
         # Generates DNS entry
         my $cmd = $config->{'ipalias'}->{'change_command'};
-        my $command = $cmd . " --dnsname=" . $dnsname . " --rm_ip=" . $host;
+        my $command = $cmd . " --dnsname=" . $resp->{dnsname} . " --rm_ip=" . $host;
         DEBUG 'Executing ' . $command;
         my $return_code = DBOD::Runtime::run_cmd(cmd => $command);
         if ($return_code == $ERROR) {
@@ -99,7 +102,7 @@ sub remove_alias {
         }
         else { 
             INFO sprintf("Registerd alias: %s to dnsname: %s, host: %s",
-                $ipalias, $dnsname, $host);
+                $resp->{alias}, $resp->{dnsname}, $host);
             return scalar $OK;
         }
     }

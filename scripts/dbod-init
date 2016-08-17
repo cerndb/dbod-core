@@ -170,8 +170,8 @@ sub body {
 			# like we do for the metadata entries
 			$input->{entity} = 'dod_' . $job->entity;
 			my $result = DBOD::Network::Api::get_ip_alias($job->entity, $job->config);
-			my ($dnsname, $ipalias) = @{$result->{'response'}};
-			$input->{ipalias} = $ipalias;
+			my $response = shift @{$result->{'response'}};
+			$input->{ipalias} = $response->{alias};
 			# Create metadata entry and register using the API
 			DBOD::Network::Ldap::create_instance($input, $job->config, $job->new_templates());
 			# Register entity in Appdynamics
