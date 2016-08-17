@@ -46,6 +46,9 @@ has 'config' => (is => 'rw', isa => 'HashRef',
 has 'metadata' => (is => 'rw', isa => 'HashRef',
     documentation => 'Entity metadata (from API)');
 
+has 'allow_empty_metadata' => (is => 'ro', isa => 'Bool', default=> 0,
+            documentation => 'Allow empty metadata');
+
 # output
 has '_output' => ( is => 'rw', isa => 'Str' );
 has '_result' => ( is => 'rw', isa => 'Num' );
@@ -78,7 +81,7 @@ sub BUILD {
     # Load entity metadata
     $self->metadata(
         get_entity_metadata($self->entity, $self->md_cache, $self->config));
-    
+
     return;
 };
 
@@ -109,9 +112,14 @@ sub is_local {
 
 sub run {
     my ($self, $body, $params) = @_;
-    my $result = $body->($params);
-    $self->_result($result);
-    return;
+    if ($self->allow_empty_metadata() || scalar %{$self->metadata()}) {
+        my $result = $body->( $params );
+        $self->_result( $result );
+        return;
+    } else {
+        $self->log->error('Empty metadata not allowed');
+        $self->_result($ERROR);
+    }
 }
 
 after 'run' => sub {
