@@ -82,6 +82,8 @@ sub BUILD {
     $self->metadata(
         get_entity_metadata($self->entity, $self->md_cache, $self->config));
 
+    $self->log->debug('Metadata: '. Dumper $self->metadata());
+
     return;
 };
 
@@ -117,7 +119,7 @@ sub run {
         $self->_result( $result );
         return;
     } else {
-        $self->log->error('Empty metadata not allowed');
+        $self->log->error('Instance not found in system. Aborting execution');
         $self->_result($ERROR);
     }
 }
