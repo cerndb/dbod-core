@@ -17,6 +17,12 @@ with 'MooseX::Getopt::Usage',
      'MooseX::Getopt::Usage::Role::Man';
 
 # Traditionally named dbname parameter is now 'entity'
+has 'owner' => (
+    is => 'ro',
+    isa => 'Str',
+    required => 1,
+    documentation => qq{ Database owner });
+
 has 'subcategory' => (
     is => 'ro', 
     isa => 'Str', 
@@ -68,6 +74,11 @@ has 'skip_volumes_creation' => (
     isa => 'Bool',
     default => '0',
     documentation => qq{If set, skip instance volumes creation} );
+has 'no_ip_alias' => (
+    is => 'ro',
+    isa => 'Bool',
+    default => '0',
+    documentation => qq{If set, skip IP alias creation} );
 has 'debug' => (
     is => 'ro', 
     isa => 'Bool', 
@@ -99,12 +110,16 @@ BEGIN {
 
 
 $ENV{PERL_LWP_SSL_VERIFY_HOSTNAME} = 0;
-my $job = DBOD::Init->new_with_options();
+my $job = DBOD::Init->new_with_options(
+    allow_empty_metadata => $TRUE,
+    new_templates => $TRUE,
+    );
 
 sub body {
 
     # Set up hash containing new instance parameters
     my $input = {};
+    $input->{username} = $job->owner();
     $input->{dbname} = $job->entity();
     $input->{dbname} =~ s/\-/\_/g;
     $input->{DBNAME} = uc $input->{dbname};
@@ -161,13 +176,13 @@ sub body {
     # Create metadata entry and register using the API
     if (DBOD::Network::Api::create_entity($input, $job->config) == $OK) {
 		# Network registration
-		if (DBOD::Network::IPalias::add_alias($input, $job->config) == $ERROR) {
-			$job->log->error("Please verify IP Alias assignment");
-			$job->_result($ERROR);
-		}
+        unless ($job->no_alias()) {
+            if (DBOD::Network::IPalias::add_alias($input, $job->config) == $ERROR) {
+                $job->log->error( "Please verify IP Alias assignment" );
+                $job->_result( $ERROR );
+            }
+        }
 		if ($job->subcategory() eq 'MYSQL' or $job->subcategory() eq 'PG') {
-			# Create LDAP entry. All this needs to be migrated to use templates
-			# like we do for the metadata entries
 			$input->{entity} = 'dod_' . $job->entity;
 			my $result = DBOD::Network::Api::get_ip_alias($job->entity, $job->config);
 			my $response = shift @{$result->{'response'}};
@@ -186,7 +201,7 @@ sub body {
 			$job->_result($OK);
 		} # Else there was a previous non-fatal error
 	} else {
-		$job->log->error("Error egistering the entity in the API");	
+		$job->log->error("Error registering the entity in the API");
 		$job->_result($ERROR);
 	}
 }
