@@ -23,7 +23,7 @@ Readonly $FALSE => 0;
 
 Readonly %db_type => (
     MYSQL => 'MySQL',
-    PGSQL => 'PG',
+    PG => 'PG',
     InfluxDB => 'InfluxDB',
 );
 
