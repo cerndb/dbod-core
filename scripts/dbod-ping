@@ -18,13 +18,16 @@ my $job = DBOD::Job->new_with_options();
 
 use DBOD qw ($ERROR $OK $db_type);
 use DBOD::Instance;
+
+$ENV{PERL_LWP_SSL_VERIFY_HOSTNAME}= 0 ;
+
 sub body {
 
     $job->log->debug('Pinging ' . $job->entity() . '/' . 
-        $job->metadata->{subcategory});
+        $job->metadata->{db_type});
     
     my $instance = DBOD::Instance::Factory->create(
-        $db_type->{$job->metadata->{subcategory}},
+        $db_type->{$job->metadata->{db_type}},
         instance => $job->entity(),
         metadata => $job->metadata(),
         config => $job->config());
