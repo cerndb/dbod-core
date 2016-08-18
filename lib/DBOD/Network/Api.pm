@@ -52,8 +52,13 @@ sub _api_client {
     );
     $client->addHeader('Content-Type', 'application/json');
     $client->addHeader('Accept', 'application/json');
+    # X509 Auth
+    #$client->setCert('/etc/dbod/dbod-cert.pem');
+    #$client->setKey('/etc/dbod/dbod-key.pem');
+    $client->setCa('/etc/ssl/certs/CERN_Grid_Certification_Authority.crt');
     # Disable SSL host verification
-    $client->getUseragent()->ssl_opts( SSL_verify_mode => 0 ); 
+    $client->getUseragent()->ssl_opts( verify_hostame => 0 );
+    $client->getUseragent()->ssl_opts( SSL_verify_mode => 0 );
     if (defined $auth) {
         my $api_user = $config->{'api'}->{'user'};
         my $api_pass = $config->{'api'}->{'password'};
@@ -85,7 +90,7 @@ sub get_entity_metadata {
     my ($entity, $cache, $config) = @_;
     my $result = _api_get_entity_metadata($entity, $config);
     if ($result->{'code'} eq '200') {
-        return $result->{'response'};
+        return shift @{$result->{response}->{response}};
     } elsif ($result->{'code'} eq '500') {
         WARN 'Returning metadata info from cache';
         return $cache->{$entity} // {};
@@ -177,9 +182,9 @@ sub create_entity {
         my $client = _api_client($config, 1);
         $client->POST(
             join('/', $config->{'api'}->{'entity_endpoint'}, $entity),
-            "metadata=$metadata",
+            $metadata,
             {
-                Content_Type => 'application/x-www-form-urlencoded',
+                Content_Type => 'application/json',
             }
         );
         my %result;
