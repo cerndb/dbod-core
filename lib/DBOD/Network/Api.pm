@@ -76,6 +76,7 @@ sub _api_get_entity_metadata {
         $config->{'api'}->{'entity_metadata_endpoint'}, $entity);
     my %result;
 	DEBUG "API call returns " . $client->responseCode();
+    DEBUG "API call returns " . $client->responseContent();
     $result{'code'} = $client->responseCode();
     if ($result{'code'} eq '200') {
         $result{'response'} = decode_json $client->responseContent();
@@ -87,10 +88,14 @@ sub _api_get_entity_metadata {
 }
 
 sub get_entity_metadata {
-    my ($entity, $cache, $config) = @_;
+    my ($entity, $cache, $config, $new_api) = @_;
     my $result = _api_get_entity_metadata($entity, $config);
     if ($result->{'code'} eq '200') {
-        return shift @{$result->{response}->{response}};
+        if ($new_api) {
+            return shift @{$result->{response}->{response}};
+        } else {
+            return $result->{response};
+        }
     } elsif ($result->{'code'} eq '500') {
         WARN 'Returning metadata info from cache';
         return $cache->{$entity} // {};
@@ -125,8 +130,8 @@ sub get_ip_alias {
     my $client = _api_client($config);
     $client->GET(join '/', 
         $config->{'api'}->{'entity_ipalias_endpoint'}, $entity);
-    my %result;
 	DEBUG "API call returns " . $client->responseCode();
+    DEBUG "API call returns " . $client->responseContent();
     if ($client->responseCode() eq '200') {
         INFO 'IP Alias fetched for ' . $entity;
         return decode_json $client->responseContent();
@@ -141,9 +146,9 @@ sub remove_ip_alias {
     my $client = _api_client($config, 1);
     $client->DELETE(join '/', 
         $config->{'api'}->{'entity_ipalias_endpoint'}, $entity);
-    my %result;
-    $result{'code'} = $client->responseCode();
-    if ($result{'code'} eq '204') {
+    DEBUG "API call returns " . $client->responseCode();
+    DEBUG "API call returns " . $client->responseContent();
+    if ($client->responseCode() eq '204') {
         INFO 'IP Alias removed for ' . $entity;
 		return $OK;
     } else {
