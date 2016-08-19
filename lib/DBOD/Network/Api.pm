@@ -175,18 +175,28 @@ sub set_metadata {
 }
 
 sub create_entity { 
-    my ($input, $config) = @_;
+    my ($input, $config, $new_api) = @_;
     my $entity = $input->{dbname};
     my $metadata = DBOD::Templates::create_metadata($input, $config);
     if (defined $metadata) { 
         my $client = _api_client($config, 1);
-        $client->POST(
-            join('/', $config->{'api'}->{'entity_endpoint'}, $entity),
-            $metadata,
-            {
+        if ($new_api) {
+            $client->PUT(
+                join('/', $config->{'api'}->{'entity_endpoint'}, $entity),
+                $metadata,
+                {
                 Content_Type => 'application/json',
-            }
-        );
+                }
+            );
+        } else {
+            $client->POST(
+                join('/', $config->{'api'}->{'entity_endpoint'}, $entity),
+                "metadata=$metadata",
+                {
+                    Content_Type => 'application/x-www-form-urlencoded',
+                }
+            );
+        }
         my %result;
         $result{'code'} = $client->responseCode();
 		DEBUG "result: ", Dumper \%result;
