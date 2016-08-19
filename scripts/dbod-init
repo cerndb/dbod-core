@@ -210,7 +210,7 @@ sub body {
             $job->_result( $DBOD::ERROR );
         }
         # Register entity in Appdynamics
-        my $metadata = DBOD::Network::Api::get_entity_metadata($job->entity(), undef, $job->config);
+        my $metadata = DBOD::Network::Api::get_entity_metadata($job->entity(), undef, $job->config, $job->new_api());
         $job->log->debug( Dumper $metadata );
         if ((defined $metadata) && (scalar keys %{$metadata})) {
             unless (DBOD::Monitoring::Appdynamics::enable($job->entity, $job->config(), $metadata) == $DBOD::OK) {
