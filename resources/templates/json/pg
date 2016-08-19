@@ -3,37 +3,37 @@ version: Version of the DB we want to use
 dbname: Lowercase name of the instance
 DBNAME: (uppercase of dbname)
 port: Port where the database server will listen
-buffer: InnoDB Buffer size
-serverdata: NAS server hosting the datadir volume
-serverlogs: NAS server hosting the binary logs volume
-
+buffer: shared_buffer size
+dataserver: NAS server hosting the datadir volume
+binlogserver: NAS server hosting the binary logs volume
 Optional:
 crs_ref: Name of the CRS hosting the entity (if any)
 crs_socket:
 crs_port: 
 %]
+
 {
     "db_name": "[% dbname %]", 
     "username": "[% username %]", 
     "class": "[% type %]", 
     "version": "[% version %]", 
     "db_size": "[% size %]", 
-    "db_type": "MYSQL",
+    "db_type": "PGSQL",
     "volumes": [
         {
-            "group": "mysql", 
+            "group": "postgres", 
             "file_mode": "0755", 
             "server": "[% serverlogs %]", 
             "mount_options": "rw,bg,hard,nointr,tcp,vers=3,noatime,timeo=600,rsize=65536,wsize=65636", 
-            "owner": "mysql", 
+            "owner": "postgres", 
             "mounting_path": "/ORA/dbs02/[% DBNAME %]"
         }, 
         {
-            "group": "mysql", 
+            "group": "postgres", 
             "file_mode": "0755", 
             "server": "[% serverdata %]", 
             "mount_options": "rw,bg,hard,nointr,tcp,vers=3,noatime,timeo=600,rsize=65536,wsize=65636", 
-            "owner": "mysql", 
+            "owner": "postgres", 
             "mounting_path": "/ORA/dbs03/[% DBNAME %]"}
     ],
     "hosts": [
@@ -47,9 +47,9 @@ crs_port:
     "[% loop.next %]" [% BREAK -%]
     [% END -%]
 [% END -%]
-    ],
+    ], 
     "attributes": {
-        "innodb_buffer_pool_size": "[% buffer %]",
+        "shared_buffers": "[% buffer %]",
         [% IF crs_ref -%]
         "port": "[% port %]", 
         "crs_ref": "[% crs_ref %]", 
@@ -59,5 +59,4 @@ crs_port:
         "port": "[% port %]" 
         [% END -%]
     }
-
 }

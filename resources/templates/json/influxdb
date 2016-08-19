@@ -1,0 +1,50 @@
+[%# This template requires the following variables as input:
+version: Version of the DB we want to use 
+DBNAME: (uppercase of dbname)
+port: Port where the database server will listen
+%]
+{
+    "db_name": "[% dbname %]", 
+    "username": "[% username %]", 
+    "class": "[% type %]", 
+    "version": "[% version %]", 
+    "db_size": "[% size %]", 
+    "db_type": "InfluxDB",
+"volumes": [
+    {
+        "group": "influxdb",
+        "file_mode": "0755",
+        "server": "[% serverlogs %]", 
+        "mount_options": "rw,bg,hard,nointr,tcp,vers=3,noatime,timeo=600,rsize=65536,wsize=65536",
+        "owner": "influxdb",
+        "mounting_path": "/ORA/dbs02/[% DBNAME %]"
+    },
+    {
+    "group": "influxdb",
+    "file_mode": "0755",
+    "server": "[% serverdata %]", 
+    "mount_options": "rw,bg,hard,nointr,tcp,vers=3,noatime,timeo=600,rsize=65536,wsize=65536",
+    "owner": "influxdb",
+    "mounting_path": "/ORA/dbs03/[% DBNAME %]"
+    }
+    ],
+    "hosts": [
+[% FOREACH host IN hosts -%]
+    [% IF loop.size == 1 -%]
+        "[% host %]"
+    [% ELSE -%]
+        "[% host %]",
+    [% END -%]
+    [% IF loop.count+1 == loop.size -%]
+    "[% loop.next %]" [% BREAK -%]
+    [% END -%]
+[% END -%]
+    ], 
+    "attributes": {
+        "max-concurrent-queries" : "0",
+        "query-timeout": "30m",
+        "cache-max-memory-size": "524288000",
+        "cache-snapshot-memory-size": "26214400",
+        "port": "[% port %]" 
+    }
+}
