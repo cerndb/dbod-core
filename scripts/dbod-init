@@ -202,7 +202,7 @@ sub body {
     if ($job->subcategory() eq 'MYSQL' or $job->subcategory() eq 'PG') {
         $input->{entity} = 'dod_' . $job->entity;
         my $buf = 'dbod-' . $input->{dbname} . '.cern.ch';
-        $input->{dbname} =~ s/\-/\-/g;
+        $buf =~ s/\_/\-/g;
         $input->{ipalias} = $buf;
         # Create metadata entry and register using the API
         unless (DBOD::Network::Ldap::create_instance($input, $job->config, $job->new_templates()) == $DBOD::OK) {
@@ -214,7 +214,7 @@ sub body {
         $job->log->debug( Dumper $metadata );
         if ((defined $metadata) && (scalar keys %{$metadata})) {
             unless (DBOD::Monitoring::Appdynamics::enable($job->entity, $job->config(), $metadata) == $DBOD::OK) {
-                $job->log->error( "Error registering instance in LDAP" );
+                $job->log->error( "Error registering instance in AppDynamics" );
                 $job->_result( $DBOD::ERROR );
             }
         } else {
