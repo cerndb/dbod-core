@@ -204,6 +204,8 @@ sub create_entity {
             INFO 'Entity created: ' . $entity;
         } elsif ($result{code} eq '200') {
 			INFO 'Entity already present in database';
+        } elsif ($result{code} eq '204') {
+            INFO 'Entity updated';
         } else {
             ERROR 'Error creating entity: ' . $entity; 
 			return $ERROR;
