@@ -44,7 +44,7 @@ sub add_alias {
         DEBUG 'set_ip_alias API response: ' . Dumper $response;
 	}
     if (defined $response) {
-        my $dnsname = shift @{$response};
+        my $dnsname = shift @{$response->{response}};
         # Extract dnsname and alias from JSON response of Api call
         # Register ip alias to dns name on the CERN Network service
         DBOD::Network::LanDB::add_ip_alias($dnsname, $ipalias, $config);
