@@ -123,8 +123,7 @@ sub create_instance {
     DEBUG 'Creating LDAP entity: ' . Dumper $new_instance;
 
     my $entry = DBOD::Templates::create_ldap_entry($new_instance, $config, $new_templates);
-    my $tns = DBOD::Templates::create_ldap_tnsnetservice_entry($new_instance, $config, $new_templates);
- 
+
     my $conn = get_connection($config);
     my $result;
 
@@ -139,17 +138,6 @@ sub create_instance {
                 $result = $ERROR;
 			}
 		
-        }
-		DEBUG "TNS";
-        for my $subtree (@{$tns}) {
-            DEBUG "Adding " . $subtree;
-            my $response = $conn->add($subtree);
-			if ($response->code) {
-                DEBUG "subtree: " . Dumper $subtree;
-                ERROR "response: " . Dumper $response;
-				ERROR $response->error;
-                $result = $ERROR;
-			}
         }
         timestamp_entity($conn, $new_instance);
         $conn->unbind();
