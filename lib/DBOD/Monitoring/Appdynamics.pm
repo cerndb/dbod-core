@@ -19,9 +19,11 @@ sub enable {
     my $drivername;
 
     # Argument unpacking
-    my $hostname = $metadata->{hosts}[0]; # Functional alias
-    my $dbport = $metadata->{port};
-    my $dbtype = lc $metadata->{subcategory};
+    my $hostname = 'dbod-' . $metadata->{db_name} . '.cern.ch';
+    $hostname =~ s/\_/\-/g;
+
+    my $dbport = $metadata->{attributes}->{port};
+    my $dbtype = lc $metadata->{db_type};
     $username = $config->{$dbtype}->{db_user};
     $password = $config->{$dbtype}->{db_password};
 
