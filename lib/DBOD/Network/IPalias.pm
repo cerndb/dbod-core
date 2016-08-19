@@ -32,8 +32,7 @@ sub add_alias {
     my $resp;
     DEBUG 'get_ip_alias API Response: ' . Dumper $response;
 	if (defined $response) {
-        $resp = shift @{$response->{'response'}};
-        my ($dnsname, $ipalias) = @{$response->{'response'}};
+        my ($dnsname, $ipalias) = @{$response};
 		INFO "IP Alias already exists, nothing to do";
 		INFO " DNS name: " . $dnsname;
 		INFO " IP Alias: " . $ipalias;
