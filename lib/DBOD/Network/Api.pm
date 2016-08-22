@@ -53,12 +53,11 @@ sub _api_client {
     $client->addHeader('Content-Type', 'application/json');
     $client->addHeader('Accept', 'application/json');
     # X509 Auth
-    #$client->setCert('/etc/dbod/dbod-cert.pem');
-    #$client->setKey('/etc/dbod/dbod-key.pem');
     $client->setCa('/etc/ssl/certs/CERN_Grid_Certification_Authority.crt');
-    # Disable SSL host verification
-    $client->getUseragent()->ssl_opts( verify_hostame => 0 );
-    $client->getUseragent()->ssl_opts( SSL_verify_mode => 0 );
+    # This seems to be needed because of an issue with the underlying LWP library
+    # not being able to verify the host certificate although the whole chain
+    # and hostname is correct
+    $client->getUseragent()->ssl_opts(verify_hostname => 0);
     if (defined $auth) {
         my $api_user = $config->{'api'}->{'user'};
         my $api_pass = $config->{'api'}->{'password'};
@@ -75,8 +74,6 @@ sub _api_get_entity_metadata {
     $client->GET(join '/', 
         $config->{'api'}->{'entity_metadata_endpoint'}, $entity);
     my %result;
-	DEBUG "API call returns " . $client->responseCode();
-    DEBUG "API call returns " . $client->responseContent();
     $result{'code'} = $client->responseCode();
     if ($result{'code'} eq '200') {
         $result{'response'} = decode_json $client->responseContent();
@@ -106,27 +103,24 @@ sub get_entity_metadata {
 }
 
 sub set_ip_alias {
-    my ($entity, $ipalias, $config) = @_;
+    my ($entity, $ipalias, $config, $new_api) = @_;
     my $client = _api_client($config, 1);
     my $params = $client->buildQuery([ alias => $ipalias ]);
     $client->POST(
         join('/', $config->{'api'}->{'entity_ipalias_endpoint'}, $entity) .
         $params
     );
-    my %result;
-    $result{'code'} = $client->responseCode();
-    if ($result{'code'} eq '201') {
+    if ($client->responseCode() eq '201') {
         INFO 'IP Alias succesfully created for ' . $entity;
-        $result{'response'} = decode_json $client->responseContent();
+        return $OK;
     } else {
-        ERROR 'Resource not available. IP alias creation failed for ' . $entity; 
-        $result{'response'} = undef;
+        ERROR 'Resource not available. IP alias creation failed for ' . $entity;
+        return $ERROR;
     }
-    return \%result;
 }
 
 sub get_ip_alias {
-    my ($entity, $config) = @_;
+    my ($entity, $config, $new_api) = @_;
     my $client = _api_client($config);
     $client->GET(join '/', 
         $config->{'api'}->{'entity_ipalias_endpoint'}, $entity);
@@ -134,7 +128,12 @@ sub get_ip_alias {
     DEBUG "API call returns " . $client->responseContent();
     if ($client->responseCode() eq '200') {
         INFO 'IP Alias fetched for ' . $entity;
-        return decode_json $client->responseContent();
+        if ($new_api) {
+            my $result = decode_json $client->responseContent();
+            return shift @{$result->{response}};
+        } else {
+            return decode_json $client->responseContent();
+        }
     } else {
         WARN 'IP alias does not exist for ' . $entity;
 		return;
