@@ -6,6 +6,7 @@ SC-ARCHIVE-RETENTION: 15
 SC-ARCHIVEDIR-LOCATION: /ORA/dbs02/[% DBNAME %]/archive
 SC-AUTOMATIC-STARTUP: no
 SC-BINDIR-LOCATION: /usr/local/pgsql/pgsql-[% version %]/bin
+SC-CATEGORY: ORADB
 SC-COMMENT: -
 SC-CONFIGURATION-DIRECTORY: /ORA/dbs01/syscontrol
 SC-DATADIR-LOCATION: /ORA/dbs03/[% DBNAME %]/data
@@ -86,7 +87,9 @@ SC-CATEGORY: nfs-volumes
 dn: SC-NFS-VOLUME-ID=1,SC-CATEGORY=nfs-volumes,SC-ENTITY=[% entity %],SC-CATEGORY=entities,ou=syscontrol,dc=cern,dc=ch
 objectClass: SC-NFS-VOLUME
 SC-NFS-VOLUME-GROUP: postgres
-SC-NFS-VOLUME-HOST-REF: 1
+[% FOREACH host IN hosts -%]
+SC-NFS-VOLUME-HOST-REF: [% host %]
+[% END -%]
 SC-NFS-VOLUME-ID: 1
 SC-NFS-VOLUME-LOCAL-PATH: /ORA/dbs02/[% DBNAME %]
 SC-NFS-VOLUME-MOD: 0755
@@ -99,7 +102,9 @@ SC-NFS-VOLUME-SERVER-PATH: /ORA/dbs02/[% DBNAME %]
 dn: SC-NFS-VOLUME-ID=2,SC-CATEGORY=nfs-volumes,SC-ENTITY=[% entity %],SC-CATEGORY=entities,ou=syscontrol,dc=cern,dc=ch
 objectClass: SC-NFS-VOLUME
 SC-NFS-VOLUME-GROUP: postgres
-SC-NFS-VOLUME-HOST-REF: 1
+[% FOREACH host IN hosts -%]
+SC-NFS-VOLUME-HOST-REF: [% host %]
+[% END -%]
 SC-NFS-VOLUME-ID: 2
 SC-NFS-VOLUME-LOCAL-PATH: /ORA/dbs03/[% DBNAME %]
 SC-NFS-VOLUME-MOD: 0755
