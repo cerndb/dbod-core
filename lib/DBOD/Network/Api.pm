@@ -85,14 +85,10 @@ sub _api_get_entity_metadata {
 }
 
 sub get_entity_metadata {
-    my ($entity, $cache, $config, $new_api) = @_;
+    my ($entity, $cache, $config) = @_;
     my $result = _api_get_entity_metadata($entity, $config);
     if ($result->{'code'} eq '200') {
-        if ($new_api) {
-            return shift @{$result->{response}->{response}};
-        } else {
-            return $result->{response};
-        }
+        return shift @{$result->{response}->{response}};
     } elsif ($result->{'code'} eq '500') {
         WARN 'Returning metadata info from cache';
         return $cache->{$entity} // {};
@@ -103,7 +99,7 @@ sub get_entity_metadata {
 }
 
 sub set_ip_alias {
-    my ($entity, $ipalias, $config, $new_api) = @_;
+    my ($entity, $ipalias, $config) = @_;
     my $client = _api_client($config, 1);
     my $params = $client->buildQuery([ alias => $ipalias ]);
     $client->POST(
@@ -120,7 +116,7 @@ sub set_ip_alias {
 }
 
 sub get_ip_alias {
-    my ($entity, $config, $new_api) = @_;
+    my ($entity, $config) = @_;
     my $client = _api_client($config);
     $client->GET(join '/', 
         $config->{'api'}->{'entity_ipalias_endpoint'}, $entity);
@@ -128,12 +124,8 @@ sub get_ip_alias {
     DEBUG "API call returns " . $client->responseContent();
     if ($client->responseCode() eq '200') {
         INFO 'IP Alias fetched for ' . $entity;
-        if ($new_api) {
-            my $result = decode_json $client->responseContent();
-            return shift @{$result->{response}};
-        } else {
-            return decode_json $client->responseContent();
-        }
+        my $result = decode_json $client->responseContent();
+        return shift @{$result->{response}};
     } else {
         WARN 'IP alias does not exist for ' . $entity;
 		return;
@@ -179,28 +171,18 @@ sub set_metadata {
 }
 
 sub create_entity { 
-    my ($input, $config, $new_api) = @_;
+    my ($input, $config) = @_;
     my $entity = $input->{dbname};
     my $metadata = DBOD::Templates::create_metadata($input, $config);
     if (defined $metadata) { 
         my $client = _api_client($config, 1);
-        if ($new_api) {
-            $client->PUT(
-                join('/', $config->{'api'}->{'entity_endpoint'}, $entity),
-                $metadata,
-                {
-                Content_Type => 'application/json',
-                }
-            );
-        } else {
-            $client->POST(
-                join('/', $config->{'api'}->{'entity_endpoint'}, $entity),
-                "metadata=$metadata",
-                {
-                    Content_Type => 'application/x-www-form-urlencoded',
-                }
-            );
-        }
+        $client->PUT(
+            join('/', $config->{'api'}->{'entity_endpoint'}, $entity),
+            $metadata,
+            {
+            Content_Type => 'application/json',
+            }
+        );
         my %result;
         $result{'code'} = $client->responseCode();
 		DEBUG "result: ", Dumper \%result;

@@ -84,11 +84,6 @@ has 'no_api' => (
         isa => 'Bool',
         default => '0',
         documentation => qq{If set, skip API alias creation} );
-has 'new_api' => (
-        is => 'ro',
-        isa => 'Bool',
-        default => '0',
-        documentation => qq{New API interface} );
 has 'debug' => (
     is => 'ro', 
     isa => 'Bool', 
@@ -184,7 +179,7 @@ sub body {
 
     # Create metadata entry and register in the API
     unless ($job->no_api()) {
-        unless (DBOD::Network::Api::create_entity($input, $job->config, $job->new_api()) == $DBOD::OK) {
+        unless (DBOD::Network::Api::create_entity($input, $job->config) == $DBOD::OK) {
             $job->log->error("Error registering the entity in the API");
             $job->_result($DBOD::ERROR);
             return;
@@ -210,7 +205,7 @@ sub body {
             $job->_result( $DBOD::ERROR );
         }
         # Register entity in Appdynamics
-        my $metadata = DBOD::Network::Api::get_entity_metadata($job->entity(), undef, $job->config, $job->new_api());
+        my $metadata = DBOD::Network::Api::get_entity_metadata($job->entity(), undef, $job->config);
         $job->log->debug( Dumper $metadata );
         if ((defined $metadata) && (scalar keys %{$metadata})) {
             unless (DBOD::Monitoring::Appdynamics::enable($job->entity, $job->config(), $metadata) == $DBOD::OK) {

@@ -49,9 +49,6 @@ has 'metadata' => (is => 'rw', isa => 'HashRef',
 has 'allow_empty_metadata' => (is => 'ro', isa => 'Bool', default=> 0,
     documentation => 'Allow empty metadata');
 
-has 'new_api' => (is => 'ro', isa => 'Bool', default => 0,
-    documentation => 'Use new api');
-
 # output
 has '_output' => ( is => 'rw', isa => 'Str' );
 has '_result' => ( is => 'rw', isa => 'Num' );
@@ -83,7 +80,7 @@ sub BUILD {
 
     # Load entity metadata
     $self->metadata(
-        get_entity_metadata($self->entity, $self->md_cache, $self->config, $self->new_api));
+        get_entity_metadata($self->entity, $self->md_cache, $self->config));
 
     $self->log->debug('Metadata: '. Dumper $self->metadata());
 
