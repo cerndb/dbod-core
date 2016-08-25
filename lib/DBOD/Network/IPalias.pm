@@ -32,10 +32,9 @@ sub add_alias {
     my $resp;
     DEBUG 'get_ip_alias API Response: ' . Dumper $response;
 	if (defined $response) {
-        my ($dnsname, $ipalias) = @{$response};
 		INFO "IP Alias already exists, nothing to do";
-		INFO " DNS name: " . $dnsname;
-		INFO " IP Alias: " . $ipalias;
+		INFO " DNS name: " . $response->{dnsname};
+		INFO " IP Alias: " . $response->{alias};
 		return scalar $OK;
 	} else {
 		# Register a dns-name to the instance IP alias
