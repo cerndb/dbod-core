@@ -33,7 +33,7 @@ sub add_alias {
     DEBUG 'get_ip_alias API Response: ' . Dumper $response;
 	if (defined $response) {
 		INFO "IP Alias already exists, nothing to do";
-		INFO " DNS name: " . $response->{dnsname};
+		INFO " DNS name: " . $response->{dns_name};
 		INFO " IP Alias: " . $response->{alias};
 		return scalar $OK;
 	} else {
@@ -48,7 +48,7 @@ sub add_alias {
         DBOD::Network::LanDB::add_ip_alias($response->{dnsname}, $response->{alias}, $config);
         # Generates DNS entry
         my $cmd = $config->{'ipalias'}->{'change_command'};
-        my $command = $cmd . " --dnsname=" . $response->{dnsname} . " --add_ip=" . $host;
+        my $command = $cmd . " --dnsname=" . $response->{dns_name} . " --add_ip=" . $host;
         DEBUG 'Executing ' . $command;
         my $return_code = DBOD::Runtime::run_cmd(cmd => $command);
         if ($return_code == $ERROR) {
@@ -58,7 +58,7 @@ sub add_alias {
         }
         else { 
             INFO sprintf("Registerd alias: %s to dnsname: %s, host: %s",
-                $response->{ipalias}, $response->{dnsname}, $host);
+                $response->{alias}, $response->{dn_sname}, $host);
             return scalar $OK;
         }
     }
