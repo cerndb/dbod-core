@@ -64,11 +64,6 @@ has 'crs' => (
     is => 'ro', 
     isa => 'Str', 
     documentation => qq{Optional: CRS reference} );
-has 'new_templates' => (
-    is => 'ro',
-    isa => 'Bool',
-    default => '0',
-    documentation => qq{Optional: If set, use new LDAP entity templates} );
 has 'skip_volumes_creation' => (
     is => 'ro', 
     isa => 'Bool',
@@ -193,17 +188,19 @@ sub body {
             return;
         }
     }
-    # Create LDAP entry and register MySQL and PG instances in AppDynamics
+    # Register entity in LDAP
+    $input->{entity} = 'dod_' . $job->entity;
+    my $buf = 'dbod-' . $input->{dbname} . '.cern.ch';
+    $buf =~ s/\_/\-/g;
+    $input->{ipalias} = $buf;
+    # Create metadata entry and register using the API
+    unless (DBOD::Network::Ldap::create_instance($input, $job->config) == $DBOD::OK) {
+        $job->log->error( "Error registering instance in LDAP" );
+        $job->_result( $DBOD::ERROR );
+    }
+
+    # Register MySQL and PG instances in AppDynamics
     if ($job->subcategory() eq 'MYSQL' or $job->subcategory() eq 'PG') {
-        $input->{entity} = 'dod_' . $job->entity;
-        my $buf = 'dbod-' . $input->{dbname} . '.cern.ch';
-        $buf =~ s/\_/\-/g;
-        $input->{ipalias} = $buf;
-        # Create metadata entry and register using the API
-        unless (DBOD::Network::Ldap::create_instance($input, $job->config, $job->new_templates()) == $DBOD::OK) {
-            $job->log->error( "Error registering instance in LDAP" );
-            $job->_result( $DBOD::ERROR );
-        }
         # Register entity in Appdynamics
         my $metadata = DBOD::Network::Api::get_entity_metadata($job->entity(), undef, $job->config);
         $job->log->debug( Dumper $metadata );

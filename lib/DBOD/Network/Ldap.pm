@@ -119,10 +119,10 @@ sub modify_attributes {
 
 sub create_instance {
     
-    my ($new_instance, $config, $new_templates) = @_;
+    my ($new_instance, $config) = @_;
     DEBUG 'Creating LDAP entity: ' . Dumper $new_instance;
 
-    my $entry = DBOD::Templates::create_ldap_entry($new_instance, $config, $new_templates);
+    my $entry = DBOD::Templates::create_ldap_entry($new_instance, $config);
 
     my $conn = get_connection($config);
     my $result;

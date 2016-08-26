@@ -55,34 +55,13 @@ sub create_metadata {
 
 sub create_ldap_entry {
     # Creates a new metadata object.
-    my ($new_entity, $config, $new_templates) = @_;
-    DEBUG 'Creating Metadata object for entity: ' . Dumper $new_entity;
+    my ($new_entity, $config) = @_;
+    DEBUG 'Creating LDAP object for instance: ' . Dumper $new_entity;
     my $type = lc $new_entity->{subcategory};
     my $ldap_template;
-    if ($new_templates) {
-        load_template 'ldap', $type . '_new', $new_entity, $config, \$ldap_template;
-    } else {
-        load_template 'ldap', $type, $new_entity, $config, \$ldap_template;
-    }
+    load_template 'ldap', $type, $new_entity, $config, \$ldap_template;
     my ($fh, $filename) = tempfile();
     print $fh $ldap_template;
-    close $fh;
-    my $entries = DBOD::Network::Ldap::load_ldif($filename);
-    DEBUG 'LDAP entry: ' . Dumper $entries;
-    return $entries;
-}
-
-sub create_ldap_tnsnetservice_entry {
-    my ($new_entity, $config, $new_templates) = @_;
-    my $tnsnetservice;
-    if ($new_templates) {
-        load_template 'ldap', 'tnsnetservice' . '_new', $new_entity, $config, \$tnsnetservice;
-    } else {
-        load_template 'ldap', 'tnsnetservice', $new_entity, $config, \$tnsnetservice;
-    }
-    DEBUG 'Metadata: ' . Dumper $tnsnetservice;
-    my ($fh, $filename) = tempfile();
-    print $fh $tnsnetservice;
     close $fh;
     my $entries = DBOD::Network::Ldap::load_ldif($filename);
     DEBUG 'LDAP entry: ' . Dumper $entries;
