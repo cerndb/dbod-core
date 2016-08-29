@@ -21,14 +21,15 @@ INIT {
 }
 my $job = DBOD::Job->new_with_options( allow_empty_metadata => 1);
 
+$ENV{PERL_LWP_SSL_VERIFY_HOSTNAME}=0;
+
 sub body {
     my $params = shift;
-    print Dumper $job->config->{network} ;
     my $result = DBOD::Network::LanDB::get_ip_alias($job->entity(), $job->config);
     print Dumper $result;
-    if (defined $result) {
+    if (defined $result and (scalar @{$result} > 0)) {
         $job->log->debug('Removing ip alias');
-        $result = DBOD::Network::LanDB::remove_ip_alias('db-dbod-700', $job->entity, $job->config);
+        $result = DBOD::Network::LanDB::remove_ip_alias('db-dbod-699', $job->entity, $job->config);
         print Dumper $result;
     }
     else {
