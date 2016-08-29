@@ -33,7 +33,7 @@ sub body {
     }
     else {
         $job->log->debug('Adding ip alias');
-        $result = DBOD::Network::LandDB::add_ip_alias('db-dbod-700', $job->entity, $job->config);
+        $result = DBOD::Network::LanDB::add_ip_alias('db-dbod-699', $job->entity, $job->config);
         print Dumper $result;
     }
     return 0;
