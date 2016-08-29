@@ -33,10 +33,14 @@ $config{mysql} = \%dbtype;
 $config{appdynamics} = \%appdynamics;
 my $conf = \%config;
 
+my %attributes =();
+$attributes{port} = '6666';
 my %metadata = ();
 $metadata{hosts} = ['hostname'];
 $metadata{port} = '1234';
-$metadata{subcategory} = 'MYSQL';
+$metadata{db_name} = 'my_test';
+$metadata{db_type} = 'MYSQL';
+$metadata{attributes} = \%attributes;
 
 my $data = \%metadata;
 
