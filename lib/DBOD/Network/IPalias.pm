@@ -58,7 +58,7 @@ sub add_alias {
         }
         else { 
             INFO sprintf("Registerd alias: %s to dnsname: %s, host: %s",
-                $response->{alias}, $response->{dn_sname}, $host);
+                $response->{alias}, $response->{dns_name}, $host);
             return scalar $OK;
         }
     }
