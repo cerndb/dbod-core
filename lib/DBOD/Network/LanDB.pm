@@ -30,7 +30,7 @@ sub _get_landb_connection {
     my $username = $config->{'network'}->{'username'};
     my $password = $config->{'network'}->{'password'};
     DEBUG 'LANDB Api client connection for ' . $username;
-    my $call = $client->getAuthToken($username, $password, 'NICE');
+    my $call = $client->getAuthToken($username, $password, 'CERN');
     my $auth = $call->result;
     if ($call->fault) {
         ERROR "FAILED: " . $call->faultstring;
@@ -70,12 +70,13 @@ sub remove_ip_alias {
 sub get_ip_alias {
     my ($search, $config) = @_;
     my ($conn, $auth) = _get_landb_connection($config);
-    my $call = $conn->dnsDelegatedAliasSearch($auth, $search);
+    my $call = $conn->dnsDelegatedSearch($auth, $search);
     if ($call->fault) {
         ERROR "FAILED: " . $call->faultstring;
         return;
     }
     return $call->result;
+
 }
 
 sub create_alias {
