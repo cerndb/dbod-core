@@ -29,7 +29,7 @@ $call->mock('faultstring', sub { return "SOAP call error"; } );
 my $client = Test::MockObject->new();
 $client->mock('dnsDelegatedAliasAdd', sub {return $call;} );
 $client->mock('dnsDelegatedAliasRemove', sub {return $call;} );
-$client->mock('dnsDelegatedAliasSearch', sub {return $call;} );
+$client->mock('dnsDelegatedSearch', sub {return $call;} );
 
 my $network = Test::MockModule->new('DBOD::Network::LanDB');
 $network->mock( _get_landb_connection => sub { return ($client, $auth);} );
