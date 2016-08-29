@@ -59,11 +59,4 @@ subtest "create_ldap_entry" => sub {
     
 };
 
-subtest "create_ldap_tnsnetservice_entry" => sub {
-
-    my %input = ();
-    my $entries = DBOD::Templates::create_ldap_tnsnetservice_entry(\%input, \%config);    
-    ok(scalar @{$entries} >= 1, 'tnsnetservice entry: Array of entries');
-};
-
 done_testing();
