@@ -74,6 +74,10 @@ my $input = {
 	hosts => ["hostname"],
 };
 
+my %response = ();
+$response{dns_name} = 'dns-name-000';
+$response{alias} = 'ip-alias.domain';
+
 subtest 'add_alias' => sub {
         
         $runtime->mock( 'run_cmd' =>
@@ -84,12 +88,13 @@ subtest 'add_alias' => sub {
                 return $DBOD::OK;
             });
 
+        $api_m->mock( get_ip_alias => sub { return \%response; } );
 
         is(DBOD::Network::IPalias::add_alias($input, \%config),
             $DBOD::OK, 'Alias already exists');
 
-        $api_m->mock( get_ip_alias => sub { return undef; } );
-        $api_m->mock( set_ip_alias => sub { return undef; } );
+        $api_m->mock( get_ip_alias => sub { return ; } );
+        $api_m->mock( set_ip_alias => sub { return $DBOD::ERROR; } );
 
         is(DBOD::Network::IPalias::add_alias($input, \%config),
             $DBOD::ERROR, 'Error registering alias');
