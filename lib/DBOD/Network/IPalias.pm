@@ -45,7 +45,7 @@ sub add_alias {
         my $response = DBOD::Network::Api::get_ip_alias($dbname, $config);
         # Extract dnsname and alias from JSON response of Api call
         # Register ip alias to dns name on the CERN Network service
-        DBOD::Network::LanDB::add_ip_alias($response->{dnsname}, $response->{alias}, $config);
+        DBOD::Network::LanDB::add_ip_alias($response->{dns_name}, $response->{alias}, $config);
         # Generates DNS entry
         my $cmd = $config->{'ipalias'}->{'change_command'};
         my $command = $cmd . " --dnsname=" . $response->{dns_name} . " --add_ip=" . $host;
