@@ -133,7 +133,7 @@ sub body {
     my @hosts = split /,/ , $job->hosts();
     $input->{hosts} = \@hosts;
     if ($job->subcategory() eq 'MYSQL') {
-        $input->{socket} = '/var/lib/mysql/mysql.socket.' . $input->{dbname} . '.' . $input->{port};
+        $input->{socket} = '/var/lib/mysql/mysql.sock.' . $input->{dbname} . '.' . $input->{port};
     } elsif ($job->subcategory() eq 'PG') {
         $input->{socket} = '/var/lib/pgsql';
     }
