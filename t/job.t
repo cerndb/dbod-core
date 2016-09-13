@@ -35,11 +35,17 @@ subtest 'Class parameters' => sub {
 
 # Check execution, job is succesfull
 subtest 'Job execution' => sub {
-        my $job1 = DBOD::Job->new_with_options( entity => 'test' );
+        my $job1 = DBOD::Job->new_with_options(
+            entity => 'test',
+            allow_empty_metadata => $TRUE
+            );
         $job1->run( sub { return 0 } );
         is( $job1->_result(), 0, "Succesfull Job execution code" );
 
-        my $job2 = DBOD::Job->new_with_options( entity => 'test' );
+        my $job2 = DBOD::Job->new_with_options(
+            entity => 'test',
+            allow_empty_metadata => $TRUE
+        );
         $job2->run( sub { return 1 } );
         is( $job2->_result(), 1, "Succesfull Error execution code" );
 };
@@ -49,6 +55,7 @@ subtest 'is_local' => sub {
         my $job = DBOD::Job->new_with_options(
             entity => 'test',
             debug => 1,
+            allow_empty_metadata => $TRUE
         );
 
         my $fqdn = `hostname -f`;
