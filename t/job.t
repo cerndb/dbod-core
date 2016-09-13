@@ -51,10 +51,12 @@ subtest 'Job execution' => sub {
 };
 
 subtest 'is_local' => sub {
+
         plan 'skip_all' if ($Config{osname} eq 'darwin'); #skip tests if running in osx
+
         my $job = DBOD::Job->new_with_options(
-            entity => 'test',
-            debug => 1,
+            entity               => 'test',
+            debug                => 1,
             allow_empty_metadata => $TRUE
         );
 
@@ -70,10 +72,16 @@ subtest 'is_local' => sub {
                 my $output_ref = $args{output};
                 $$output_ref = $host_addresses;
                 return $OK;
-            });
+            } );
 
-        is($job->is_local($fqdn), $TRUE, 'Local Job');
-        is($job->is_local(), $FALSE, 'Remote Job');
+        SKIP: {
+            my $username = `whoami`;
+            chomp $username;
+            diag "Running as user: ${username}";
+            skip 'Skipping on Travis infra', 2, unless $username ne 'travis';
+            is($job->is_local( $fqdn ), $TRUE, 'Local Job');
+            is($job->is_local(), $FALSE, 'Remote Job');
+        }
     };
 
 done_testing();
