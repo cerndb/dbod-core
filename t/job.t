@@ -60,8 +60,9 @@ subtest 'is_local' => sub {
 
         my $fqdn = `hostname -f`;
         chomp $fqdn;
-
+        diag "FQDN: ${fqdn}";
         my $host_addresses = `hostname -I`;
+        diag "ADDRESSES: ${host_addresses}";
 
         $runtime->mock( 'run_cmd' =>
             sub {
