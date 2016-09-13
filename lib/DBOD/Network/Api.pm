@@ -45,19 +45,21 @@ sub load_cache {
 
 sub _api_client {
     my ($config, $auth) = @_;
-    DEBUG 'Api client connecting to ' . $config->{'api'}->{'host'};
+    DEBUG 'Api client connecting to '.$config->{'api'}->{'host'};
     my $client = REST::Client->new(
-        host => $config->{'api'}->{'host'},
+        host    => $config->{'api'}->{'host'},
         timeout => $config->{'api'}->{'timeout'},
     );
-    $client->addHeader('Content-Type', 'application/json');
-    $client->addHeader('Accept', 'application/json');
-    # X509 Auth
-    $client->setCa('/etc/ssl/certs/CERN_Grid_Certification_Authority.crt');
-    # This seems to be needed because of an issue with the underlying LWP library
-    # not being able to verify the host certificate although the whole chain
-    # and hostname is correct
-    $client->getUseragent()->ssl_opts(verify_hostname => 0);
+    $client->addHeader( 'Content-Type', 'application/json' );
+    $client->addHeader( 'Accept', 'application/json' );
+    if ($config->{api}->{ssl_enable}) {
+        # X509 Auth
+        $client->setCa( $config->{api}->{ssl_ca_certfile} );
+        # This seems to be needed because of an issue with the underlying LWP library
+        # not being able to verify the host certificate although the whole chain
+        # and hostname is correct
+        $client->getUseragent()->ssl_opts( verify_hostname => 0 );
+    }
     if (defined $auth) {
         my $api_user = $config->{'api'}->{'user'};
         my $api_pass = $config->{'api'}->{'password'};
