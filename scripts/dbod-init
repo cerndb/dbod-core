@@ -17,11 +17,17 @@ with 'MooseX::Getopt::Usage',
      'MooseX::Getopt::Usage::Role::Man';
 
 # Traditionally named dbname parameter is now 'entity'
+has 'owner' => (
+    is => 'ro',
+    isa => 'Str',
+    required => 1,
+    documentation => qq{ Database owner });
+
 has 'subcategory' => (
     is => 'ro', 
     isa => 'Str', 
     required => 1, 
-    documentation => qq{Database server: MYSQL/PG/ORACLE} );
+    documentation => qq{Database server: MYSQL/PG/ORACLE/InfluxDB} );
 has 'type' => (
     is => 'ro', 
     isa => 'Str', 
@@ -31,7 +37,7 @@ has 'version' => (
     is => 'ro', 
     isa => 'Str', 
     required => 1, 
-    documentation => qq{Database server version: (e.g: 5.6.17, 9.4.4, ...)} );
+    documentation => qq{Database server version: (e.g: 5.6.17, 9.4.5, ...)} );
 has 'port' => (
     is => 'ro', 
     isa => 'Str', 
@@ -63,6 +69,16 @@ has 'skip_volumes_creation' => (
     isa => 'Bool',
     default => '0',
     documentation => qq{If set, skip instance volumes creation} );
+has 'no_ip_alias' => (
+    is => 'ro',
+    isa => 'Bool',
+    default => '0',
+    documentation => qq{If set, skip IP alias creation} );
+has 'no_api' => (
+        is => 'ro',
+        isa => 'Bool',
+        default => '0',
+        documentation => qq{If set, skip API alias creation} );
 has 'debug' => (
     is => 'ro', 
     isa => 'Bool', 
@@ -76,10 +92,12 @@ use warnings;
 
 use Log::Log4perl;
 use Data::Dumper;
-use DBOD::Api;
+use DBOD;
 use DBOD::Runtime;
-use DBOD::Network;
+use DBOD::Network::Api;
+use DBOD::Network::IPalias;
 use DBOD::Templates;
+use DBOD::Monitoring::Appdynamics;
 
 # Using the old Runtime_Zapi, as the new version is missing methods
 use lib '/ORA/dbs01/syscontrol/projects/recovery/bin';
@@ -92,12 +110,15 @@ BEGIN {
 
 
 $ENV{PERL_LWP_SSL_VERIFY_HOSTNAME} = 0;
-my $job = DBOD::Init->new_with_options();
+my $job = DBOD::Init->new_with_options(
+    allow_empty_metadata => $TRUE,
+    );
 
 sub body {
 
     # Set up hash containing new instance parameters
     my $input = {};
+    $input->{username} = $job->owner();
     $input->{dbname} = $job->entity();
     $input->{dbname} =~ s/\-/\_/g;
     $input->{DBNAME} = uc $input->{dbname};
@@ -111,26 +132,36 @@ sub body {
     $input->{buffer} = $job->buffer();
     my @hosts = split /,/ , $job->hosts();
     $input->{hosts} = \@hosts;
+    if ($job->subcategory() eq 'MYSQL') {
+        $input->{socket} = '/var/lib/mysql/mysql.sock.' . $input->{dbname} . '.' . $input->{port};
+    } elsif ($job->subcategory() eq 'PG') {
+        $input->{socket} = '/var/lib/pgsql';
+    }
 
     # If volumes are to be created
-    my $rt = DBOD::Runtime->new();
-
     unless ($job->skip_volumes_creation()) {
 
-        my $cmd = "/etc/init.d/syscontrol -i dfm.db-cmode DFM_create_dod_volumes_Cmode -name $input->{dbname} -size $input->{size} -server $input->{hosts}->[0]  -type $input->{subcategory} -debug";
+        # TODO InfluxDb type is not supported in volume creation. Temporal mask. Revert when it is supported
+        my $volume_type = $input->{subcategory};
+        if ($volume_type eq "InfluxDB"){
+            $volume_type = "PG";
+        }
+
+        my $cmd = "/etc/init.d/syscontrol -i dfm.db-cmode DFM_create_dod_volumes_Cmode -name $input->{dbname} -size $input->{size} -server $input->{hosts}->[0]  -type ${volume_type} -debug";
+
         $job->log->debug( "Executing: $cmd" );
         my $vol_creation_output = `$cmd`;
-        if ($rt->result_code($vol_creation_output)) {
+        if (DBOD::Runtime::result_code($vol_creation_output)) {
             $job->log->error( "An error ocurred creating volumes:" );
             $job->log->error( $vol_creation_output );
-            $job->_output(-1);
+            $job->_output($DBOD::ERROR);
             return;
         }
 
         # Fetch volumes mounting details. Will wait until details are available
         $job->log->debug("Fetching volumes server information");
-        my $datavol = $rt->mywait(\&RunTime_Zapi::GetDODMountpoint, ("dod$input->{dbname}03", $hosts[0]));
-        my $logvol = $rt->mywait(\&RunTime_Zapi::GetDODMountpoint, ("dod$input->{dbname}02", $hosts[0]));
+        my $datavol = DBOD::Runtime::mywait(\&RunTime_Zapi::GetDODMountpoint, ("dod$input->{dbname}03", $hosts[0]));
+        my $logvol = DBOD::Runtime::mywait(\&RunTime_Zapi::GetDODMountpoint, ("dod$input->{dbname}02", $hosts[0]));
         my ($serverdata, $data_mounting_path) = split ':', $datavol;
         my ($serverlogs, $logs_mounting_path) = split ':', $logvol;
 
@@ -141,23 +172,54 @@ sub body {
         $input->{'serverdata'} =  'NASDATASERVER';
     }
 
-    # Create metadata entry and register using the API
-    DBOD::Network::Api::create_entity($input, $job->config);
-    
-    # Create LDAP entry. All this needs to be migrated to use templates
-    # like we do for the metadat entries
+    # Create metadata entry and register in the API
+    unless ($job->no_api()) {
+        unless (DBOD::Network::Api::create_entity($input, $job->config) == $DBOD::OK) {
+            $job->log->error("Error registering the entity in the API");
+            $job->_result($DBOD::ERROR);
+            return;
+        }
+    }
+    # Create IP alias and register in API
+    unless ($job->no_ip_alias()) {
+        unless (DBOD::Network::IPalias::add_alias($input, $job->config) == $DBOD::OK) {
+            $job->log->error( "Error registering IP Alias" );
+            $job->_result( $DBOD::ERROR );
+            return;
+        }
+    }
+    # Register entity in LDAP
     $input->{entity} = 'dod_' . $job->entity;
-    $input->{ip_alias} =~ s/\_/\-/g;
-    $input->{ip_alias} = 'dbod-' . $input->{dbname};
-    $input->{ip_alias} =~ s/\_/\-/g;
+    my $buf = 'dbod-' . $input->{dbname} . '.cern.ch';
+    $buf =~ s/\_/\-/g;
+    $input->{ipalias} = $buf;
     # Create metadata entry and register using the API
-    DBOD::LDAP::create_instance($input, $job->config); 
-    
-    # Network registration
-    DBOD::Network::LanDB::create_alias($input, $job->config);
+    unless (DBOD::Network::Ldap::create_instance($input, $job->config) == $DBOD::OK) {
+        $job->log->error( "Error registering instance in LDAP" );
+        $job->_result( $DBOD::ERROR );
+    }
 
+    # Register MySQL and PG instances in AppDynamics
+    if ($job->subcategory() eq 'MYSQL' or $job->subcategory() eq 'PG') {
+        # Register entity in Appdynamics
+        my $metadata = DBOD::Network::Api::get_entity_metadata($job->entity(), undef, $job->config);
+        $job->log->debug( Dumper $metadata );
+        if ((defined $metadata) && (scalar keys %{$metadata})) {
+            unless (DBOD::Monitoring::Appdynamics::enable($job->entity, $job->config(), $metadata) == $DBOD::OK) {
+                $job->log->error( "Error registering instance in AppDynamics" );
+                $job->_result( $DBOD::ERROR );
+            }
+        } else {
+            $job->log->error( "Entity not found through API. Skipping AppDynamics registration" );
+            $job->_result( $DBOD::ERROR );
+        }
+    }
     # Job done!
-    $job->_result(0);
+    unless (defined $job->_result()){
+        $job->_result($DBOD::OK);
+    } # Else there was a previous non-fatal error
+		# Job done!
 }
 
 $job->run(\&body, );
+exit $job->_result();

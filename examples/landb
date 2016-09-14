@@ -12,7 +12,7 @@ use strict;
 use Log::Log4perl;
 use DBOD::Job;
 use Data::Dumper;
-use DBOD::Network::Api;
+use DBOD::Network::LanDB;
 use JSON; 
 
 # Initiates logger
@@ -21,20 +21,20 @@ INIT {
 }
 my $job = DBOD::Job->new_with_options( allow_empty_metadata => 1);
 
+$ENV{PERL_LWP_SSL_VERIFY_HOSTNAME}=0;
+
 sub body {
     my $params = shift;
-    
-    $job->log->debug('Fetching ip alias');
-    my $result = DBOD::Network::Api::get_ip_alias($job->entity(), $job->config, $job->new_api);
+    my $result = DBOD::Network::LanDB::get_ip_alias($job->entity(), $job->config);
     print Dumper $result;
-    if (defined $result) { 
+    if (defined $result and (scalar @{$result} > 0)) {
         $job->log->debug('Removing ip alias');
-        $result = DBOD::Network::Api::remove_ip_alias($job->entity(), $job->config);
+        $result = DBOD::Network::LanDB::remove_ip_alias('db-dbod-699', $job->entity, $job->config);
         print Dumper $result;
     }
     else {
         $job->log->debug('Adding ip alias');
-        $result = DBOD::Network::Api::set_ip_alias($job->entity(),'dbod-alias', $job->config);
+        $result = DBOD::Network::LanDB::add_ip_alias('db-dbod-699', $job->entity, $job->config);
         print Dumper $result;
     }
     return 0;

@@ -46,6 +46,9 @@ has 'config' => (is => 'rw', isa => 'HashRef',
 has 'metadata' => (is => 'rw', isa => 'HashRef',
     documentation => 'Entity metadata (from API)');
 
+has 'allow_empty_metadata' => (is => 'ro', isa => 'Bool', default=> 0,
+    documentation => 'Allow empty metadata');
+
 # output
 has '_output' => ( is => 'rw', isa => 'Str' );
 has '_result' => ( is => 'rw', isa => 'Num' );
@@ -69,16 +72,18 @@ sub BUILD {
     $ENV{ENTITY} = $self->entity;
 
     # Load General Configuration from file
-    $self->config(DBOD::Config::load());
+    $self->config(DBOD::Config::load()); #load from default share dir
 
     # Load cache file
-    my %cache = load_cache($self->config);
+    my %cache = load_cache($self->config->{'api'}->{'cachefile'});
     $self->md_cache(\%cache);
 
     # Load entity metadata
     $self->metadata(
         get_entity_metadata($self->entity, $self->md_cache, $self->config));
-    
+
+    $self->log->debug('Metadata: '. Dumper $self->metadata());
+
     return;
 };
 
@@ -103,20 +108,25 @@ sub is_local {
     DBOD::Runtime::run_cmd( cmd => 'hostname -I', output => \$host_addresses );
     my @addresses = split / /, $host_addresses;
     $self->log->debug($host_addresses);
-    my $res = grep {/$host_ip/} @addresses;
+    my $res = grep {/$host_ip/x} @addresses;
     return scalar $res;
 }
 
 sub run {
     my ($self, $body, $params) = @_;
-    my $result = $body->($params);
-    $self->_result($result);
-    return;
+    if ($self->allow_empty_metadata() || scalar %{$self->metadata()}) {
+        my $result = $body->( $params );
+        $self->_result( $result );
+        return;
+    } else {
+        $self->log->error('Instance not found in system. Aborting execution');
+        $self->_result($ERROR);
+    }
 }
 
 after 'run' => sub {
     my $self = shift;
-    $self->log->info('[' . $self->_result()  . ']');
+    $self->log->info('[Job exit code][' . $self->_result()  . ']');
 };
 
 1;

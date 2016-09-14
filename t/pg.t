@@ -25,6 +25,7 @@ my $metadata = {
     bindir => "/tmp",
     socket => "/var/lib/pgsql",
     port => '6600',
+    version => '9.4.5'
 };
 
 my $config = {
@@ -43,15 +44,14 @@ my $pg = DBOD::Systems::PG->new(
 my $runtime = Test::MockModule->new('DBOD::Runtime');
 
 my @outputs = (
-    0,1, # check_State
-    0,1, # start OK
+    1,0, # check_State STOPPED/RUNNING
+    0,0, # start OK
     1, # start OK. Nothing to do
-    0,0, # start FAIL
+    1,1, # start FAIL
     0, # Stop OK. Nothing to do
-    1,1, # Stop OK
-    1,0,
-    1,0); # Stop FAIL
-
+    0,0, # Stop OK
+    1, # Stop FAIL
+    1,0,0,0,0,0,0); # Snapshot
 # Check status
 $runtime->mock('run_cmd' => sub {
         my $ret = shift @outputs;
@@ -87,7 +87,7 @@ is($pg->ping(), $ERROR, 'ping ERROR. Unresponsive delete');
 is($pg->ping(), $ERROR, 'ping ERROR. Unresponsive insert');
 
 $db->mock('do' => sub {
-        return undef;
+        return 0;
     });
 
 # TODO: Fix this test
@@ -98,6 +98,82 @@ SKIP: {
 
 $pg->_connect_db();
 isa_ok($pg->db(), 'DBOD::DB', 'db connection object OK');
+
+# snapshot testing
+subtest 'snapshot' => sub {
+
+        my $zapi = Test::MockModule->new('DBOD::Storage::NetApp::ZAPI');
+
+        # We start failing everything
+        $zapi->mock( 'get_server_and_volname' =>
+            sub {
+                my @buf = (undef, undef);
+                return \@buf;
+            });
+
+        $zapi->mock( 'snap_prepare' => sub { return $ERROR; });
+        $zapi->mock( 'snap_create' => sub { return $ERROR; });
+
+        is($pg->snapshot(), $ERROR, 'Snapshot ERROR. No Instance running');
+        is($pg->snapshot(), $ERROR, 'Snapshot ERROR. No ZAPI server');
+        $zapi->mock( 'get_server_and_volname' =>
+            sub {
+                my @buf = ("server_zapi", "volume_name");
+                return \@buf;
+            });
+        is($pg->snapshot(), $ERROR, 'Snapshot ERROR. Error preparing snapshot');
+        $zapi->mock( 'snap_prepare' => sub { return $OK; });
+
+        @db_do_outputs = (
+            0, # Error setting up backup mode
+            1, 1,# Error creating snapshot
+            1, 0,# Error stopping backup mode
+            1, 1, # OK
+        );
+
+        $db->mock('do' => sub {
+                my $buf = shift @db_do_outputs;
+                return $buf;
+            });
+
+        is($pg->snapshot(), $ERROR, 'Snapshot ERROR. Error setting DB in backup mode');
+
+        is($pg->snapshot(), $ERROR, 'Snapshot ERROR. Error creating snapshot');
+        $zapi->mock( 'snap_create' => sub { return $OK; });
+
+        is($pg->snapshot(), $ERROR, 'Snapshot ERROR. Error stopping backup mode');
+
+        is($pg->snapshot(), $OK, 'Snapshot OK');
+
+    };
+
+subtest 'restore' => sub {
+		use Test::MockObject;
+		use DBOD::Config;
+		my $pgmod = Test::MockModule->new('DBOD::Systems::PG');
+		$pgmod->mock('is_running' => sub { return $TRUE });
+		$pgmod->mock('stop' => sub { return $OK });
+		$pgmod->mock('start' => sub { return $OK });
+		my $snapshot =  'snapscript_03122015_174427_222_945';
+		my $pit = '2016-02-13_09:23:34';
+        
+		is($pg->restore(), $ERROR, 'Restore without snapshot ERROR');
+        my $mtab_file = DBOD::Config::get_share_dir() . '/sample_mtab';
+        my $mntpoint = '/ORA/dbs03/PINOCHO';
+        my $regex = "^(.*?dbnas[\\w-]+):(.*?)\\s+($mntpoint)\\s+nfs";
+		# Mocking ZAPI methods
+		my $zapi_mock = Test::MockModule->new('DBOD::Storage::NetApp::ZAPI');
+		my $server_zapi = Test::MockObject->new();
+		$zapi_mock->mock('get_server_and_volname' => sub { 
+				my @array = ($server_zapi, $mntpoint);
+				return \@array;
+			});
+		$zapi_mock->mock('snap_restore' => sub { return $ERROR } );
+        is($pg->restore($snapshot), $ERROR, 'snap_estore fail');
+		$zapi_mock->mock('snap_restore' => sub { return $OK } );
+		# Succesful restore
+        is($pg->restore($snapshot), $OK, 'Restore successful');
+};
 
 done_testing();
 

@@ -6,6 +6,7 @@ use Log::Log4perl qw(:easy);
 
 use Socket;
 
+use DBOD;
 use DBOD::DB;
 
 sub enable {
@@ -18,9 +19,11 @@ sub enable {
     my $drivername;
 
     # Argument unpacking
-    my $hostname = $metadata->{host}[0]; # Functional alias
-    my $dbport = $metadata->{port};
-    my $dbtype = lc $metadata->{subcategory};
+    my $hostname = 'dbod-' . $metadata->{db_name} . '.cern.ch';
+    $hostname =~ s/\_/\-/g;
+
+    my $dbport = $metadata->{attributes}->{port};
+    my $dbtype = lc $metadata->{db_type};
     $username = $config->{$dbtype}->{db_user};
     $password = $config->{$dbtype}->{db_password};
 
@@ -56,11 +59,14 @@ sub enable {
         db_dsn  => $dsn,
         db_user => $appduser,
         db_password => $appdpassword,
-        db_attrs => {RaiseError => 0, Autocommit => 1},
+        db_attrs => {RaiseError => 0, AutoCommit => 1},
     );
 
     $servername = lc $servername;
     $dbtype = uc $dbtype;
+	if ($dbtype eq 'PGSQL') {
+		$dbtype = 'POSTGRES';
+	}
     $ostype = uc $ostype;
 
     my $affected_rows;
@@ -91,9 +97,9 @@ sub enable {
     }
 
     if ($affected_rows != 1) {
-        return 0; #some error
+        return $ERROR; #some error
     } else {
-        return 1; #ok
+        return $OK; #ok
     }
 }
 
@@ -117,10 +123,10 @@ sub is_enabled {
     my $rows = $db->do("select 1 from monitoredservers where servername=?", \@bind_params);
     if ($rows == 1) {
         INFO "<$servername> is already defined";
-        return 1; #ok
+        return $TRUE;
     } else {
         ERROR "<$servername> is found <$rows> not enabled";
-        return 0; #error
+        return $FALSE;
     }
 
 }
@@ -144,10 +150,10 @@ sub disable {
     my @bind_params = ($servername);
     my $rows = $db->do("DELETE FROM monitoredservers WHERE servername=?", \@bind_params);
     if ($rows != 1) {
-        ERROR "Couldnt delete <$servername>";
-        return 0; # error
+        ERROR "Couldn't delete <$servername>";
+        return $ERROR; # error
     }
-    return 1; # ok
+    return $OK; # ok
 }
 
 # TODO: Is this method actually required if aliases follow convention?
@@ -163,7 +169,7 @@ sub get_active_alias {
     } else {
         return $entity;
     }
-    return 0;
+    return;
 }
 
 1;

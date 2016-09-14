@@ -30,6 +30,7 @@ requires 'is_running'; # Checks status of server process
 requires 'ping'; # Executes transaction on the instance's DB
 requires 'start'; # Starts instance server
 requires 'stop'; # Stops instance server
+requires 'snapshot'; # Performs a database snapshot
 
 ## Private
 requires '_connect_db';

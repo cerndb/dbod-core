@@ -17,6 +17,7 @@ use MIME::Base64;
 use JSON;
 use Data::Dumper;
 use DBOD::Templates;
+use DBOD;
 
 our ($VERSION, @EXPORT_OK);
 
@@ -24,14 +25,16 @@ $VERSION     = 0.67;
 use base qw(Exporter);
 @EXPORT_OK   = qw( load_cache get_entity_metadata );
 
-# Loads entity/host entities metadata from cache file
+# Loads entity/host entities metadata from cache file. Returns empty if the cache does not exists.
 sub load_cache {
-    my $config = shift;
-    my $filename = $config->{'api'}->{'cachefile'};
+    my ($filename)=@_;
     DEBUG 'Loading cache from ' . $filename;
     local $/ = undef;
-    open(my $json_fh, "<:encoding(UTF-8)", $filename)
-        or return ();
+    open(my $json_fh, "<:encoding(UTF-8)", $filename) or do {
+        WARN 'File does not exist or cannot be open';
+        return ();
+    };
+
     my $json_text = <$json_fh>;
     close($json_fh);
     my $nested_array = decode_json $json_text;
@@ -42,15 +45,21 @@ sub load_cache {
 
 sub _api_client {
     my ($config, $auth) = @_;
-    DEBUG 'Api client connecting to ' . $config->{'api'}->{'host'};
+    DEBUG 'Api client connecting to '.$config->{'api'}->{'host'};
     my $client = REST::Client->new(
-        host => $config->{'api'}->{'host'},
+        host    => $config->{'api'}->{'host'},
         timeout => $config->{'api'}->{'timeout'},
     );
-    $client->addHeader('Content-Type', 'application/json');
-    $client->addHeader('Accept', 'application/json');
-    # Disable SSL host verification
-    $client->getUseragent()->ssl_opts( SSL_verify_mode => 0 ); 
+    $client->addHeader( 'Content-Type', 'application/json' );
+    $client->addHeader( 'Accept', 'application/json' );
+    if ($config->{api}->{ssl_enable}) {
+        # X509 Auth
+        $client->setCa( $config->{api}->{ssl_ca_certfile} );
+        # This seems to be needed because of an issue with the underlying LWP library
+        # not being able to verify the host certificate although the whole chain
+        # and hostname is correct
+        $client->getUseragent()->ssl_opts( verify_hostname => 0 );
+    }
     if (defined $auth) {
         my $api_user = $config->{'api'}->{'user'};
         my $api_pass = $config->{'api'}->{'password'};
@@ -81,7 +90,7 @@ sub get_entity_metadata {
     my ($entity, $cache, $config) = @_;
     my $result = _api_get_entity_metadata($entity, $config);
     if ($result->{'code'} eq '200') {
-        return $result->{'response'};
+        return shift @{$result->{response}->{response}};
     } elsif ($result->{'code'} eq '500') {
         WARN 'Returning metadata info from cache';
         return $cache->{$entity} // {};
@@ -99,16 +108,13 @@ sub set_ip_alias {
         join('/', $config->{'api'}->{'entity_ipalias_endpoint'}, $entity) .
         $params
     );
-    my %result;
-    $result{'code'} = $client->responseCode();
-    if ($result{'code'} eq '201') {
+    if ($client->responseCode() eq '201') {
         INFO 'IP Alias succesfully created for ' . $entity;
-        $result{'response'} = decode_json $client->responseContent();
+        return $OK;
     } else {
-        ERROR 'Resource not available. IP alias creation failed for ' . $entity; 
-        $result{'response'} = undef;
+        ERROR 'Resource not available. IP alias creation failed for ' . $entity;
+        return $ERROR;
     }
-    return \%result;
 }
 
 sub get_ip_alias {
@@ -116,16 +122,16 @@ sub get_ip_alias {
     my $client = _api_client($config);
     $client->GET(join '/', 
         $config->{'api'}->{'entity_ipalias_endpoint'}, $entity);
-    my %result;
-    $result{'code'} = $client->responseCode();
-    if ($result{'code'} eq '200') {
+	DEBUG "API call returns " . $client->responseCode();
+    DEBUG "API call returns " . $client->responseContent();
+    if ($client->responseCode() eq '200') {
         INFO 'IP Alias fetched for ' . $entity;
-        $result{'response'} = decode_json $client->responseContent();
+        my $result = decode_json $client->responseContent();
+        return shift @{$result->{response}};
     } else {
-        ERROR 'IP alias does not exist for ' . $entity;
-        $result{'response'} = undef;
+        WARN 'IP alias does not exist for ' . $entity;
+		return;
     }
-    return \%result;
 }
 
 sub remove_ip_alias {
@@ -133,14 +139,15 @@ sub remove_ip_alias {
     my $client = _api_client($config, 1);
     $client->DELETE(join '/', 
         $config->{'api'}->{'entity_ipalias_endpoint'}, $entity);
-    my %result;
-    $result{'code'} = $client->responseCode();
-    if ($result{'code'} eq '204') {
+    DEBUG "API call returns " . $client->responseCode();
+    DEBUG "API call returns " . $client->responseContent();
+    if ($client->responseCode() eq '204') {
         INFO 'IP Alias removed for ' . $entity;
+		return $OK;
     } else {
         ERROR 'IP alias could not be removed for ' . $entity;
+		return $ERROR;
     }
-    return \%result;
 }
 
 sub set_metadata { 
@@ -171,24 +178,30 @@ sub create_entity {
     my $metadata = DBOD::Templates::create_metadata($input, $config);
     if (defined $metadata) { 
         my $client = _api_client($config, 1);
-        $client->POST(
-            join('/', $config->{'api'}->{'entity_metadata_endpoint'}, $entity),
-            "metadata=$metadata",
+        $client->PUT(
+            join('/', $config->{'api'}->{'entity_endpoint'}, $entity),
+            $metadata,
             {
-                Content_Type => 'application/x-www-form-urlencoded',
+            Content_Type => 'application/json',
             }
         );
         my %result;
         $result{'code'} = $client->responseCode();
+		DEBUG "result: ", Dumper \%result;
         if ($result{'code'} eq '201') {
             INFO 'Entity created: ' . $entity;
+        } elsif ($result{code} eq '200') {
+			INFO 'Entity already present in database';
+        } elsif ($result{code} eq '204') {
+            INFO 'Entity updated';
         } else {
             ERROR 'Error creating entity: ' . $entity; 
-        }
-        return \%result;
+			return $ERROR;
+		}
+        return $OK;
     } else {
         ERROR "Entity metadata not valid. Aborting operation";
-        return;
+        return $ERROR;
     }
 }
 

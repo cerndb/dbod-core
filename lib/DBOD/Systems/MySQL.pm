@@ -14,8 +14,13 @@ use Moose;
 with 'DBOD::Instance';
 
 use Data::Dumper;
+use File::Basename;
+use POSIX qw(strftime);
+
 use DBOD;
 use DBOD::Runtime;
+use DBOD::Storage::NetApp::ZAPI;
+use DBOD::Storage::NetApp::Snapshot;
 
 # input parameters
 has 'instance' => ( is => 'ro', isa => 'Str', required => 1);
@@ -37,7 +42,7 @@ sub BUILD {
     $self->socket($self->metadata->{socket});
 
     my $ip_alias = 'dbod-' . lc $self->instance() . ".cern.ch";
-    $ip_alias =~ s/\_/\-/g;
+    $ip_alias =~ s/\_/\-/gx;
     $self->ip_alias($ip_alias);
 
     $self->logger->debug("Instance: " . $self->instance);
@@ -93,22 +98,44 @@ sub _parse_err_file {
 	return $res;
 }
 
+sub _binary_log{
+    my $self = shift;
+    if (! defined $self->db()){
+        $self->_connect_db();
+    }
+    my $rows = $self->db->select("show master status");
+    if (scalar @{$rows} != 1) {
+        $self->log->error("Error querying master status");
+        return;
+    }
+    # Unpacking result
+    my @buf = @{$rows};
+    my @row = @{$buf[0]}[0];
+    $self->log->debug('Current binary log file: ' . $row[0]);
+    return $row[0];
+}
+
 sub is_running {
 	my $self = shift;
     my ($output, @buf);
-	DBOD::Runtime::run_cmd(
+	my $error = DBOD::Runtime::run_cmd(
         cmd => "ps -u mysql -f",
         output => \$output);
-    @buf = split m{/\n/}x, $output;
-    my $datadir = $self->datadir();
-    my @search =  grep {/$datadir/} @buf;
-    if (scalar @search) {
-		$self->log->debug("Instance is running");
-		return $TRUE;
-	} else {
-		$self->log->debug("Instance not running");
-		return $FALSE;
-	}
+    if (! $error) {
+        @buf = split m{/\n/}x, $output;
+        my $datadir = $self->datadir();
+        my @search = grep {/$datadir/x} @buf;
+        if (scalar @search) {
+            $self->log->debug( "Instance is running" );
+            return $TRUE;
+        } else {
+            $self->log->debug( "Instance not running" );
+            return $FALSE;
+        }
+    } else {
+        $self->log->error("Problem getting process list");
+        return $FALSE;
+    }
 }
 
 sub ping {
@@ -178,7 +205,7 @@ sub start {
 
 #Stops a MySQL database
 sub stop {
-	my ($self) = @_;
+	my $self = shift;
     my $entity = 'dod_' . $self->instance;
 	if ($self->is_running()) {
         my ($cmd, $error);
@@ -199,6 +226,192 @@ sub stop {
         return $OK;
     }
 }
+
+sub _get_ZAPI_server_and_volume {
+    my $self = shift;
+    # Get ZAPI server
+    my $zapi = DBOD::Storage::NetApp::ZAPI->new( config => $self->config() );
+    my $datadir_nosuffix = dirname( $self->datadir() );
+    my $arref = $zapi->get_server_and_volname( $datadir_nosuffix );
+    my ($server_zapi, $volume_name) = @{$arref};
+    if ((!defined $server_zapi) || (!defined $volume_name)) {
+        $self->log->error( "Error generating ZAPI server" );
+        return;
+    }
+    return ($server_zapi, $volume_name);
+}
+
+sub snapshot {
+    my $self = shift;
+
+    if (! $self->is_running()) {
+        $self->log->error("Snapshotting requires a running instance");
+        return $ERROR;
+    }
+    
+    unless (defined $self->db()) {
+        $self->_connect_db();
+    };
+
+    my $zapi = DBOD::Storage::NetApp::ZAPI->new( config => $self->config() );
+    my ($server_zapi, $volume) = $self->_get_ZAPI_server_and_volume();
+
+    # Snapshot preparation
+    my $rc = $zapi->snap_prepare($server_zapi, $volume);
+    if ($rc == $ERROR) {
+        $self->log->error("Error preparing snapshot");
+        return $ERROR;
+    }
+
+    # Pre-snapshot actions
+    $self->log->debug("Flushing tables");
+    $rc = $self->db->do("flush tables with read lock");
+    if ($rc == $ERROR) {
+        $self->log->error("Error flushing tables");
+        return $ERROR;
+    }
+    $self->log->debug("Flushing logs");
+    $rc = $self->db->do("flush logs");
+    if ($rc == $ERROR) {
+        $self->log->error("Error flushing logs. Aborting snapshot");
+		$self->log->debug("Unlocking tables");
+        if ($self->db->do("unlock tables") == $ERROR){
+            $self->log->error("Error unlocking tables! Please contact an admin");
+        };
+        return $ERROR;
+    }
+
+    my $binlog_file = $self->_binary_log();
+    my ($log_prefix, $log_sequence) = split /\./x, $binlog_file;
+    if (! defined $log_sequence || ! defined $log_prefix) {
+        $self->log->error("Actual log_sequence couldnt be determined. Please check.");
+        return $ERROR;
+    }
+
+    # Create snapshot label (Missing version at the end)
+    my $log_num;
+    if (int($log_sequence) > 0) {
+        $log_num = int($log_sequence) + 1;
+    }
+    my $timetag = strftime "%d%m%Y_%H%M%S", gmtime;
+    my $version = $self->metadata->{version};
+    $version =~ tr/\.//d;
+    my $snapname = "snapscript_" . $timetag . "_" . $log_num . "_" . $version;
+
+    # Create snapshot
+    $rc = $zapi->snap_create($server_zapi, $volume, $snapname);
+    my $errorflag = $OK;
+    if ($rc == $ERROR ) {
+        $errorflag = $ERROR;
+        $self->log->error("Error creating snapshot");
+    }
+
+    # Disable backup mode
+	$self->log->debug("Unlocking tables");
+    $rc = $self->db->do("unlock tables");
+    if ($rc != $OK) {
+        $self->log->error("Error unlocking tables! Please contact an admin");
+        return $ERROR;
+    }
+    return $errorflag;
+}
+
+sub _list_binary_logs {
+    my ( $self, $pattern ) = @_;
+    my $dir = $self->metadata->{binlogdir};
+    $self->log->debug("Reading <$dir> for binary logs: <$pattern>");
+
+    my @files;
+    opendir( D, $dir ) || $self->log->debug("Cannot read directory $dir : $!");
+    if ( defined $pattern ) {
+        @files = grep { /$pattern/ } readdir(D);
+    }
+    else {
+        @files = grep { !/^\.\.?$/ } readdir(D);
+    }
+    closedir(D);
+    return \@files;
+}
+
+sub restore {
+    my $self = shift;
+    my ($snapshot, $pit) = @_;
+    return $ERROR unless (defined $snapshot);
+
+    $self->log->debug('Restoring database to ' . $snapshot );
+    $self->log->debug('Using ' . $pit) if (defined $pit);
+
+    # Get ZAPI server controller object
+    my $zapi = DBOD::Storage::NetApp::ZAPI->new( config => $self->config() );
+    my ($zapi_server, $volume) = $self->_get_ZAPI_server_and_volume();
+    return $ERROR unless ((defined $zapi_server) and (defined $volume));
+
+    # Validate parameters validity
+    my $actual_version =
+        DBOD::Runtime::get_instance_version( $self->metadata->{'version'} );
+    if (
+        DBOD::Storage::NetApp::Snapshot::is_valid(
+            $snapshot, $pit, $actual_version
+        ) == $FALSE
+    )
+    {
+        $self->log->error( 'Error validating snapshot file and/or PITR time' );
+        return $ERROR;
+    }
+
+    # Fetch list of available binary log files
+    my $binlogs = $self->_list_binary_logs("^binlog\\.\\d+");
+    my @binlogs = sort(@{$binlogs});
+    $self->log->debug('Found binary logs:' . Dumper \@binlogs);
+    # Create list of binary log files to use in crash recovery
+	my $fromsnap;
+	if ($snapshot =~ /snapscript_.*_(\d+)_$actual_version+$/) {$fromsnap = $1};
+    $self->log->debug('Binlog #'. $fromsnap . ' at time of snapshot');
+
+	my @pitrlogs = @binlogs;
+    my ($pitrlogs);
+	foreach my $binlog (\@binlogs) {
+		$self->log->debug('binlog: ' . $binlog);
+        unless ( $binlog =~ /binlog\..*?$fromsnap$/ ) {
+			shift @pitrlogs;
+		} else {
+			last;
+		}
+	}
+    if (scalar(@pitrlogs) == 0 ) {
+        $self->log->error(
+            "Crash recovery will not be possible binary logs are missing!");
+        return $ERROR;
+    }
+	$pitrlogs = join( " ", @pitrlogs);
+    $self->log->debug("Binary logs available for PITR: <$pitrlogs>");
+
+    # Stop database
+    if ($self->is_running()) {
+        return $ERROR if ($self->stop());
+    }
+
+    # Restore snapshot;
+    my $rc = $zapi->snap_restore($zapi_server, $volume, $snapshot);
+    if ($rc == $ERROR) {
+        $self->log->error('Error restoring snapshot: ' . $snapshot);
+        $self->log->error('Affected volume: ' . $volume);
+        return $ERROR;
+    }
+    $self->log->debug('Successfully restored snapshot ' . $snapshot);
+    $self->log->debug('Affected volume: ' . $volume);
+
+    # Re-start the database with disabled networking to perform
+    # Crash recovery
+    return $ERROR if $self->start( skip_networking => $TRUE);
+    # Restart normally
+    return $ERROR if ($self->stop());
+    return $ERROR if ($self->start());
+
+    # TODO: Implement PITR
+    return $OK;
+}
+
 
 1;
 

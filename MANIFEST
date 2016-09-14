@@ -1,4 +1,3 @@
-.travis.yml
 bin/cpanm
 COPYRIGHT
 dbod-core.spec
@@ -27,6 +26,7 @@ lib/DBOD/Network/LanDB.pm
 lib/DBOD/Systems/CRS.pm
 lib/DBOD/Systems/MySQL.pm
 lib/DBOD/Systems/PG.pm
+lib/DBOD/Systems/InfluxDB.pm
 lib/DBOD/Storage/NetApp/Snapshot.pm
 lib/DBOD/Storage/NetApp/ZAPI.pm
 LICENSE
@@ -34,21 +34,11 @@ Makefile.PL
 MANIFEST			This list of files
 META.yml
 README.md
-scripts/init_instance
-scripts/dbod_ping
-scripts/mysql_appdynamics
-scripts/mysql_restore
-scripts/mysql_snapclone
-scripts/mysql_snapshot
-scripts/mysql_start
-scripts/mysql_stop
-scripts/pg_appdynamics
-scripts/pg_restore
-scripts/pg_snapclone
-scripts/pg_snapshot
-scripts/pg_start
-scripts/pg_stop
-scripts/pg_upgrade
+scripts/dbod-init
+scripts/dbod-ping
+scripts/dbod-start
+scripts/dbod-stop
+scripts/dbod-backup
 share/configpath.conf
 share/dbod-core.conf-template
 share/entities.json
@@ -61,6 +51,7 @@ share/templates/ldap/pg
 share/templates/ldap/tnsnetservice
 share/test.json
 share/sample_mtab
+share/influxdb_entity_example.json
 t/api.t
 t/config.t
 t/db.t
@@ -72,3 +63,4 @@ t/network.t
 t/pg.t
 t/runtime.t
 t/templates.t
+t/influxdb.t

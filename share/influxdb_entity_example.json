@@ -1,0 +1,51 @@
+[
+  [
+    "my_influx",
+    {
+      "basedir": "/usr/local/influxdb/influxdb-0.13.0",
+      "waldir": "/ORA/dbs02/INFLUX_T",
+      "datadir": "/ORA/dbs03/INFLUX_T/data",
+      "metadir": "/ORA/dbs03/INFLUX_T/meta",
+      "configfile":"/ORA/dbs03/INFLUX_T/influxdb.conf",
+      "pidfile": "/var/run/influxdb-my_influx/influxd.pid",
+      "environment_file": "/etc/default/influxdb",
+      "version": "0.13.0",
+      "query-timeout": "30m",
+      "max-concurrent-queries": 0,
+      "log-queries-after": "30m",
+      "cache-max-memory-size": 524288000,
+      "cache-snapshot-memory-size": 26214400,
+      "volumes": [
+        {
+          "group": "influxdb",
+          "file_mode": "0755",
+          "server": "nas1",
+          "mount_options": "rw,bg,hard,nointr,tcp,vers=3,noatime,timeo=600,rsize=65536,wsize=65536",
+          "owner": "influxdb",
+          "mounting_path": "/ORA/dbs02/INFLUX_T"
+        },
+        {
+          "group": "influxdb",
+          "file_mode": "0755",
+          "server": "nas2",
+          "mount_options": "rw,bg,hard,nointr,tcp,vers=3,noatime,timeo=600,rsize=65536,wsize=65536",
+          "owner": "influxdb",
+          "mounting_path": "/ORA/dbs03/INFLUX_T"
+        }
+      ],
+      "hosts": [
+        "localhost"
+      ],
+      "udp": [
+        {
+          "bind-address": 8099,
+          "database": "gitlab"
+        }
+      ],
+      "type": "DEV",
+      "port": "8086",
+      "bindir": "/usr/bin",
+      "subcategory": "InfluxDB"
+    }
+  ]
+]

@@ -6,18 +6,13 @@
 # granted to it by virtue of its status as Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-package dbod_ping;
+package dbod_start;
  
 use warnings;
 use strict;
 
 use DBOD::Job;
 use Data::Dumper;
-
-# Initiates logger
-BEGIN { 
-    Log::Log4perl->easy_init() ;
-}
 
 my $job = DBOD::Job->new_with_options();
 
@@ -26,7 +21,7 @@ use DBOD::Instance;
  
 sub body {
 
-    $job->log->debug('Pinging ' . $job->entity() . '/' . 
+    $job->log->debug('Storting' . $job->entity() . '/' . 
         $job->metadata->{subcategory});
     
     my $instance = DBOD::Instance::Factory->create(
@@ -37,13 +32,10 @@ sub body {
     
     if ($job->is_local()) {
         $job->log->debug('Job running locally in database host');
-        unless ($instance->is_running()) {
-            $job->log->error('Instance OS process not found');
-            return $ERROR;
-        }
+        return $instance->start();
     } else {
-        $job->log->debug('Job running from remote host');
-        return $instance->ping();
+        $job->log->error('This command has to be run locally');
+        return $ERROR;
     }
     return $OK; 
 }

@@ -1,6 +1,6 @@
 # DBOD-core
 
-[![Build Status](https://travis-ci.org/cerndb/DBOD-core.svg?branch=master)](https://travis-ci.org/cerndb/DBOD-core)
+[![Build Status](https://travis-ci.org/cerndb/dbod-core.svg?branch=master)](https://travis-ci.org/cerndb/DBOD-core)
 [![Coverage Status](https://coveralls.io/repos/cerndb/DBOD-core/badge.svg)](https://coveralls.io/r/cerndb/DBOD-core)
 
 ## Objectives
@@ -27,14 +27,24 @@ also trying set a base which eases the implementation of future extensions.
 
 ## Development setup installation
 
-This procedure assumes you have installed *cpanm*, and requires the use of *inc::Module::Install*.
+This procedure assumes you have installed *cpanm*, and requires the use of *inc::Module::Install* and *File::ShareDir*.
 
 ```bash
    $ git clone https://github.com/cerndb/DBOD-core.git dbod-core
    $ cd dbod-core
    $ cpanm inc::Module::Install
+   $ cpanm File::ShareDir
    $ cpanm --installdeps .
+
+   $ # Build and install
+   $ make
+   $ make install
+
+   $ # Run tests (optional)
+   $ make test
 ```
+
+
 
 Please note that the list of requirements include database drivers, which in turn require
 additional packages to be build. The names of the required extra packages will vary depend on

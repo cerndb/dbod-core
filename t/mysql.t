@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-
+use DBOD::Config;
 use Test::More;
 use File::ShareDir;
 use Data::Dumper;
@@ -22,6 +22,7 @@ my $metadata = {
     socket => "/tmp/socket",
     subcategory => 'mysql',
     port => '5500',
+    version => '5.6.17',
 };
 
 my $config = {
@@ -70,8 +71,8 @@ $mymod->mock('_parse_err_file' => sub {
 
 is($mysql->is_running(), $TRUE, 'Instance is RUNNING');
 is($mysql->start(), $OK, 'start OK: Nothing to do');
-is($mysql->stop(), $OK, 'stop OK');
 is($mysql->stop(), $ERROR, 'stop FAIL');
+is($mysql->stop(), $OK, 'stop OK');
 
 $runtime->mock('run_cmd' =>
     sub {
@@ -118,11 +119,112 @@ isa_ok( $mysql->db(), 'DBOD::DB', 'db connection object OK' );
 $mymod->unmock('_parse_err_file');
 $runtime->unmock('run_cmd');
 
-my $mtab_file = File::ShareDir::dist_dir('DBOD') . '/sample_mtab';
+my $mtab_file = DBOD::Config::get_share_dir() . '/sample_mtab';
 diag Dumper $mtab_file;
 my $buf = $mysql->_parse_err_file('PIN', $mtab_file);
 ok(length $buf > 0, '_parse_err_file');
 
+# snapshot testing
+subtest 'snapshot' => sub {
+
+        my @outputs = (
+            $FALSE, # Error no instance running
+            $TRUE, # Error no ZAPI server
+            $TRUE, # Error preparing snapshot
+            $TRUE, # Error flushing tables
+            $TRUE, # Error flushing logs
+            $TRUE, # Error unlocking tables
+            $TRUE, # Error determining log sequence
+            $TRUE, # Error creating snapshot
+            $TRUE, # Error unlocking tables
+            $TRUE, # Succesful snapshot
+        );
+
+        $mymod->mock('is_running' => sub {
+                return shift @outputs;
+            });
+
+        $db->mock('select' => sub {
+                my @row = ("binlog.000354",);
+                my @rows = (\@row,);
+                return \@rows;
+            });
+
+        my $zapi = Test::MockModule->new('DBOD::Storage::NetApp::ZAPI');
+
+        # We start failing everything
+        $zapi->mock( 'get_server_and_volname' =>
+            sub {
+                my @buf = (undef, undef);
+                return \@buf;
+            });
+
+        $zapi->mock( 'snap_prepare' => sub { return $ERROR; });
+        $zapi->mock( 'snap_create' => sub { return $ERROR; });
+
+        is($mysql->snapshot(), $ERROR, 'Snapshot ERROR. No Instance running');
+        is($mysql->snapshot(), $ERROR, 'Snapshot ERROR. No ZAPI server');
+        $zapi->mock( 'get_server_and_volname' =>
+            sub {
+                my @buf = ("server_zapi", "volume_name");
+                return \@buf;
+            });
+        is($mysql->snapshot(), $ERROR, 'Snapshot ERROR. Error preparing snapshot');
+        $zapi->mock( 'snap_prepare' => sub { return $OK; });
+
+        @db_do_outputs = (
+            $ERROR, # Error flushing tables
+            $OK, $ERROR, $ERROR,# Error flushing logs. Unlock Error
+            $OK, $ERROR, $OK,# Error flushing logs. Unlock OK
+            $OK, $OK, $OK,# Error creating snapshot
+            $OK, $OK, $ERROR, # Error unlocking tables
+            $OK, $OK, $OK, # Succesful snapshot
+        );
+
+        $db->mock('do' => sub {
+                my $buf = shift @db_do_outputs;
+				diag 'do: ' .  $buf;
+                return $buf;
+            });
+
+        is($mysql->snapshot(), $ERROR, 'Snapshot ERROR. Error flushing tables');
+        is($mysql->snapshot(), $ERROR, 'Snapshot ERROR. Error flushing logs');
+        is($mysql->snapshot(), $ERROR, 'Snapshot ERROR. Error flushing logs. Unlock OK');
+        is($mysql->snapshot(), $ERROR, 'Snapshot ERROR. Error creating snapshot');
+        $zapi->mock( 'snap_create' => sub { return $OK; });
+        is($mysql->snapshot(), $ERROR, 'Snapshot completed. Error unlocking tables');
+        is($mysql->snapshot(), $OK, 'Snapshot OK');
+
+    };
+
+subtest 'restore' => sub {
+		use Test::MockObject;
+		my $snapshot =  'snapscript_03122015_174427_222_5617';
+		my $pit = '2016-02-13_09:23:34';
+        
+		is($mysql->restore(), $ERROR, 'Restore without snapshot ERROR');
+        my $mtab_file = DBOD::Config::get_share_dir() . '/sample_mtab';
+        my $mntpoint = '/ORA/dbs03/PINOCHO';
+        my $regex = "^(.*?dbnas[\\w-]+):(.*?)\\s+($mntpoint)\\s+nfs";
+		# Mocking ZAPI methods
+		my $zapi_mock = Test::MockModule->new('DBOD::Storage::NetApp::ZAPI');
+		my $server_zapi = Test::MockObject->new();
+		$zapi_mock->mock('get_server_and_volname' => sub { 
+				my @array = ($server_zapi, $mntpoint);
+				return \@array;
+			});
+        is($mysql->restore($snapshot), $ERROR, 'Restore missing binary logs');
+		# Mock list of binary logs
+		$mymod->mock('_list_binary_logs' => sub {
+				my @array = ('binlog.000222', 'binlog.000223', 'binlog.000224');
+				return \@array;
+			});
+		$zapi_mock->mock('snap_restore' => sub { return $ERROR } );
+        is($mysql->restore($snapshot), $ERROR, 'snap_estore fail');
+		$zapi_mock->mock('snap_restore' => sub { return $OK } );
+		# Succesful restore
+        is($mysql->restore($snapshot), $OK, 'Restore successful');
+};
 
 done_testing();
 

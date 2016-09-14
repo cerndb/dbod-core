@@ -1,0 +1,49 @@
+#!/usr/bin/env perl
+# Copyright (C) 2015, CERN
+# This software is distributed under the terms of the GNU General Public
+# Licence version 3 (GPL Version 3), copied verbatim in the file "LICENSE".
+# In applying this license, CERN does not waive the privileges and immunities
+# granted to it by virtue of its status as Intergovernmental Organization
+# or submit itself to any jurisdiction.
+
+package dbod_ping;
+ 
+use warnings;
+use strict;
+
+use DBOD::Job;
+use Data::Dumper;
+
+my $job = DBOD::Job->new_with_options();
+
+use DBOD qw ($ERROR $OK $db_type);
+use DBOD::Instance;
+
+$ENV{PERL_LWP_SSL_VERIFY_HOSTNAME}= 0 ;
+
+sub body {
+
+    $job->log->debug('Pinging ' . $job->entity() . '/' . 
+        $job->metadata->{db_type});
+    
+    my $instance = DBOD::Instance::Factory->create(
+        $db_type->{$job->metadata->{db_type}},
+        instance => $job->entity(),
+        metadata => $job->metadata(),
+        config => $job->config());
+    
+    if ($job->is_local()) {
+        $job->log->debug('Job running locally in database host');
+        unless ($instance->is_running()) {
+            $job->log->error('Instance OS process not found');
+            return $ERROR;
+        }
+    } else {
+        $job->log->debug('Job running from remote host');
+        return $instance->ping();
+    }
+    return $OK; 
+}
+
+$job->run(\&body);
+

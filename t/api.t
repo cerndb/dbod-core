@@ -12,7 +12,11 @@ use Test::MockModule;
 
 use JSON;
 
-my $share_dir = File::ShareDir::dist_dir('DBOD');
+use DBOD;
+use DBOD::Config;
+
+
+my $share_dir = DBOD::Config::get_share_dir();
 my $filename = "$share_dir/test.json";
 my %config = ();
 my %api = ();
@@ -21,21 +25,19 @@ $api{'host'} = "https://api-server:443";
 $api{'timeout'} = "3";
 $api{'user'} = "API-USER";
 $api{'password'} = "XXXXXXXXX";
-$api{'entity_metadata_endpoint'} = "api/v1/entity";
-$api{'entity_ipalias_endpoint'} = "api/v1/entity/alias";
+$api{'entity_metadata_endpoint'} = "api/v1/metadata/instance";
+$api{'entity_ipalias_endpoint'} = "api/v1/instance/alias";
+$api{'entity_endpoint'} = "api/v1/instance";
 
 $config{'api'} = \%api;
 $config{'common'} = { template_folder => "${share_dir}/templates" };
 
 # DBOD::Api::load_cache
 note( "%config is " . Dumper \%config );
-my %cache = DBOD::Network::Api::load_cache(\%config);
+my %cache = DBOD::Network::Api::load_cache($config{'api'}{'cachefile'});
 note( Dumper \%cache );
 
-isa_ok(\%cache, 'HASH');
-ok(exists $cache{'a'});
-ok(exists $cache{'c'});
-is($cache{'b'}{'prop1'}, 'value1');
+isa_ok(\%cache, 'HASH', 'Cache is a HASH');
 
 # We need to Mock the _api_client method on the
 # DBOD::Api module
@@ -60,45 +62,38 @@ subtest 'get_entity_metadata' => sub {
 
     $rest_client->mock('responseCode', sub { return "200" } );
     $rest_client->mock('responseContent', 
-        sub { return "{\"metadata\":\"test\"}" } );
+        sub { return "{\"response\":[{\"metadata\":\"test\"}]}" } );
     ok(DBOD::Network::Api::get_entity_metadata('unexistant', \%cache, \%config),
         "Method call");
     my $metadata = DBOD::Network::Api::get_entity_metadata('unexistant', \%cache,
         \%config);
     isa_ok($metadata, 'HASH', 'Result is a HASH/HASHREF');
-    ok(exists $metadata->{metadata}, "Result has metadata field");
-    note( Dumper $metadata );
     
     # Test failure
     $rest_client->mock('responseCode', sub { return "404" } );
-    $rest_client->mock('responseContent', sub { return "" } );
-    ok(DBOD::Network::Api::get_entity_metadata('unexistant', \%cache, \%config),
-        "Method call: error");
+    $rest_client->mock('responseContent', sub { return "{\"response\": []}" } );
     $metadata = DBOD::Network::Api::get_entity_metadata('unexistant', \%cache, \%config);
     isa_ok($metadata, 'HASH', 'Result is a HASH/HASHREF');
-    ok(!exists $metadata->{metadata}, "Result has empty metadata field");
+    ok(!exists $metadata->{response}, "Result has empty metadata field");
 };
 
 # DBOD::Api::get_ip_alias
 subtest 'get_ip_alias' => sub {
 
     $rest_client->mock('responseCode', sub { return "200" } );
-    $rest_client->mock('responseContent', sub { return "{\"ipalias\":\"dbod-test\"}" } );
+	my %buf = ( ipalias => 'dbod-test.cern.ch', dns_name => 'dns-name-xxx' );
+	my %resp = ( response => [\%buf] );
+    $rest_client->mock('responseContent', sub { return encode_json \%resp } );
     ok(DBOD::Network::Api::get_ip_alias($entity, \%config), "Method call");
     my $result = DBOD::Network::Api::get_ip_alias($entity, \%config);
     note( Dumper $result );
-    ok(exists $result->{code}, 'Result has code field');
-    ok(exists $result->{response}, 'Result has response field');
-    
+    ok(exists $result->{dns_name}, 'Result has dns_name field');
+    ok(exists $result->{ipalias}, 'Result has ipalias field');
+
     # Test failure
     $rest_client->mock('responseCode', sub { return "404" } );
     $rest_client->mock('responseContent', sub { return "" } );
-    ok(DBOD::Network::Api::get_ip_alias($entity, \%config), "Method call: error");
-    $result = DBOD::Network::Api::get_ip_alias($entity, \%config);
-    note( Dumper $result );
-    ok(exists $result->{code}, 'Result has code field');
-    ok(exists $result->{response}, 'Result has response field');
-
+    is(DBOD::Network::Api::get_ip_alias($entity, \%config), undef, "Method call: error");
 };
 
 # DBOD::Api::set_ip_alias 
@@ -106,21 +101,16 @@ subtest 'set_ip_alias' => sub {
 
     $rest_client->mock('responseCode', sub { return "201" } );
     $rest_client->mock('responseContent', sub { return "{\"ipalias\":\"dbod-test\"}" } );
-    ok(DBOD::Network::Api::set_ip_alias($entity, 'ip-alias',\%config), "set_ip_alias");
+    is(DBOD::Network::Api::set_ip_alias($entity, 'ip-alias',\%config), $OK, "set_ip_alias");
     my $result = DBOD::Network::Api::set_ip_alias($entity, 'ip-alias',\%config);
     note( Dumper $result );
-    ok(exists $result->{code}, 'Result has code field');
-    ok(exists $result->{response}, 'Result has response field');
 
     # Test failure
     $rest_client->mock('responseCode', sub { return "404" } );
     $rest_client->mock('responseContent', sub { return "" } );
-    ok(DBOD::Network::Api::set_ip_alias($entity, 'ip-alias', \%config), "set_ip_alias: error");
+    is(DBOD::Network::Api::set_ip_alias($entity, 'ip-alias', \%config), $ERROR, "set_ip_alias: error");
     $result = DBOD::Network::Api::set_ip_alias($entity, 'ip-alias', \%config);
     note( Dumper $result );
-    ok(exists $result->{code}, 'Result has code field');
-    ok(exists $result->{response}, 'Result has response field');
-
 };
 
 # DBOD::Api::remove_ip_alias
@@ -128,20 +118,12 @@ subtest 'remove_ip_alias' => sub {
     
     $rest_client->mock('responseCode', sub { return "204" } );
     $rest_client->mock('responseContent', sub { return "" } );
-    ok(DBOD::Network::Api::remove_ip_alias($entity, \%config), "Method call");
-    my $result = DBOD::Network::Api::remove_ip_alias($entity, \%config);
-    note (Dumper $result);
-    ok(exists $result->{code}, 'Result has code fieldd');
-    ok(!exists $result->{response}, 'Result has not response field');
+    is(DBOD::Network::Api::remove_ip_alias($entity, \%config), $OK, "Method call");
     
     # Test failure
     $rest_client->mock('responseCode', sub { return "404" } );
     $rest_client->mock('responseContent', sub { return "" } );
-    ok(DBOD::Network::Api::remove_ip_alias($entity, \%config), "Method call: error");
-    $result = DBOD::Network::Api::remove_ip_alias($entity, \%config);
-    note (Dumper $result);
-    ok(exists $result->{code}, 'Result has code fieldd');
-    ok(!exists $result->{response}, 'Result has not response field');
+    is(DBOD::Network::Api::remove_ip_alias($entity, \%config), $ERROR, "Method call: error");
 
 };
 
@@ -177,18 +159,14 @@ subtest 'create_entity' => sub {
 
     $rest_client->mock('responseCode', sub { return "201" } );
     $rest_client->mock('responseContent', sub { return "" } );
-    ok(DBOD::Network::Api::create_entity($input, \%config), "Method call");
     my $result = DBOD::Network::Api::create_entity($input, \%config);
-    note (Dumper $result);
-    ok(exists $result->{code}, 'Result has code field');
+    is($result, $OK, 'Entity created');
     
     # Test failure
     $rest_client->mock('responseCode', sub { return "404" } );
     $rest_client->mock('responseContent', sub { return "" } );
-    ok(DBOD::Network::Api::create_entity($input, \%config), "set_metadata: error");
     $result = DBOD::Network::Api::create_entity($input, \%config);
-    note (Dumper $result);
-    ok(exists $result->{code}, 'Result has code field');
+    is($result, $ERROR, 'Result has code field');
 
 };
 

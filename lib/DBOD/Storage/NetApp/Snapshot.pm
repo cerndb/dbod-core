@@ -13,13 +13,13 @@ use Log::Log4perl qw(:easy);
 use Time::Local;
 
 # TODO: Substitute the Regexp validations for actual Date types checks.
-
-sub check_times {
+# TODO: Add version validation
+sub is_valid {
     # Check snapshot file format and PITR provided
     # Expected to return the snapshot version
     my ($snapshot, $pitr, $current_version) = @_;
-    my ($numsecs, $version) = validate($snapshot);
-    my $numsecs_pitr = validate_PITR($pitr);
+    my ($numsecs, $version) = validate_snapshot($snapshot);
+    my $numsecs_pitr = validate_PITR($pitr) if defined($pitr);
     if ($version != $current_version){
         ERROR "Snapshot version missmatch";
         return 0;
@@ -38,7 +38,7 @@ sub check_times {
     return 1;
 }
 
-sub validate {
+sub validate_snapshot {
     my $snapshot = shift;
     if ( $snapshot =~ /snapscript_(\d\d)(\d\d)(\d\d\d\d)_(\d\d)(\d\d)(\d\d)_(\d+)_(\d+)/x ) {
         my ($year, $month, $day, $hour, $min, $sec, $binlog, $version);

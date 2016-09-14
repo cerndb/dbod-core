@@ -1,0 +1,116 @@
+version: 1
+
+dn: SC-ENTITY=[% entity %],SC-CATEGORY=entities,ou=syscontrol,dc=cern,dc=ch
+objectClass: SC-ORACLE-RDBMS-SERVICE
+SC-ARCHIVE-RETENTION: 15
+SC-ARCHIVEDIR-LOCATION: /ORA/dbs02/[% DBNAME %]/archive
+SC-AUTOMATIC-STARTUP: no
+SC-BINDIR-LOCATION: /usr/local/pgsql/pgsql-[% version %]/bin
+SC-CATEGORY: ORADB
+SC-COMMENT: -
+SC-CONFIGURATION-DIRECTORY: /ORA/dbs01/syscontrol
+SC-DATADIR-LOCATION: /ORA/dbs03/[% DBNAME %]/data
+SC-DB-COMPILED-PLATFORM: 64
+SC-DB-DATABASE-NAME: [% dbname %]
+SC-DB-DBID: -
+SC-DOMAIN: DOD
+SC-ENTITY: [% entity %]
+SC-FLAG-EXCLUDE-FROM-TNSNAMES-DISTRIBUTION: true
+SC-FLAG-EXCLUDE-FROM-TNSNAMES-GENERATION: true
+SC-INTERFACE-COMMANDS-GROUP: DOD
+SC-LOGS-OWNER: postgres
+SC-MANAGEMENT-GROUP-EXECUTE: agc-system
+SC-MANAGEMENT-GROUP-VIEW: agc-system
+SC-MASTER: -
+SC-ORACLE-HOME: -
+SC-OS: Linux
+SC-PACKAGES-GROUP: DBOD_DB6_STABLE
+SC-PROFILE: tabxml_generated
+SC-PROFILE-GROUP: INFRA
+SC-PROFILE-GROUP: PERL_10_2_0
+SC-PROFILE-GROUP: DBOD_PGSQL
+SC-PROJECT: INFRADB
+SC-RUN-AS: postgres
+SC-SHARED-INSTANCE: -
+SC-SLAVE: -
+SC-SORT-PROFILE: true
+SC-STARTUP-ORDER: -1
+SC-STATE: active
+SC-SUBCATEGORY: PGSQL
+SC-SYSTEM-COMMANDS-GROUP: DOD
+SC-SYSTEM-COMMANDS-GROUP: ALL
+SC-TNS-NAMES-NAME: [% entity %]
+SC-TSM-SERVER: -
+SC-TYPE: DEV
+SC-UNIX-OWNER: postgres
+SC-VERSION: [% version %]
+SC-XLOGDIR-LOCATION: /ORA/dbs02/[% DBNAME %]/pg_xlog
+
+dn: SC-CATEGORY=tnsnetservices,SC-ENTITY=[% entity %],SC-CATEGORY=entities,ou=syscontrol,dc=cern,dc=ch
+objectClass: SC-CATEGORY
+SC-CATEGORY: tnsnetservices
+
+dn: SC-TNS-NET-SERVICE-NAME=[% entity %]_con,SC-CATEGORY=tnsnetservices,SC-ENTITY=[% entity %],SC-CATEGORY=entities,ou=syscontrol,dc=cern,dc=ch
+objectClass: SC-ORACLE-SERVICE
+SC-ADDRESS-REF: 0
+SC-TNS-NET-SERVICE-NAME: [% entity %]_con
+SC-TNS-INSTANCE-NAME: [% DBNAME %]
+SC-TNS-PINGABLE: false
+
+dn: SC-CATEGORY=hosts,SC-ENTITY=[% entity %],SC-CATEGORY=entities,ou=syscontrol,dc=cern,dc=ch
+objectClass: SC-CATEGORY
+SC-CATEGORY: hosts
+
+[% FOREACH host IN hosts -%]
+dn: SC-HOST-NAME=[% host %],SC-CATEGORY=hosts,SC-ENTITY=[% entity %],SC-CATEGORY=entities,ou=syscontrol,dc=cern,dc=ch
+objectClass: SC-HOST-INSTANCE
+SC-HOST-ID: [% loop.count %]
+SC-HOST-NAME: [% host %]
+SC-LOGIN-AS: sysctl
+SC-TNS-LISTENER-NAME: [% socket %]
+[% END %]
+
+dn: SC-CATEGORY=db-addresses,SC-ENTITY=[% entity %],SC-CATEGORY=entities,ou=syscontrol,dc=cern,dc=ch
+objectClass: SC-CATEGORY
+SC-CATEGORY: db-addresses
+
+dn: SC-DB-ADDRESS-ID=0,SC-CATEGORY=db-addresses,SC-ENTITY=[% entity %],SC-CATEGORY=entities,ou=syscontrol,dc=cern,dc=ch
+objectClass: SC-DB-ADDRESS
+SC-DB-ADDRESS-ID: 0
+SC-DB-ADDRESS-IP: [% ipalias %]
+SC-DB-ADDRESS-PORT: [% port %]
+
+dn: SC-CATEGORY=nfs-volumes,SC-ENTITY=[% entity %],SC-CATEGORY=entities,ou=syscontrol,dc=cern,dc=ch
+objectClass: SC-CATEGORY
+SC-CATEGORY: nfs-volumes
+
+dn: SC-NFS-VOLUME-ID=1,SC-CATEGORY=nfs-volumes,SC-ENTITY=[% entity %],SC-CATEGORY=entities,ou=syscontrol,dc=cern,dc=ch
+objectClass: SC-NFS-VOLUME
+SC-NFS-VOLUME-GROUP: postgres
+[% FOREACH host IN hosts -%]
+SC-NFS-VOLUME-HOST-REF: [% host %]
+[% END -%]
+SC-NFS-VOLUME-ID: 1
+SC-NFS-VOLUME-LOCAL-PATH: /ORA/dbs02/[% DBNAME %]
+SC-NFS-VOLUME-MOD: 0755
+SC-NFS-VOLUME-MOUNT-OPTIONS: rw,bg,hard,nointr,tcp,vers=3,noatime,timeo=600,
+ rsize=65536,wsize=65536
+SC-NFS-VOLUME-OWNER: postgres
+SC-NFS-VOLUME-SERVER: [% serverlogs %]
+SC-NFS-VOLUME-SERVER-PATH: /ORA/dbs02/[% DBNAME %]
+
+dn: SC-NFS-VOLUME-ID=2,SC-CATEGORY=nfs-volumes,SC-ENTITY=[% entity %],SC-CATEGORY=entities,ou=syscontrol,dc=cern,dc=ch
+objectClass: SC-NFS-VOLUME
+SC-NFS-VOLUME-GROUP: postgres
+[% FOREACH host IN hosts -%]
+SC-NFS-VOLUME-HOST-REF: [% host %]
+[% END -%]
+SC-NFS-VOLUME-ID: 2
+SC-NFS-VOLUME-LOCAL-PATH: /ORA/dbs03/[% DBNAME %]
+SC-NFS-VOLUME-MOD: 0755
+SC-NFS-VOLUME-MOUNT-OPTIONS: rw,bg,hard,nointr,tcp,vers=3,noatime,timeo=600,
+ rsize=65536,wsize=65536
+SC-NFS-VOLUME-OWNER: postgres
+SC-NFS-VOLUME-SERVER: [% serverdata %]
+SC-NFS-VOLUME-SERVER-PATH: /ORA/dbs03/[% DBNAME %]
+
