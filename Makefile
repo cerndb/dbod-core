@@ -6,6 +6,7 @@ SPECPATH=$(SRCPATH)/SPECS
 SOURCESPATH=$(SRCPATH)/SOURCES
 RPMPATH=$(SRCPATH)/RPMS/$(ARCH)
 
+VERSION=0.71
 
 # This is Koji required and must generate a suitable tarball
 #
@@ -19,6 +20,10 @@ gen-sources:
 	perl Makefile.PL 
 	make
 	make dist
+	tar xvzf DBOD-$(VERSION).tar.gz
+	cp -r bin DBOD-$(VERSION)
+	tar cvzf DBOD-$(VERSION).tar.gz DBOD-$(VERSION)
+	git checkout Makefile
 
 sources:
 
