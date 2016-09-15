@@ -7,6 +7,7 @@
 # Trying to avoid Koji post-generation issues
 %define __arch_install_post %{nil} # /usr/lib/rpm/check-buildroot
 %define debug_package %{nil} # Disables building debug RPM
+%define SCL_ROOT /opt/rh/rh-perl520/root
 
 Summary: DB On Demand Core library
 Name: cerndb-sw-dbod-core
@@ -37,11 +38,11 @@ DB On Demand core library
 
 %prep
 %setup -n DBOD-%{version}
-bin/cpanm  --from http://dbod-mirrors.cern.ch/CPAN --installdeps .
+bin/cpanm  --from http://dbod-gw.cern.ch/CPAN --installdeps .
 exit 0
 
 %build
-perl Makefile.PL PREFIX=$RPM_BUILD_ROOT/usr/local
+perl Makefile.PL PREFIX=$RPM_BUILD_ROOT/%{SCL_ROOT}/usr/local
 make
 exit 0
 
