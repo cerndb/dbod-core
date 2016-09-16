@@ -25,6 +25,15 @@ gen-sources:
 	tar cvzf DBOD-$(VERSION).tar.gz DBOD-$(VERSION)
 	git checkout Makefile
 
+dependencies:
+	mkdir -p /tmp/opt/dbod/perl5
+	declare -x PERL5LIB="/tmp/opt/dbod/perl5"
+	declare -x PERL_LOCAL_LIB_ROOT="/tmp/opt/dbod/perl5"
+	declare -x PERL_MB_OPT="--install_base \"/tmp/opt/dbod/perl5\""
+	declare -x PERL_MM_OPT="INSTALL_BASE=/tmp/opt/dbod/perl5"
+	bin/cpanm --from http://dbod-gw.cern.ch/pinto --installdeps .
+	git checkout Makefile
+
 sources:
 
 # This task will generate an RPM locally
