@@ -12,7 +12,7 @@
 Summary: DB On Demand Core library
 Name: cerndb-sw-dbod-core
 Version: %{version}
-Release: 0%{?dist}
+Release: 1%{?dist}
 License: GPL
 Group: Applications
 ExclusiveArch: x86_64
@@ -48,6 +48,7 @@ cp -r profile.d/dbod-core.sh $RPM_BUILD_ROOT/etc/profile.d/
 mkdir -p $RPM_BUILD_ROOT/%{CORE_ROOT}
 mkdir -p $RPM_BUILD_ROOT/var/log/dbod
 make install
+rm $RPM_BUILD_ROOT/%{CORE_ROOT}/lib/perl5/x86_64-linux-thread-multi/perllocal.pod
 exit 0
 
 %clean
@@ -70,7 +71,6 @@ exit 0;
 %{CORE_ROOT}/lib/perl5/DBOD/
 %{CORE_ROOT}/lib/perl5/DBOD.pm
 %{CORE_ROOT}/lib/perl5/x86_64-linux-thread-multi/auto/DBOD/.packlist
-%{CORE_ROOT}/lib/perl5/x86_64-linux-thread-multi/perllocal.pod
 %{CORE_ROOT}/lib/perl5/DBOD.pm
 %attr (-, dbod, dbod) /var/log/dbod
 %{CORE_ROOT}/bin
