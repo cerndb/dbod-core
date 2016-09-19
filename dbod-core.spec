@@ -22,6 +22,8 @@ Distribution: DBOD
 Vendor: CERN
 Packager: Ignacio Coterillo Coz <icoteril@cern.ch>
 
+Requires: cerndb-sw-dbod-core-deps
+
 # Build requirements
 BuildRequires: perl-Module-Install
 BuildRequires: perl-File-ShareDir
@@ -33,9 +35,6 @@ DB On Demand core framework
 
 %prep
 %setup -n DBOD-%{version}
-mkdir -p $RPM_BUILD_ROOT/%{CORE_ROOT}
-mkdir -p $RPM_BUILD_ROOT/etc
-cp -r profile.d $RPM_BUILD_ROOT/etc
 exit 0
 
 %build
@@ -44,8 +43,11 @@ make
 exit 0
 
 %install
-make install
+mkdir -p $RPM_BUILD_ROOT/etc/profile.d
+cp -r profile.d/dbod-core.sh $RPM_BUILD_ROOT/etc/profile.d/
+mkdir -p $RPM_BUILD_ROOT/%{CORE_ROOT}
 mkdir -p $RPM_BUILD_ROOT/var/log/dbod
+make install
 exit 0
 
 %clean
@@ -66,6 +68,9 @@ exit 0;
 /etc/profile.d/dbod-core.sh
 %config %{CORE_ROOT}/lib/perl5/auto/share/dist/DBOD
 %{CORE_ROOT}/lib/perl5/DBOD/
+%{CORE_ROOT}/lib/perl5/DBOD.pm
+%{CORE_ROOT}/lib/perl5/x86_64-linux-thread-multi/auto/DBOD/.packlist
+%{CORE_ROOT}/lib/perl5/x86_64-linux-thread-multi/perllocal.pod
 %{CORE_ROOT}/lib/perl5/DBOD.pm
 %attr (-, dbod, dbod) /var/log/dbod
 %{CORE_ROOT}/bin
