@@ -34,6 +34,8 @@ DB On Demand core framework
 %prep
 %setup -n DBOD-%{version}
 mkdir -p $RPM_BUILD_ROOT/%{CORE_ROOT}
+mkdir -p $RPM_BUILD_ROOT/etc
+cp -r profile.d $RPM_BUILD_ROOT/etc
 exit 0
 
 %build
@@ -50,13 +52,22 @@ exit 0
 rm -rf $RPM_BUILD_ROOT
 exit 0
 
+# Post-uninstallation
+%postun
+# Only remove perlbrew profile if the package is the last one to be removed
+# (0 versions remain in the system as this stage (the number of versions
+# passed to the %postun script).
+if [ $1 -eq 0 ]; then
+    rm /etc/profile.d/dbod-core.sh;
+fi
+exit 0;
+
 %files
+/etc/profile.d/dbod-core.sh
 %config %{CORE_ROOT}/lib/perl5/auto/share/dist/DBOD
 %{CORE_ROOT}/lib/perl5/DBOD/
 %{CORE_ROOT}/lib/perl5/DBOD.pm
 %attr (-, dbod, dbod) /var/log/dbod
-%{CORE_ROOT}/lib/perl5/x86_64-linux/perllocal.pod
-%{CORE_ROOT}/lib/perl5/x86_64-linux/auto/DBOD/.packlist
 %{CORE_ROOT}/bin
 
 %changelog

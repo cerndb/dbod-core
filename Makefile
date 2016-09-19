@@ -22,6 +22,7 @@ gen-sources:
 	make dist
 	tar xvzf DBOD-$(VERSION).tar.gz
 	cp -r bin DBOD-$(VERSION)
+	cp -r profile.d DBOD-$(VERSION)
 	tar cvzf DBOD-$(VERSION).tar.gz DBOD-$(VERSION)
 	git checkout Makefile
 
