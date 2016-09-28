@@ -6,7 +6,7 @@ SPECPATH=$(SRCPATH)/SPECS
 SOURCESPATH=$(SRCPATH)/SOURCES
 RPMPATH=$(SRCPATH)/RPMS/$(ARCH)
 
-VERSION=0.71
+VERSION=$(shell grep version Makefile.PL | cut -d\' -f2)
 
 # This is Koji required and must generate a suitable tarball
 #
