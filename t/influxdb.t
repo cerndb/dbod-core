@@ -23,11 +23,11 @@ BEGIN { Log::Log4perl->easy_init( {
 
 my $filename = DBOD::Config::get_share_dir() . "/influxdb_entity_example.json";
 
-my %cache = DBOD::Network::Api::load_cache($filename);
-note( Dumper \%cache );
+my $cache = DBOD::Network::Api::load_cache($filename);
+note( Dumper $cache );
 
 my $instancename = "my_influx";
-my $metadata = $cache{$instancename};
+my $metadata = $cache->{$instancename};
 
 my $config = {
     influxdb => {

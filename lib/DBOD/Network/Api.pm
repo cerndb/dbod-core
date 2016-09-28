@@ -21,7 +21,6 @@ use DBOD;
 
 our ($VERSION, @EXPORT_OK);
 
-$VERSION     = 0.67;
 use base qw(Exporter);
 @EXPORT_OK   = qw( load_cache get_entity_metadata );
 
@@ -35,11 +34,15 @@ sub load_cache {
         return ();
     };
 
+    # The metadata cache is stored as an array of hashes
     my $json_text = <$json_fh>;
     close($json_fh);
-    my $nested_array = decode_json $json_text;
-    my @flat_array = map{@$_} @$nested_array;
-    return @flat_array;
+    my $array = decode_json $json_text;
+    my %md_cache;
+    for my $instance (@{$array}) {
+        $md_cache{$instance->{db_name}} = $instance;
+    }
+    return \%md_cache;
 }
 
 

@@ -34,10 +34,9 @@ $config{'common'} = { template_folder => "${share_dir}/templates" };
 
 # DBOD::Api::load_cache
 note( "%config is " . Dumper \%config );
-my %cache = DBOD::Network::Api::load_cache($config{'api'}{'cachefile'});
-note( Dumper \%cache );
-
-isa_ok(\%cache, 'HASH', 'Cache is a HASH');
+my $cache = DBOD::Network::Api::load_cache($config{'api'}{'cachefile'});
+note( Dumper $cache );
+isa_ok($cache, 'HASH', 'Cache is a HASH/HASHREF');
 
 # We need to Mock the _api_client method on the
 # DBOD::Api module
@@ -63,16 +62,16 @@ subtest 'get_entity_metadata' => sub {
     $rest_client->mock('responseCode', sub { return "200" } );
     $rest_client->mock('responseContent', 
         sub { return "{\"response\":[{\"metadata\":\"test\"}]}" } );
-    ok(DBOD::Network::Api::get_entity_metadata('unexistant', \%cache, \%config),
+    ok(DBOD::Network::Api::get_entity_metadata('unexistant', $cache, \%config),
         "Method call");
-    my $metadata = DBOD::Network::Api::get_entity_metadata('unexistant', \%cache,
+    my $metadata = DBOD::Network::Api::get_entity_metadata('unexistant', $cache,
         \%config);
     isa_ok($metadata, 'HASH', 'Result is a HASH/HASHREF');
     
     # Test failure
     $rest_client->mock('responseCode', sub { return "404" } );
     $rest_client->mock('responseContent', sub { return "{\"response\": []}" } );
-    $metadata = DBOD::Network::Api::get_entity_metadata('unexistant', \%cache, \%config);
+    $metadata = DBOD::Network::Api::get_entity_metadata('unexistant', $cache, \%config);
     isa_ok($metadata, 'HASH', 'Result is a HASH/HASHREF');
     ok(!exists $metadata->{response}, "Result has empty metadata field");
 };

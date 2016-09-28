@@ -75,9 +75,7 @@ sub BUILD {
     $self->config(DBOD::Config::load()); #load from default share dir
 
     # Load cache file
-    my %cache = load_cache($self->config->{'api'}->{'cachefile'});
-    $self->md_cache(\%cache);
-
+    $self->md_cache(load_cache($self->config->{'api'}->{'cachefile'}));
     # Load entity metadata
     $self->metadata(
         get_entity_metadata($self->entity, $self->md_cache, $self->config));
