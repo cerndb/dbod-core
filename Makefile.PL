@@ -5,7 +5,7 @@ use inc::Module::Install;
 
 # Package metadata
 author  'Ignacio Coterillo <ignacio.coterillo@cern.ch>';
-version '0.71';
+version '0.72';
 license 'GPLv3';
 name    'DBOD';
 
