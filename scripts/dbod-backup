@@ -22,10 +22,10 @@ use DBOD::Instance;
 sub body {
 
     $job->log->debug('Storting' . $job->entity() . '/' . 
-        $job->metadata->{subcategory});
+        $job->metadata->{db_type});
     
     my $instance = DBOD::Instance::Factory->create(
-        $job->metadata->{subcategory},
+        $job->metadata->{db_type},
         instance => $job->entity(),
         metadata => $job->metadata(),
         config => $job->config());
