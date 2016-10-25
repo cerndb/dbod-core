@@ -20,6 +20,10 @@ BEGIN {
 
 my $runtime = Test::MockModule->new('DBOD::Runtime');
 
+my $username = `whoami`;
+chomp $username;
+diag "Running as user: ${username}";
+
 # Check class parameters
 subtest 'Class parameters' => sub {
 
@@ -30,7 +34,12 @@ subtest 'Class parameters' => sub {
     can_ok( $job, qw(is_local) );
     isa_ok( $job->config, 'HASH', "Config type" );
     isa_ok( $job->metadata, 'HASH', "Metadata type" );
-    isa_ok( $job->md_cache, 'HASH', "md_cache type" );
+
+     SKIP: {
+        skip 'Skipping on Travis infra', 2, unless $username ne 'travis';
+        isa_ok( $job->md_cache, 'HASH', "md_cache type" );
+    }
+
 };
 
 # Check execution, job is succesfull
@@ -75,9 +84,6 @@ subtest 'is_local' => sub {
             } );
 
         SKIP: {
-            my $username = `whoami`;
-            chomp $username;
-            diag "Running as user: ${username}";
             skip 'Skipping on Travis infra', 2, unless $username ne 'travis';
             is($job->is_local( $fqdn ), $TRUE, 'Local Job');
             is($job->is_local(), $FALSE, 'Remote Job');
