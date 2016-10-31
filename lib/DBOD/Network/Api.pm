@@ -208,4 +208,21 @@ sub create_entity {
     }
 }
 
+sub delete_entity {
+    my ($entity, $config) = @_;
+    my $client = _api_client($config,1);
+    $client->DELETE(join '/', 
+        $config->{'api'}->{'entity_endpoint'}, $entity);
+    my %result;
+    $result{'code'} = $client->responseCode();
+    if ($result{'code'} eq '204') {
+         INFO 'Entity deleted: ' . $entity;
+         return $OK;
+    } else {
+        ERROR 'Failed to contact API server';
+	DEBUG Dumper $client;
+	return $ERROR;
+    }
+}
+
 1;

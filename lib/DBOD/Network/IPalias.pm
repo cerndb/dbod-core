@@ -57,7 +57,7 @@ sub add_alias {
             return scalar $ERROR;
         }
         else { 
-            INFO sprintf("Registerd alias: %s to dnsname: %s, host: %s",
+            INFO sprintf("Registered alias: %s to dnsname: %s, host: %s",
                 $response->{alias}, $response->{dns_name}, $host);
             return scalar $OK;
         }
@@ -78,20 +78,21 @@ sub remove_alias {
     #
     # Returns false if it fails, true if it succeeds
     
-    my ($input, $config) = @_;
-	my $dbname = $input->{dbname};
-	my $host = $input->{hosts}->[0];
+    my ($metadata, $config) = @_;
+    my $dbname = $metadata->{db_name};
+    my $hosts = join(',',@{$metadata->{hosts}});
     my $response = DBOD::Network::Api::get_ip_alias($dbname, $config);
-	DEBUG 'get_ip_alias API response: ' . Dumper $response;
-
+    unless (defined $response){
+        INFO "No ip alias found for $dbname, no need to remove it";
+        return scalar $OK;
+    }
     my $res = DBOD::Network::Api::remove_ip_alias($dbname, $config);
     if (( defined $res) && ( $res == $OK)) {
-        my $resp = shift @{$response->{'response'}};
         # Register ip alias to dns name on the CERN Network service
-        DBOD::Network::LanDB::remove_ip_alias($resp->{dnsname}, $resp->{alias}, $config);
+        DBOD::Network::LanDB::remove_ip_alias($response->{dns_name}, $response->{alias}, $config);
         # Generates DNS entry
         my $cmd = $config->{'ipalias'}->{'change_command'};
-        my $command = $cmd . " --dnsname=" . $resp->{dnsname} . " --rm_ip=" . $host;
+        my $command = $cmd . " --dnsname=" . $response->{dns_name} . " --rm_ip=" . $hosts;
         DEBUG 'Executing ' . $command;
         my $return_code = DBOD::Runtime::run_cmd(cmd => $command);
         if ($return_code == $ERROR) {
@@ -100,14 +101,14 @@ sub remove_alias {
             return scalar $ERROR;
         }
         else { 
-            INFO sprintf("Registerd alias: %s to dnsname: %s, host: %s",
-                $resp->{alias}, $resp->{dnsname}, $host);
+            INFO sprintf("Removed alias: %s to dnsname: %s, hosts: %s",
+                $response->{alias}, $response->{dns_name}, $hosts);
             return scalar $OK;
         }
     }
     else { 
         # An error occurred removing the alias
-        ERROR "Error removing alias from host: %s", $host;
+        ERROR "Error removing alias from hosts: %s", $hosts;
         return scalar $ERROR;
     }
 }

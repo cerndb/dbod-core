@@ -154,4 +154,24 @@ sub create_instance {
 
 }
 
+sub delete_instance {
+    my ($instance, $config) = @_;
+    $instance= 'dod_'.$instance;
+    DEBUG 'Deleting LDAP entity: ' . $instance;
+    my $conn = get_connection($config);
+    my $entities= get_entity($conn, "SC-ENTITY=$instance,SC-CATEGORY=entities,OU=syscontrol,DC=cern,DC=ch");
+    if(scalar @$entities == 0){
+	INFO 'no entry in Ldap';
+    }
+    # taken from https://github.com/perl-ldap/perl-ldap/blob/master/contrib/recursive-ldap-delete.pl:
+    # delete the entries found in a sorted way:
+    # those with more "," (= more elements) in their DN, which are deeper in the DIT, first
+    # trick for the sorting: tr/,// returns number of , (see perlfaq4 for details)
+    foreach my $e (sort { $b->dn =~ tr/,// <=> $a->dn =~ tr/,// } @$entities) {
+        $conn->delete($e);
+    }
+    return scalar $OK;
+}
+
+
 1;

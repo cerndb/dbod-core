@@ -1,0 +1,106 @@
+#!/usr/bin/env perl
+# Copyright (C) 2015, CERN
+# This software is distributed under the terms of the GNU General Public
+# Licence version 3 (GPL Version 3), copied verbatim in the file "LICENSE".
+# In applying this license, CERN does not waive the privileges and immunities
+# granted to it by virtue of its status as Intergovernmental Organization
+# or submit itself to any jurisdiction.
+
+
+# Extension of the base DBOD::Job class to add extra required parameters
+package dbod_destroy;
+use Moose;
+use DBOD::Templates;
+
+extends 'DBOD::Job';
+with 'MooseX::Getopt::Usage',
+     'MooseX::Getopt::Usage::Role::Man';
+
+# Main 
+package main;
+
+use strict;
+use warnings;
+
+use Log::Log4perl;
+use Data::Dumper;
+use DBOD;
+use DBOD::Runtime;
+use DBOD::Network::Api;
+use DBOD::Network::IPalias;
+use DBOD::Templates;
+use DBOD::Monitoring::Appdynamics;
+
+# Initiates logger
+BEGIN { 
+    Log::Log4perl->easy_init() ;
+}
+
+
+my $job = dbod_destroy->new_with_options(allow_empty_metadata => $TRUE);
+
+sub body {
+    unless((defined $job->metadata) && (scalar keys %{$job->metadata})){
+        $job->log->info("Metadata is not defined, nothing to delete");
+        $job->_result($DBOD::OK);
+	exit $job->_result();
+    }
+    $job->log->debug("Unregister MySQL and PG instances in AppDynamics");    
+    # Unregister MySQL and PG instances in AppDynamics
+    if ($job->metadata->{db_type} eq 'MYSQL' or $job->metadata->{db_type} eq 'PG') {
+        # Unregister entity in Appdynamics
+		$job->log->debug( Dumper $job->config() );
+            if (DBOD::Monitoring::Appdynamics::is_enabled($job->entity, $job->config())) {
+                unless (DBOD::Monitoring::Appdynamics::disable($job->entity, $job->config()) == $DBOD::OK) {
+                    $job->log->error( "Error unregistering instance in AppDynamics" );
+                    $job->_result( $DBOD::ERROR );
+                }
+            }
+    }
+    $job->log->debug("Delete Ldap");    
+    # Delete LDAP using the API
+    unless (DBOD::Network::Ldap::delete_instance($job->entity, $job->config) == $DBOD::OK) {
+        $job->log->error( "Error deleting instance in LDAP" );
+        $job->_result( $DBOD::ERROR );
+    }
+    $job->log->debug("Delete IP alias");    
+    # Delete IP alias
+        unless (DBOD::Network::IPalias::remove_alias($job->metadata, $job->config) == $DBOD::OK) {
+            $job->log->error( "Error deleting IP Alias" );
+            $job->_result( $DBOD::ERROR );
+            return;
+    }
+
+    # Delete local files 
+    $job->log->debug("Delete local files");
+    # Call to the delete_local_DBOD_files.sh script
+    # will only work from the local machine...
+
+    # Delete volumes? Will only work on dbod-daemon...
+    #$job->log->debug("Delete volumes");
+    #my $cmd = "/etc/init.d/syscontrol -i dfm.db-cmode DFM_delete_dod_volumes_Cmode -enti dod_$job->entity -debug";
+    #$job->log->debug( "Executing: $cmd" );
+    #my $vol_deletion_output = `$cmd`;
+    #if (DBOD::Runtime::result_code($vol_deletion_output)) {
+    #    $job->log->error( "An error ocurred deleting volumes:" );
+    #    $job->log->error( $vol_deletion_output );
+    #    $job->_output($DBOD::ERROR);
+    #    return;
+    #}
+
+    $job->log->debug("Delete entity from API");    
+    # delete entity from API
+        unless (DBOD::Network::Api::delete_entity($job->entity, $job->config) == $DBOD::OK) {
+            $job->log->error("Error deleting the entity in the API");
+            $job->_result($DBOD::ERROR);
+            return;
+        }
+    # Job done!
+    unless (defined $job->_result()){
+        $job->_result($DBOD::OK);
+    } # Else there was a previous non-fatal error
+		# Job done!
+}
+
+$job->run(\&body, );
+exit $job->_result();

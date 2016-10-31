@@ -105,10 +105,10 @@ sub enable {
 
 sub is_enabled {
     my ($servername, $config) = @_;
-    my $host = $config->{host};
-    my $port = $config->{port};
-    my $user = $config->{user};
-    my $password = $config->{password};
+    my $host = $config->{appdynamics}->{host};
+    my $port = $config->{appdynamics}->{port};
+    my $user = $config->{appdynamics}->{user};
+    my $password = $config->{appdynamics}->{password};
 
     my $dsn = "DBI:mysql:database=dbtuna;host=$host;port=$port";
     my $db = DBOD::DB->new(
@@ -125,7 +125,7 @@ sub is_enabled {
         INFO "<$servername> is already defined";
         return $TRUE;
     } else {
-        ERROR "<$servername> is found <$rows> not enabled";
+        INFO "<$servername> is found <$rows> not enabled";
         return $FALSE;
     }
 
@@ -133,10 +133,10 @@ sub is_enabled {
 
 sub disable {
     my ($servername, $config) = @_;
-    my $host = $config->{host};
-    my $port = $config->{port};
-    my $user = $config->{user};
-    my $password = $config->{password};
+    my $host = $config->{appdynamics}->{host};
+    my $port = $config->{appdynamics}->{port};
+    my $user = $config->{appdynamics}->{user};
+    my $password = $config->{appdynamics}->{password};
 
     my $dsn = "DBI:mysql:database=dbtuna;host=$host;port=$port";
     my $db = DBOD::DB->new(
