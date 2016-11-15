@@ -5,6 +5,7 @@ use Log::Log4perl qw(:easy);
 use Data::Dumper;
 use Test::More;
 use Test::MockModule;
+use Test::Output;
 use DBOD;
 use File::ShareDir;
 use Getopt::Long;
@@ -44,6 +45,11 @@ my $influxdb = DBOD::Systems::InfluxDB->new({
 
 my $runtime = Test::MockModule->new('DBOD::Runtime');
 
+
+
+####################
+# is_running() tests
+####################
 $runtime->mock('run_cmd' =>
     sub {
         my %args = @_;
@@ -69,6 +75,23 @@ $runtime->mock('run_cmd' =>
 
 ok($influxdb->is_running(), "Test instance is running");
 
+
+$runtime->mock('run_cmd' =>
+    sub {
+        my %args = @_;
+        my $output_ref = $args{output};
+        if ($args{cmd} =~ /status/i) {
+            $$output_ref = undef;
+            return $ERROR;
+        }
+    });
+
+stdout_like {$influxdb->is_running()} qr/CMD OUTPUT: undef/,
+    "Test undef output when running cmd";
+
+####################
+# start() tests
+####################
 $runtime->mock('run_cmd' =>
     sub {
         my %args = @_;
@@ -121,6 +144,9 @@ $runtime->mock('run_cmd' =>
 is($influxdb->start(), $OK, 'Test start instance when it is already running');
 
 
+####################
+# stop() tests
+####################
 $runtime->mock('run_cmd' =>
     sub {
         my %args = @_;
@@ -173,6 +199,9 @@ $runtime->mock('run_cmd' =>
 is($influxdb->stop(), $OK, 'Tets stop instance when it is not running');
 
 
+####################
+# ping() tests
+####################
 my $useragent = Test::MockModule->new('LWP::UserAgent');
 $useragent->mock('request' =>
     sub {
@@ -228,7 +257,10 @@ $runtime->mock('run_cmd' =>
         }
     });
 
-# snapshot testing
+
+####################
+# snapshot() tests
+####################
 subtest 'snapshot' => sub {
 
         my $zapi = Test::MockModule->new('DBOD::Storage::NetApp::ZAPI');

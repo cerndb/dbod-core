@@ -41,6 +41,7 @@ test_requires 'Test::MockModule' => 0;
 test_requires 'Test::MockObject' => 0;
 test_requires 'Test::MockObject::Extends' => 0;
 test_requires 'Data::Handle' => 0;
+test_requires 'Test::Output' => 0;
 
 # Install share/ files
 use File::ShareDir;

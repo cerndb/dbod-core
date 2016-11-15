@@ -50,6 +50,8 @@ sub is_running {
         cmd => $cmd,
         output => \$output);
 
+    #if output is not defined print literal 'undef'
+    $output //= 'undef';
     $self->log->debug("CMD OUTPUT: " . $output);
 
     if ($error) {
