@@ -281,7 +281,7 @@ sub get_server_and_volname {
 sub create_server_from_mount_point {
     my($self, $controller,$mount_point,$admin) = @_;
     $self->log->info("Parameters controller: <$controller>, mount_point: <$mount_point>, admin: <$admin>");
-    my $arref = $self->get_auth_details($controller,$mount_point,$admin);
+    my $arref = $self->get_auth_details($controller, $mount_point, $admin);
     my($controller_mgmt,$ipcluster,$user_storage,$password_nas,$server_version,$server);
 
     if (defined $arref) {
@@ -324,7 +324,9 @@ sub get_auth_details {
         $user_storage = "vsadmin";
         $ipcluster = _host_ip($controller);
     }
-    $password_nas = $self->config->{filers}->{password};
+    #$password_nas = $self->config->{filers}->{password};
+    $self->log->debug("Controller Suffix: " . uc(substr($controller, 5,1)));
+    $password_nas = $self->config->{filers}->{password} . uc(substr($controller, 5,1)) ;
     unless (defined $password_nas) {
         $self->log->error("No password to connect to NAS defined!");
         return 0; #not ok
