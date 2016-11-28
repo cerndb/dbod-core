@@ -164,7 +164,7 @@ subtest 'snap_prepare_snap_list' => sub {
         $na_server->mock(invoke => sub {return $na_element_ok;});
         $snaplist->mock(children_get => sub {return 0;});
         $snaplist->mock(child_get => sub {return 0;});
-        is($zapi->snap_prepare($na_server, 'Volume', 1), $ERROR, 'snap_prepare FAIL. No Snapshots');
+        is($zapi->snap_prepare($na_server, 'Volume', 1), $OK, 'snap_prepare OK. No Snapshots');
     };
 
 subtest 'snap_clone' => sub {

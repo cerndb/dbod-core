@@ -432,7 +432,8 @@ sub snap_list {
     if (!defined($snapshotlist) || ($snapshotlist eq "")) {
         # no snapshots to report
         $self->log->info("No snapshots on volume $volume_name");
-        return @arr_snaps;
+        $self->log->info("Returning: " . Dumper \@arr_snaps);
+        return \@arr_snaps;
     }
 
     my @snapshots = $snapshotlist->children_get();
@@ -446,12 +447,9 @@ sub snap_list {
         my $dependency = $ss->child_get_string("dependency");
         my $name = $ss->child_get_string("name");
 
-        my($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst)=POSIX::localtime($accesstime);
-        my $date = POSIX::strftime("%a %b %e %H:%M:%S %Y",$sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst);
-
         push @arr_snaps, [$name, $accesstime, $busy, $total, $cumtotal, $dependency];
     }
-    return @arr_snaps;
+    return \@arr_snaps;
 }
 
 #TODO: Add max_num_snapshots to config file
@@ -464,19 +462,21 @@ sub snap_prepare {
 
     my $rc;
     $self->log->debug("Getting snapshots for <$volume_name>");
-    my @arr_snaps = $self->snap_list($server_zapi,$volume_name);
-    if (!@arr_snaps) {
-        $self->log->debug("Error fetching # of snapshots for <$volume_name>");
+    my $arr_snaps = $self->snap_list($server_zapi, $volume_name);
+    $self->log->debug("Snapshot list: " . Dumper $arr_snaps );
+    $self->log->debug("Snapshot list size: " . scalar @{$arr_snaps} ) if defined ($arr_snaps);
+    if (!defined $arr_snaps) {
+        $self->log->debug("Error fetching # of snapshots for <$volume_name>. PSS");
         return $ERROR;
-    } elsif (@arr_snaps == 0) {
+    } elsif (scalar(@{$arr_snaps}) == 0) {
         $self->log->debug(" There are no snapshots in the volume");
         return $OK;
     } else {
-        if (scalar(@arr_snaps) > $max_snapshots) { #we need to delete some snapshots
-            my($tobedeleted) = scalar(@arr_snaps) - $max_snapshots ;
+        if (scalar(@{$arr_snaps}) > $max_snapshots) { #we need to delete some snapshots
+            my($tobedeleted) = scalar(@{$arr_snaps}) - $max_snapshots ;
             $self->log->debug("<$tobedeleted> need to be deleted to meet threshold <$max_snapshots>.");
             for (my $i = $tobedeleted; $i > 0; $i--) {
-                my $snapinfoscalar = shift @arr_snaps; #get the first one. it's the oldest
+                my $snapinfoscalar = shift @{$arr_snaps}; #get the first one. it's the oldest
                 my @snapinfo = @$snapinfoscalar;
                 $self->log->debug("Deleting: < $snapinfo[0] > on volume <$volume_name>");
                 $rc = $self->snap_delete($server_zapi,$volume_name ,$snapinfo[0]);
