@@ -46,19 +46,19 @@ my $data = \%metadata;
 
 subtest 'is_enabled' => sub {
         $mock_db->mock('do', sub {return 1;});
-        is(DBOD::Monitoring::Appdynamics::is_enabled('testserver', $conf->{appdynamics}), $TRUE,
+        is(DBOD::Monitoring::Appdynamics::is_enabled('testserver', $conf), $TRUE,
             'is_enabled: true');
         $mock_db->mock('do', sub {return 0;});
-        is(DBOD::Monitoring::Appdynamics::is_enabled('testserver', $conf->{appdynamics}), $FALSE,
+        is(DBOD::Monitoring::Appdynamics::is_enabled('testserver', $conf), $FALSE,
             'is_enabled: false');
     };
 
 subtest 'disable' => sub {
         $mock_db->mock('do', sub {return 1;});
-        is(DBOD::Monitoring::Appdynamics::disable('testserver', $conf->{appdynamics}), $OK,
+        is(DBOD::Monitoring::Appdynamics::disable('testserver', $conf), $OK,
             'disable: SUCCESS');
         $mock_db->mock('do', sub {return 0;});
-        is(DBOD::Monitoring::Appdynamics::disable('testserver', $conf->{appdynamics}), $ERROR,
+        is(DBOD::Monitoring::Appdynamics::disable('testserver', $conf), $ERROR,
             'disable: FAIL');
     };
 
