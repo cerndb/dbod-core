@@ -177,8 +177,7 @@ sub snapshot {
     # Get ZAPI server
     my $zapi = DBOD::Storage::NetApp::ZAPI->new(config => $self->config());
 
-    my $datadir_nosuffix = dirname($self->metadata->{datadir});
-    my $arref = $zapi->get_server_and_volname($datadir_nosuffix);
+    my $arref = $zapi->get_server_and_volname($self->metadata->{datadir});
 
     my ($server_zapi, $volume_name) = @{$arref};
 
