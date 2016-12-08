@@ -16,16 +16,16 @@ use Data::Dumper;
 
 my $job = DBOD::Job->new_with_options();
 
-use DBOD qw ($ERROR $OK);
+use DBOD qw ($ERROR $OK $db_type);
 use DBOD::Instance;
  
 sub body {
 
-    $job->log->debug('Storting' . $job->entity() . '/' . 
+    $job->log->debug('Starting ' . $job->entity() . '/' . 
         $job->metadata->{db_type});
     
     my $instance = DBOD::Instance::Factory->create(
-        $job->metadata->{db_type},
+        $db_type->{$job->metadata->{db_type}},
         instance => $job->entity(),
         metadata => $job->metadata(),
         config => $job->config());
