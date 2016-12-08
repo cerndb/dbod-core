@@ -2,7 +2,7 @@
 # Database On Demand (DBOD) core library SPEC file
 #
 
-%define version 0.72
+%define version 0.73
 
 # Trying to avoid Koji post-generation issues
 %define __arch_install_post %{nil} # /usr/lib/rpm/check-buildroot
@@ -12,7 +12,7 @@
 Summary: DB On Demand Core library
 Name: cerndb-sw-dbod-core
 Version: %{version}
-Release: 2%{?dist}
+Release: 1%{?dist}
 License: GPL
 Group: Applications
 ExclusiveArch: x86_64
