@@ -1,0 +1,70 @@
+#!/usr/bin/env perl
+# Copyright (C) 2015, CERN
+# This software is distributed under the terms of the GNU General Public
+# Licence version 3 (GPL Version 3), copied verbatim in the file "LICENSE".
+# In applying this license, CERN does not waive the privileges and immunities
+# granted to it by virtue of its status as Intergovernmental Organization
+# or submit itself to any jurisdiction.
+
+package dbod_file_upload;
+use Moose; 
+extends 'DBOD::Job';
+use DBOD;
+with 'MooseX::Getopt::Usage',
+    'MooseX::Getopt::Usage::Role::Man';
+
+has 'ftype' => (
+    is => 'ro',
+    ias => 'Str',
+    required => $TRUE,
+    documentation => qq { file type (pg_hba, postgresql.conf, my.cnf, influxd.conf });
+
+has 'fpath' => (
+    is => 'ro',
+    ias => 'Str',
+    required => $TRUE,
+    documentation => qq { /path/to/file });
+
+has 'reload' => (
+    is => 'ro',
+    ias => 'Str',
+    required => $FALSE,
+    documentation => qq { Signal the server to reload the configuration, if possible });
+
+package main;
+use warnings;
+use strict;
+my $job = dbod_file_upload->new_with_options();
+
+use DBOD qw ($ERROR $OK $db_type);
+use DBOD::Instance;
+
+sub body {
+
+    $job->log->debug('Uploading configuration file for ' . $job->entity() . '/' . 
+        $job->metadata->{db_type});
+    
+    my $instance = DBOD::Instance::Factory->create(
+        $db_type->{$job->metadata->{db_type}},
+        instance => $job->entity(),
+        metadata => $job->metadata(),
+        config => $job->config());
+    
+    if ($job->is_local()) {
+        $job->log->debug('Job running locally in instance host');
+        if ( -e $job->path() ){
+            return $instance->update_file($job->ftype(), $job->path(), $job->reload());
+        } else { 
+            $job->log->error( 'File not found. Aborting');
+            return $ERROR;
+        }
+
+    } else {
+        $job->log->debug('This job needs run locally');
+        return $ERROR;
+    }
+    return $OK; 
+}
+
+$job->run(\&body);
+

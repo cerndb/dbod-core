@@ -5,7 +5,7 @@ use inc::Module::Install;
 
 # Package metadata
 author  'Ignacio Coterillo <ignacio.coterillo@cern.ch>';
-version '0.73';
+version '0.74';
 license 'GPLv3';
 name    'DBOD';
 
@@ -53,5 +53,7 @@ install_script 'scripts/dbod-init';
 install_script 'scripts/dbod-ping';
 install_script 'scripts/dbod-start';
 install_script 'scripts/dbod-stop';
+install_script 'scripts/dbod-upload-file';
+install_script 'scripts/dbod-destroy';
 
 WriteAll;
