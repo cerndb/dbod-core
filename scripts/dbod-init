@@ -165,6 +165,12 @@ sub body {
         my ($serverdata, $data_mounting_path) = split ':', $datavol;
         my ($serverlogs, $logs_mounting_path) = split ':', $logvol;
 
+        # Fix server name to use GPN access instead of Private Network Interface
+        # Removing "-priv" suffix for RAC51 servers
+        if ($input->{hosts}->[0] =~ /^db/) {
+            $serverdata =~ s/-priv$//;
+            $serverlogs =~ s/-priv$//;
+        }
         $input->{'serverlogs'} =  $serverlogs;
         $input->{'serverdata'} =  $serverdata;
     } else {
