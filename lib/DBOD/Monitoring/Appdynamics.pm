@@ -33,6 +33,7 @@ sub enable {
         $drivername = "org.gjt.mm.mysql.Driver";
     }
     else {
+        $dbtype = 'PGSQL';
         $connectionstring = "jdbc:postgresql://${hostname}:${dbport}/";
         $drivername = "org.postgresql.Driver";
     }
