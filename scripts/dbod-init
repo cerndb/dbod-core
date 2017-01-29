@@ -248,7 +248,8 @@ sub body {
     }
 
     # Register MySQL and PG instances in AppDynamics
-    if ($job->subcategory() eq 'MYSQL' or $job->subcategory() eq 'PG') {
+    if (($job->subcategory() eq 'MYSQL' or $job->subcategory() eq 'PG') &&
+        ($job->type() eq 'PROD' )){
         # Register entity in Appdynamics
         my $metadata = DBOD::Network::Api::get_entity_metadata($job->entity(), undef, $job->config);
         $job->log->debug( Dumper $metadata );
