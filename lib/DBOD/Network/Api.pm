@@ -93,7 +93,7 @@ sub _api_get_host_metadata {
     my ($host, $config) = @_;
     my $client = _api_client($config);
     $client->GET(join '/', 
-        $config->{'api'}->{'entity_metadata_endpoint'}, $host);
+        $config->{'api'}->{'host_metadata_endpoint'}, $host);
     my %result;
     $result{'code'} = $client->responseCode();
     if ($result{'code'} eq '200') {
