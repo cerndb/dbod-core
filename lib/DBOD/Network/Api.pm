@@ -89,6 +89,33 @@ sub _api_get_entity_metadata {
     return \%result;
 }
 
+sub _api_get_host_metadata {
+    my ($host, $config) = @_;
+    my $client = _api_client($config);
+    $client->GET(join '/', 
+        $config->{'api'}->{'entity_metadata_endpoint'}, $host);
+    my %result;
+    $result{'code'} = $client->responseCode();
+    if ($result{'code'} eq '200') {
+        $result{'response'} = decode_json $client->responseContent();
+    } else {
+        ERROR 'Failed to contact API server';
+        $result{'response'} = ''; 
+    }
+    return \%result;
+}
+
+sub host_metadata {
+    my ($host, $config) = @_;
+    my $result = _api_get_host_metadata($host, $config);
+    if ($result->{'code'} eq '200') {
+        return @{$result->{response}->{response};
+    } else {
+        ERROR 'Metadata not available for entity ' . $host;
+        return {};
+    }
+}
+
 sub get_entity_metadata {
     my ($entity, $cache, $config) = @_;
     my $result = _api_get_entity_metadata($entity, $config);

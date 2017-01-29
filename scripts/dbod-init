@@ -11,6 +11,7 @@
 package DBOD::Init;
 use Moose;
 use DBOD::Templates;
+use DBOD::Api;
 
 extends 'DBOD::Job';
 with 'MooseX::Getopt::Usage',
@@ -41,7 +42,7 @@ has 'version' => (
 has 'port' => (
     is => 'ro', 
     isa => 'Str', 
-    required => 1, 
+    required => 0, 
     documentation => qq{TCP port for the server to listen at });
 has 'buffer' => (
     is => 'ro', 
@@ -83,6 +84,41 @@ has 'debug' => (
     is => 'ro', 
     isa => 'Bool', 
     documentation => qq{If set, output debug level messages} );
+
+sub next_port {
+    my ($host, $type) = @_;
+    my %used_ports;
+    $used_ports[MySQL] = ();
+    $used_ports[PG] = ();
+    $used_ports[InfluxDB] = ();
+    # Fecth host metadata from API
+    my $host_instances = DBOD::API::get_host_metadata($host, $self->$config);
+    # Get list of used ports
+    for my $instance (@{host_instances}) {
+        push $used_ports[$instance->{type}], int($instance->{port});
+    }
+    # Sort 
+    $used_ports[MySQL] = sort $used_ports[MySQL];
+    $used_ports[PG] = sort $used_ports[PG];
+    $used_ports[InfluxDB] = sort $used_ports[InfluxDB];
+
+    if ($type eq 'MySQL') {
+        for (my $port = 5500, $port++, $port < 5570) {
+            if ( ! grep {$port} $used_ports[MySQL] ) return $port;
+        }
+    } elsif ($type eq 'PG') {
+        for (my $port = 6600, $port++, $port < 6620) {
+            if ( ! grep {$port} $used_ports[PG] ) return $port;
+
+    } elsif ($type eq 'InfluxDB') {
+        for (my $port = 8080, $port++, $port < 8100) {
+            if ( ! grep {$port} $used_ports[InfluxDB] ) return $port;
+        }
+    } else {
+        return;
+    };
+
+}
 
 # Main 
 package main;
@@ -132,6 +168,17 @@ sub body {
     $input->{buffer} = $job->buffer();
     my @hosts = split /,/ , $job->hosts();
     $input->{hosts} = \@hosts;
+
+    # Try to generate port from API information if port has not been provided
+    if (! defined($job->port()) {
+            $input->{port} = $job->next_port($input->{hosts}->[0]);
+            if (! defined $input->{port}) {
+                $job->log->error("Error generting port from API information");
+                $job->_result($DBOD::ERROR);
+                return;
+            }
+        }
+
     if ($job->subcategory() eq 'MYSQL') {
         $input->{socket} = '/var/lib/mysql/mysql.sock.' . $input->{dbname} . '.' . $input->{port};
     } elsif ($job->subcategory() eq 'PG') {
