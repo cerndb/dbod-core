@@ -12,6 +12,7 @@ package DBOD::Init;
 use Moose;
 use DBOD::Templates;
 use DBOD::Network::Api;
+use Data::Dumper;
 
 extends 'DBOD::Job';
 with 'MooseX::Getopt::Usage',
@@ -81,45 +82,51 @@ has 'debug' => (
     isa => 'Bool', 
     documentation => qq{If set, output debug level messages} );
 
-sub next_port {
+sub free_port {
     my ($self, $host, $type) = @_;
-    my $used_ports = {
-        MySQL => (),
-        PG => (),
-        InfluxDB => (),
-    };
+    my $used_ports = {};
     # Fecth host metadata from API
-    my $host_instances = DBOD::Network::API::get_host_metadata($host, $self->config);
+    my $host_instances = DBOD::Network::Api::host_metadata($host, $self->config);
     # Get list of used ports
     for my $instance (@{$host_instances}) {
-        push @{$used_ports->{$instance->{type}}}, int($instance->{port});
+        if (defined $instance->{port}) {
+            $self->log->debug(sprintf("Processing (%s, %s, %s)", 
+                $instance->{db_name},
+                $instance->{db_type},
+                $instance->{port}));
+            push @{$used_ports->{$instance->{db_type}}}, int($instance->{port});
+        }
     }
+
     # Sorting on external buffer to prevent "Useless use of sort in scalar context" warning
-    my @buf = sort $used_ports->{MySQL};
-    $used_ports->{MySQL} = \@buf;
-    @buf = sort $used_ports->{PG};
-    $used_ports->{PG} = @buf;
-    @buf = sort $used_ports->{InfluxDB};
-    $used_ports->{InfluxDB} = @buf;
+    while (my ($type, $arr) = each %{$used_ports}) {
+        my @buf = sort @{$arr};
+        $used_ports->{$type} = \@buf;
+    }
+    
+    $self->log->debug( Dumper $used_ports); 
 
-    if ($type eq 'MySQL') {
-        for (my $port = 5500; $port < 5570; $port++) {
-            if ( ! grep {$port} $used_ports->{MySQL} ){
-                return $port;
-            }
+    my %range_start = ();
+    $range_start{MYSQL} = 5500;
+    $range_start{PG} = 6600;
+    $range_start{InfluxDB} = 8080;
+    
+    my $port = $range_start{$self->subcategory};
+    my $stop = $port + 50;
+    $self->log->debug( "Checking from $port to $stop" ); 
+    my @used_ports = @{$used_ports->{$self->subcategory}};
+    while ($port <= $stop ) {
+        my $used_port = shift @used_ports;
+        if ($port < $used_port) { 
+            $self->log->debug("Found port ${port}");
+            return $port;
+        } elsif ($port == $used_port) {
+            $port++;
         }
-    } elsif ($type eq 'PG') {
-        for (my $port = 6600; $port < 6620; $port++) {
-            return $port if ( ! grep {$port} $used_ports->{PG} );
-        }
-    } elsif ($type eq 'InfluxDB') {
-        for (my $port = 8080; $port < 8100; $port++) {
-            return $port if ( ! grep {$port} $used_ports->{InfluxDB} );
-        }
-    } else {
-        return;
-    };
-
+    }
+    
+    $self->log->debug("Free port not found");
+    return;
 }
 
 # Main 
@@ -172,7 +179,7 @@ sub body {
 
     # Try to generate port from API information if port has not been provided
     if (! defined($job->port())) {
-            $input->{port} = $job->next_port($input->{hosts}->[0]);
+            $input->{port} = $job->free_port($input->{hosts}->[0]);
             if (! defined $input->{port}) {
                 $job->log->error("Error generting port from API information");
                 $job->_result($DBOD::ERROR);
@@ -185,6 +192,8 @@ sub body {
     } elsif ($job->subcategory() eq 'PG') {
         $input->{socket} = '/var/lib/pgsql';
     }
+
+    exit 0;
 
     # If volumes are to be created
     unless ($job->skip_volumes_creation()) {
