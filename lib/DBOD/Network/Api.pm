@@ -109,10 +109,10 @@ sub host_metadata {
     my ($host, $config) = @_;
     my $result = _api_get_host_metadata($host, $config);
     if ($result->{'code'} eq '200') {
-        return @{$result->{response}->{response};
+        return @{$result->{response}->{response}};
     } else {
         ERROR 'Metadata not available for entity ' . $host;
-        return {};
+        return;
     }
 }
 

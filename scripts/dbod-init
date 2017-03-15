@@ -11,7 +11,7 @@
 package DBOD::Init;
 use Moose;
 use DBOD::Templates;
-use DBOD::Api;
+use DBOD::Network::Api;
 
 extends 'DBOD::Job';
 with 'MooseX::Getopt::Usage',
@@ -82,33 +82,39 @@ has 'debug' => (
     documentation => qq{If set, output debug level messages} );
 
 sub next_port {
-    my ($host, $type) = @_;
-    my %used_ports;
-    $used_ports[MySQL] = ();
-    $used_ports[PG] = ();
-    $used_ports[InfluxDB] = ();
+    my ($self, $host, $type) = @_;
+    my $used_ports = {
+        MySQL => (),
+        PG => (),
+        InfluxDB => (),
+    };
     # Fecth host metadata from API
-    my $host_instances = DBOD::API::get_host_metadata($host, $self->$config);
+    my $host_instances = DBOD::Network::API::get_host_metadata($host, $self->config);
     # Get list of used ports
-    for my $instance (@{host_instances}) {
-        push $used_ports[$instance->{type}], int($instance->{port});
+    for my $instance (@{$host_instances}) {
+        push @{$used_ports->{$instance->{type}}}, int($instance->{port});
     }
-    # Sort 
-    $used_ports[MySQL] = sort $used_ports[MySQL];
-    $used_ports[PG] = sort $used_ports[PG];
-    $used_ports[InfluxDB] = sort $used_ports[InfluxDB];
+    # Sorting on external buffer to prevent "Useless use of sort in scalar context" warning
+    my @buf = sort $used_ports->{MySQL};
+    $used_ports->{MySQL} = \@buf;
+    @buf = sort $used_ports->{PG};
+    $used_ports->{PG} = @buf;
+    @buf = sort $used_ports->{InfluxDB};
+    $used_ports->{InfluxDB} = @buf;
 
     if ($type eq 'MySQL') {
-        for (my $port = 5500, $port++, $port < 5570) {
-            if ( ! grep {$port} $used_ports[MySQL] ) return $port;
+        for (my $port = 5500; $port < 5570; $port++) {
+            if ( ! grep {$port} $used_ports->{MySQL} ){
+                return $port;
+            }
         }
     } elsif ($type eq 'PG') {
-        for (my $port = 6600, $port++, $port < 6620) {
-            if ( ! grep {$port} $used_ports[PG] ) return $port;
-
+        for (my $port = 6600; $port < 6620; $port++) {
+            return $port if ( ! grep {$port} $used_ports->{PG} );
+        }
     } elsif ($type eq 'InfluxDB') {
-        for (my $port = 8080, $port++, $port < 8100) {
-            if ( ! grep {$port} $used_ports[InfluxDB] ) return $port;
+        for (my $port = 8080; $port < 8100; $port++) {
+            return $port if ( ! grep {$port} $used_ports->{InfluxDB} );
         }
     } else {
         return;
@@ -165,7 +171,7 @@ sub body {
     $input->{hosts} = \@hosts;
 
     # Try to generate port from API information if port has not been provided
-    if (! defined($job->port()) {
+    if (! defined($job->port())) {
             $input->{port} = $job->next_port($input->{hosts}->[0]);
             if (! defined $input->{port}) {
                 $job->log->error("Error generting port from API information");
@@ -188,8 +194,9 @@ sub body {
         if ($volume_type eq "InfluxDB"){
             $volume_type = "PG";
         }
-
-        my $cmd = "/etc/init.d/syscontrol -i dfm.db-cmode DFM_create_dod_volumes_Cmode -name $input->{dbname} -size $input->{size} -server $input->{hosts}->[0]  -type ${volume_type} -debug";
+        # Use dummy server to force volume creation in RAC51 Storage
+        my $target_server = 'itrac51666';
+        my $cmd = "/etc/init.d/syscontrol -i dfm.db-cmode DFM_create_dod_volumes_Cmode -name $input->{dbname} -size $input->{size} -server ${target_server}  -type ${volume_type} -debug";
 
         $job->log->debug( "Executing: $cmd" );
         my $vol_creation_output = `$cmd`;
