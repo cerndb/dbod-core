@@ -117,16 +117,25 @@ sub free_port {
     my @used_ports = @{$used_ports->{$self->subcategory}};
     while ($port <= $stop ) {
         my $used_port = shift @used_ports;
-        if ($port < $used_port) { 
-            $self->log->debug("Found port ${port}");
-            return $port;
-        } elsif ($port == $used_port) {
-            $port++;
+        if (defined($used_port)) {
+            $self->log->debug("Port ${used_port} used");
+            if ($port < $used_port) { 
+                $self->log->debug("Found port ${port}");
+                return $port;
+            } elsif ($port == $used_port) {
+                $port++;
+                $self->log->debug("Next port to check: ${port}");
+            }
+        } else {
+            if ($port <= $stop) {
+                $self->log->debug("Found port ${port}");
+                return $port;
+            } else {
+                $self->log->debug("Free port not found");
+                return;
+            }
         }
     }
-    
-    $self->log->debug("Free port not found");
-    return;
 }
 
 # Main 
@@ -187,6 +196,9 @@ sub body {
             }
         }
 
+    $job->_result(6);
+    return;
+
     if ($job->subcategory() eq 'MYSQL') {
         $input->{socket} = '/var/lib/mysql/mysql.sock.' . $input->{dbname} . '.' . $input->{port};
     } elsif ($job->subcategory() eq 'PG') {
@@ -218,8 +230,8 @@ sub body {
 
         # Fetch volumes mounting details. Will wait until details are available
         $job->log->debug("Fetching volumes server information");
-        my $datavol = DBOD::Runtime::mywait(\&RunTime_Zapi::GetDODMountpoint, ("dod$input->{dbname}03", $hosts[0]));
-        my $logvol = DBOD::Runtime::mywait(\&RunTime_Zapi::GetDODMountpoint, ("dod$input->{dbname}02", $hosts[0]));
+        my $datavol = DBOD::Runtime::mywait(\&RunTime_Zapi::GetDODMountpoint, ("dod$input->{dbname}03", $target_server));
+        my $logvol = DBOD::Runtime::mywait(\&RunTime_Zapi::GetDODMountpoint, ("dod$input->{dbname}02", $target_server));
         my ($serverdata, $data_mounting_path) = split ':', $datavol;
         my ($serverlogs, $logs_mounting_path) = split ':', $logvol;
 
