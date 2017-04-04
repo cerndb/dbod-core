@@ -35,7 +35,7 @@ sub BUILD {
     $self->logger->debug("Datadir: " . $self->metadata->{datadir});
     $self->logger->debug("Socket: " . $self->metadata->{port});
 
-    $self->service_script("sudo /sbin/service influxdb_" . $self->instance);
+    $self->service_script("sudo /sbin/service " . $self->instance);
 	return;
 };
 
