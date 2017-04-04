@@ -12,7 +12,7 @@
 Summary: DB On Demand Core library
 Name: cerndb-sw-dbod-core
 Version: %{version}
-Release: 0%{?dist}
+Release: 1%{?dist}
 License: GPL
 Group: Applications
 ExclusiveArch: x86_64
@@ -76,13 +76,17 @@ exit 0;
 %{CORE_ROOT}/bin
 
 %changelog
+* Tue Apr 4 2017 Ignacio Coterillo <icoteril@cern.ch> 0.74.1
+- Automatic port selection
+- Fixes memory parameters initialization values issues
+- Correct registration of PG types in AppDynamics
 * Wed Sep 28 2016 Ignacio Coterillo <icoteril@cern.ch> 0.72.2
 - Fixes scripts type selection 
 * Wed Sep 28 2016 Ignacio Coterillo <icoteril@cern.ch> 0.72.0
 - Fix Cache loading format missmatch
 * Mon Sep 19 2016 Ignacio Coterillo <icoteril@cern.ch> 0.71.0
 - Install to /opt/dbod/
-* Tue Nov 19 2015 Ignacio Coterillo <icoteril@cern.ch> 0.67.1
+* Tue Nov 17 2015 Ignacio Coterillo <icoteril@cern.ch> 0.67.1
 - Changed release format
 * Tue Jun 2 2015 Ignacio Coterillo <icoteril@cern.ch> 0.5.1
 - Initial packaging
