@@ -113,6 +113,10 @@ sub free_port {
     
     my $port = $range_start{$self->subcategory};
     my $stop = $port + 50;
+    if (! defined $used_ports->{$self->subcategory}) {
+        # No instance of selected type found in host
+        return $port;
+     }
     $self->log->debug( "Checking from $port to $stop" ); 
     my @used_ports = @{$used_ports->{$self->subcategory}};
     while ($port <= $stop ) {
