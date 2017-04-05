@@ -70,31 +70,14 @@ sub body {
             $job->_result( $DBOD::ERROR );
             return;
     }
-
-    # Delete local files 
-    $job->log->debug("Delete local files");
-    # Call to the delete_local_DBOD_files.sh script
-    # will only work from the local machine...
-
-    # Delete volumes? Will only work on dbod-daemon...
-    #$job->log->debug("Delete volumes");
-    #my $cmd = "/etc/init.d/syscontrol -i dfm.db-cmode DFM_delete_dod_volumes_Cmode -enti dod_$job->entity -debug";
-    #$job->log->debug( "Executing: $cmd" );
-    #my $vol_deletion_output = `$cmd`;
-    #if (DBOD::Runtime::result_code($vol_deletion_output)) {
-    #    $job->log->error( "An error ocurred deleting volumes:" );
-    #    $job->log->error( $vol_deletion_output );
-    #    $job->_output($DBOD::ERROR);
-    #    return;
-    #}
-
-    $job->log->debug("Delete entity from API");    
+    # Currently we should delete from the web application, to remove also from FIM
+    # $job->log->debug("Delete entity from API");    
     # delete entity from API
-        unless (DBOD::Network::Api::delete_entity($job->entity, $job->config) == $DBOD::OK) {
-            $job->log->error("Error deleting the entity in the API");
-            $job->_result($DBOD::ERROR);
-            return;
-        }
+    #    unless (DBOD::Network::Api::delete_entity($job->entity, $job->config) == $DBOD::OK) {
+    #        $job->log->error("Error deleting the entity in the API");
+    #        $job->_result($DBOD::ERROR);
+    #        return;
+    #    }
     # Job done!
     unless (defined $job->_result()){
         $job->_result($DBOD::OK);
