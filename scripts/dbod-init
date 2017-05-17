@@ -238,7 +238,7 @@ sub body {
 
         # Fix server name to use GPN access instead of Private Network Interface
         # Removing "-priv" suffix for RAC51 servers
-        if ($input->{hosts}->[0] =~ /^db/) {
+        if (($input->{hosts}->[0] =~ /^db/) || ($input->{hosts}->[0] =~ /rac52/)) {
             $serverdata =~ s/-priv$//;
             $serverlogs =~ s/-priv$//;
         }
