@@ -1,14 +1,14 @@
 [
   {
     "db_name": "my_influx",
-    "basedir": "/usr/local/influxdb/influxdb-0.13.0",
+    "basedir": "/usr/local/influxdb/influxdb-1.2.0",
     "waldir": "/ORA/dbs02/INFLUX_T",
     "datadir": "/ORA/dbs03/INFLUX_T/data",
     "metadir": "/ORA/dbs03/INFLUX_T/meta",
     "configfile":"/ORA/dbs03/INFLUX_T/influxdb.conf",
     "pidfile": "/var/run/influxdb-my_influx/influxd.pid",
     "environment_file": "/etc/default/influxdb",
-    "version": "0.13.0",
+    "version": "1.2.0",
     "query-timeout": "30m",
     "max-concurrent-queries": 0,
     "log-queries-after": "30m",

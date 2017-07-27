@@ -26,16 +26,19 @@ use REST::Client;
 use JSON;
 
 has 'service_script' => (is => 'rw', isa => 'Str');
+has 'upgrade_folder' => (is => 'rw', isa => 'Str');
+
 
 sub BUILD {
 
 	my $self = shift;
 
-    $self->logger->debug("Instance: " . $self->instance);
-    $self->logger->debug("Datadir: " . $self->metadata->{datadir});
-    $self->logger->debug("Socket: " . $self->metadata->{port});
+    $self->log->debug("Instance: " . $self->instance);
+    $self->log->debug("Datadir: " . $self->metadata->{datadir});
+    $self->log->debug("Socket: " . $self->metadata->{port});
 
     $self->service_script("sudo /sbin/service " . $self->instance);
+    $self->upgrade_folder($self->config->{'common'}->{'upgrade_folder'} . '/influxdb/');
 	return;
 };
 
@@ -214,6 +217,75 @@ sub snapshot {
         $self->log->debug("Snapshot operation successful");
         return $OK;
     }
+}
+
+
+sub upgrade {
+    my $self = shift;
+    my ($upgrade_version) = @_;
+
+    my $version = $self->metadata->{version};
+    my $entity = $self->metadata->{db_name};
+    my $result;
+
+    $self->log->debug(sprintf("Executing upgrade on %s from version %s to %s", $entity, $version, $upgrade_version));
+
+    # Find upgrade script
+    my $upgrade_script = sprintf("%sinfluxdb_from_%s_to_%s", $self->upgrade_folder, $version, $upgrade_version);
+    if (! -e $upgrade_script)
+    {
+        $self->log->error(sprintf("Upgrade script %s not found from version %s to %s", $upgrade_script, $version, $upgrade_version));
+        return $ERROR;
+    }
+
+    my $upgrade_wrapper = sprintf("%sinfluxdb_upgrade_wrapper.sh", $self->upgrade_folder);
+    if (! -e $upgrade_wrapper)
+    {
+        $self->log->error(sprintf("Wrapper script %s not found", $upgrade_wrapper));
+        return $ERROR;
+    }
+
+    if (! $self->is_running()) {
+        $self->log->error("Instance is not running. Upgrades requires a running instance");
+        return $ERROR;
+    }
+
+    $result = $self->snapshot();
+    if ($result != $OK) {
+        $self->log->error("Problem making snapshop of InfluxDB instance. Please check.");
+        return $ERROR;
+    }
+
+    $result = $self->stop();
+    if ($result != $OK) {
+        $self->log->error("Problem shutting down InfluxDB instance. Please check.");
+        return $ERROR;
+    }
+
+    $ENV{'INFLUXDB_CURRENT_VERSION'} = $version;
+    $ENV{'INFLUXDB_NEXT_VERSION'} = $upgrade_version;
+    $ENV{'INFLUXDB_ENTITY'} = $entity;
+    $ENV{'INFLUXDB_UPGRADE_FOLDER'} = $self->upgrade_folder;
+
+    my $cmd = sprintf("sudo -E %s", $upgrade_wrapper);
+
+    my ($output, @buf);
+    my $cmd_error = DBOD::Runtime::run_cmd(
+        cmd => $cmd,
+        output => \$output);
+    if ($cmd_error) {
+        $self->log->error("Problem appliying the upgrade script. Please check.");
+        return $ERROR;
+    }
+    $self->log->debug("Applied upgrade script");
+
+    $result = $self->start();
+    if ($result != $OK) {
+        $self->log->error("Problem starting up InfluxDB instance. Please check.");
+        return $ERROR;
+    }
+
+    return $OK;
 }
 
 1;

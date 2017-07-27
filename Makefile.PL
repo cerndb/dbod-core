@@ -53,5 +53,6 @@ install_script 'scripts/dbod-init';
 install_script 'scripts/dbod-ping';
 install_script 'scripts/dbod-start';
 install_script 'scripts/dbod-stop';
+install_script 'scripts/dbod-upgrade';
 
 WriteAll;

@@ -1,0 +1,57 @@
+#!/usr/bin/env perl
+# Copyright (C) 2015, CERN
+# This software is distributed under the terms of the GNU General Public
+# Licence version 3 (GPL Version 3), copied verbatim in the file "LICENSE".
+# In applying this license, CERN does not waive the privileges and immunities
+# granted to it by virtue of its status as Intergovernmental Organization
+# or submit itself to any jurisdiction.
+
+package dbod_upgrade;
+
+use warnings;
+use strict;
+
+use DBOD::Job;
+use Data::Dumper;
+use DBOD qw ($ERROR $OK);
+use DBOD::Instance;
+use Moose;
+
+extends 'DBOD::Job';
+with 'MooseX::Getopt::Usage',
+     'MooseX::Getopt::Usage::Role::Man';
+
+has 'upgrade_version' => (is => 'ro', isa => 'Str', required => 1, documentation => qq{Target upgrade version} );
+has 'help' => (is => 'ro', isa => 'Bool', documentation => qq{Print command usage} );
+
+
+package main;
+
+use DBOD;
+
+my $job = dbod_upgrade->new_with_options();
+
+
+sub body {
+
+    $job->log->debug('Upgrading' . $job->entity() . '/' .
+        $job->metadata->{db_type});
+
+    my $instance = DBOD::Instance::Factory->create(
+        $job->metadata->{db_type},
+        instance => $job->entity(),
+        metadata => $job->metadata(),
+        config => $job->config());
+
+    if ($job->is_local()) {
+        $job->log->debug('Job running locally in database host');
+        return $instance->upgrade($job->upgrade_version());
+    } else {
+        $job->log->error('This command has to be run locally');
+        return $ERROR;
+    }
+    return $OK;
+}
+
+$job->run(\&body);
+
