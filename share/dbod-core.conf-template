@@ -1,13 +1,13 @@
-<general>
+<common>
 logdir  
 project
-upgrade_folder
+upgrade_folder = /etc/dbod/scripts/upgrades
 sql_folder
 template_folder
 init_folder
 syscontrol_path
 dsmc_exe
-</general>
+</common>
 <api>
 cachefile = /etc/dbod/cache/entities.json
 </api>

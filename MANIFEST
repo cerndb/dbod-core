@@ -39,6 +39,7 @@ scripts/dbod-ping
 scripts/dbod-start
 scripts/dbod-stop
 scripts/dbod-backup
+scripts/dbod-upgrade
 share/configpath.conf
 share/dbod-core.conf-template
 share/entities.json
@@ -52,6 +53,8 @@ share/templates/ldap/tnsnetservice
 share/test.json
 share/sample_mtab
 share/influxdb_entity_example.json
+share/upgrades/influxdb_upgrade_wrapper.sh
+share/upgrades/influxdb_from_1.2.0_to_1.3.0
 t/api.t
 t/config.t
 t/db.t
