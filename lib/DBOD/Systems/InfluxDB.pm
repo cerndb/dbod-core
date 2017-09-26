@@ -37,7 +37,7 @@ sub BUILD {
     $self->log->debug("Datadir: " . $self->metadata->{datadir});
     $self->log->debug("Socket: " . $self->metadata->{port});
 
-    $self->service_script("sudo /sbin/service " . $self->instance);
+    $self->service_script("sudo /sbin/service dbod-" . $self->instance);
     $self->upgrade_folder($self->config->{'common'}->{'upgrade_folder'} . '/influxdb/');
 	return;
 };

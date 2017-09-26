@@ -2,7 +2,7 @@
 # Database On Demand (DBOD) core library SPEC file
 #
 
-%define version 0.74
+%define version 0.75
 
 # Trying to avoid Koji post-generation issues
 %define __arch_install_post %{nil} # /usr/lib/rpm/check-buildroot
@@ -12,7 +12,7 @@
 Summary: DB On Demand Core library
 Name: cerndb-sw-dbod-core
 Version: %{version}
-Release: 1%{?dist}
+Release: 0%{?dist}
 License: GPL
 Group: Applications
 ExclusiveArch: x86_64
@@ -76,6 +76,9 @@ exit 0;
 %{CORE_ROOT}/bin
 
 %changelog
+* Tue Sep 26 2017 Ignacio Coterillo <icoteril@cern.ch> 0.75.0
+- Add InfluxDB Upgrade scripts
+- Add prefix to InfluxDB script
 * Tue Apr 4 2017 Ignacio Coterillo <icoteril@cern.ch> 0.74.1
 - Automatic port selection
 - Fixes memory parameters initialization values issues
