@@ -12,7 +12,7 @@
 Summary: DB On Demand Core library
 Name: cerndb-sw-dbod-core
 Version: %{version}
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: GPL
 Group: Applications
 ExclusiveArch: x86_64
@@ -78,6 +78,8 @@ exit 0;
 %changelog
 * Fri Oct 6 2017 Ignacio Coterillo <icoteril@cern.ch> 0.76.0
 - Remove AppDynamics references
+- Fix dbod-destroy deployment
+- Fix dbod-init call for volume creation
 * Tue Sep 26 2017 Ignacio Coterillo <icoteril@cern.ch> 0.75.0
 - Add InfluxDB Upgrade scripts
 - Add prefix to InfluxDB script
