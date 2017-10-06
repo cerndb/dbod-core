@@ -155,7 +155,6 @@ use DBOD::Runtime;
 use DBOD::Network::Api;
 use DBOD::Network::IPalias;
 use DBOD::Templates;
-use DBOD::Monitoring::Appdynamics;
 
 # Using the old Runtime_Zapi, as the new version is missing methods
 use lib '/ORA/dbs01/syscontrol/projects/recovery/bin';
@@ -276,22 +275,6 @@ sub body {
         $job->_result( $DBOD::ERROR );
     }
 
-    # Register MySQL and PG instances in AppDynamics
-    if (($job->subcategory() eq 'MYSQL' or $job->subcategory() eq 'PG') &&
-        ($job->type() eq 'PROD' )){
-        # Register entity in Appdynamics
-        my $metadata = DBOD::Network::Api::get_entity_metadata($job->entity(), undef, $job->config);
-        $job->log->debug( Dumper $metadata );
-        if ((defined $metadata) && (scalar keys %{$metadata})) {
-            unless (DBOD::Monitoring::Appdynamics::enable($job->entity, $job->config(), $metadata) == $DBOD::OK) {
-                $job->log->error( "Error registering instance in AppDynamics" );
-                $job->_result( $DBOD::ERROR );
-            }
-        } else {
-            $job->log->error( "Entity not found through API. Skipping AppDynamics registration" );
-            $job->_result( $DBOD::ERROR );
-        }
-    }
     # Job done!
     unless (defined $job->_result()){
         $job->_result($DBOD::OK);

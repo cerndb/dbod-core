@@ -29,7 +29,6 @@ use DBOD::Runtime;
 use DBOD::Network::Api;
 use DBOD::Network::IPalias;
 use DBOD::Templates;
-use DBOD::Monitoring::Appdynamics;
 
 # Initiates logger
 BEGIN { 
@@ -44,18 +43,6 @@ sub body {
         $job->log->info("Metadata is not defined, nothing to delete");
         $job->_result($DBOD::OK);
 	exit $job->_result();
-    }
-    $job->log->debug("Unregister MySQL and PG instances in AppDynamics");    
-    # Unregister MySQL and PG instances in AppDynamics
-    if ($job->metadata->{db_type} eq 'MYSQL' or $job->metadata->{db_type} eq 'PG') {
-        # Unregister entity in Appdynamics
-		$job->log->debug( Dumper $job->config() );
-            if (DBOD::Monitoring::Appdynamics::is_enabled($job->entity, $job->config())) {
-                unless (DBOD::Monitoring::Appdynamics::disable($job->entity, $job->config()) == $DBOD::OK) {
-                    $job->log->error( "Error unregistering instance in AppDynamics" );
-                    $job->_result( $DBOD::ERROR );
-                }
-            }
     }
     $job->log->debug("Delete Ldap");    
     # Delete LDAP using the API

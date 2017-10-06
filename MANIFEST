@@ -18,7 +18,6 @@ lib/DBOD/Instance.pm
 lib/DBOD/Job.pm
 lib/DBOD/Runtime.pm
 lib/DBOD/Templates.pm
-lib/DBOD/Monitoring/Appdynamics.pm
 lib/DBOD/Network/Api.pm
 lib/DBOD/Network/IPalias.pm
 lib/DBOD/Network/Ldap.pm

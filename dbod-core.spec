@@ -2,7 +2,7 @@
 # Database On Demand (DBOD) core library SPEC file
 #
 
-%define version 0.75
+%define version 0.76
 
 # Trying to avoid Koji post-generation issues
 %define __arch_install_post %{nil} # /usr/lib/rpm/check-buildroot
@@ -76,6 +76,8 @@ exit 0;
 %{CORE_ROOT}/bin
 
 %changelog
+* Fri Oct 6 2017 Ignacio Coterillo <icoteril@cern.ch> 0.76.0
+- Remove AppDynamics references
 * Tue Sep 26 2017 Ignacio Coterillo <icoteril@cern.ch> 0.75.0
 - Add InfluxDB Upgrade scripts
 - Add prefix to InfluxDB script
