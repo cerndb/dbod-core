@@ -2,7 +2,7 @@
 # Database On Demand (DBOD) core library SPEC file
 #
 
-%define version 0.76
+%define version 0.77
 
 # Trying to avoid Koji post-generation issues
 %define __arch_install_post %{nil} # /usr/lib/rpm/check-buildroot
@@ -12,7 +12,7 @@
 Summary: DB On Demand Core library
 Name: cerndb-sw-dbod-core
 Version: %{version}
-Release: 3%{?dist}
+Release: 0%{?dist}
 License: GPL
 Group: Applications
 ExclusiveArch: x86_64
@@ -76,7 +76,7 @@ exit 0;
 %{CORE_ROOT}/bin
 
 %changelog
-* Thu Nov 30 2017 Ignacio Coterillo <icoteril@cern.ch> 0.76.2
+* Thu Nov 30 2017 Ignacio Coterillo <icoteril@cern.ch> 0.77.0
 - Fix NetApp SDK path
 - Fix MANIFEST
 * Fri Oct 6 2017 Ignacio Coterillo <icoteril@cern.ch> 0.76.0

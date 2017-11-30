@@ -10,7 +10,7 @@ package DBOD::Storage::NetApp::ZAPI;
 use strict;
 use warnings;
 
-use lib '/opt/netapp-manageability-sdk-5.3.1/lib/perl/NetApp';
+use lib '/opt/netapp-manageability-sdk/lib/perl/NetApp';
 
 use Moose;
 with 'MooseX::Log::Log4perl';
