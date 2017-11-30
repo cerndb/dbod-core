@@ -12,7 +12,7 @@
 Summary: DB On Demand Core library
 Name: cerndb-sw-dbod-core
 Version: %{version}
-Release: 2%{?dist}
+Release: 3%{?dist}
 License: GPL
 Group: Applications
 ExclusiveArch: x86_64
@@ -76,6 +76,9 @@ exit 0;
 %{CORE_ROOT}/bin
 
 %changelog
+* Thu Nov 30 2017 Ignacio Coterillo <icoteril@cern.ch> 0.76.2
+- Fix NetApp SDK path
+- Fix MANIFEST
 * Fri Oct 6 2017 Ignacio Coterillo <icoteril@cern.ch> 0.76.0
 - Remove AppDynamics references
 - Fix dbod-destroy deployment
