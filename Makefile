@@ -35,6 +35,7 @@ sources:
 	tar xvzf DBOD-$(VERSION).tar.gz
 	cp -r bin DBOD-$(VERSION)
 	cp -r profile.d DBOD-$(VERSION)
+	cp -r resources DBOD-$(VERSION)
 	tar cvzf DBOD-$(VERSION).tar.gz DBOD-$(VERSION)
 
 # This task will generate an RPM locally

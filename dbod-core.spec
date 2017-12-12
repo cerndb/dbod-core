@@ -12,7 +12,7 @@
 Summary: DB On Demand Core library
 Name: cerndb-sw-dbod-core
 Version: %{version}
-Release: 0%{?dist}
+Release: 2%{?dist}
 License: GPL
 Group: Applications
 ExclusiveArch: x86_64
@@ -25,8 +25,6 @@ Packager: Ignacio Coterillo Coz <icoteril@cern.ch>
 # Build requirements
 BuildRequires: perl-Module-Install
 BuildRequires: perl-File-ShareDir
-BuildRequires: perl-App-cpanminus
-BuildRequires: gcc
 
 Requires: perl-Log-Log4perl
 Requires: perl-Log-Log4perl
@@ -48,6 +46,15 @@ Requires: perl-Try-Tiny
 Requires: perl-Readonly
 Requires: perl-SOAP-Lite
 Requires: perl-autodie
+Requires: perl-Pod-Parser
+Requires: perl-Module-Loaded
+Requires: perl-autobox
+Requires: perl-LWP-Protocol-https
+
+Requires: cerndb-perl-netapp
+Requires: cerndb-infra-storage
+
+Obsoletes: cerndb-sw-dbod-core-deps
 
 AutoReqProv: no
 
@@ -59,20 +66,15 @@ DB On Demand core framework
 exit 0
 
 %build
-cpanm -l $RPM_BUILD_ROOT/%{CORE_ROOT} Pod::Select
-cpanm -l $RPM_BUILD_ROOT/%{CORE_ROOT} MooseX::Getopt::Usage
-cpanm -l $RPM_BUILD_ROOT/%{CORE_ROOT} MooseX::Log::Log4perl
-cpanm -l $RPM_BUILD_ROOT/%{CORE_ROOT} MooseX::Role::DBIx::Connector
-cpanm -l $RPM_BUILD_ROOT/%{CORE_ROOT} MooseX::AbstractFactory
-
 perl Makefile.PL INSTALL_BASE=$RPM_BUILD_ROOT/%{CORE_ROOT}/
 make
 exit 0
 
 %install
+mkdir -p $RPM_BUILD_ROOT/%{CORE_ROOT}
+tar xvzf resources/perl5.tar.gz -C $RPM_BUILD_ROOT/opt/dbod > /dev/null 2>&1
 mkdir -p $RPM_BUILD_ROOT/etc/profile.d
 cp -r profile.d/dbod-core.sh $RPM_BUILD_ROOT/etc/profile.d/
-mkdir -p $RPM_BUILD_ROOT/%{CORE_ROOT}
 mkdir -p $RPM_BUILD_ROOT/var/log/dbod
 make install
 rm $RPM_BUILD_ROOT/%{CORE_ROOT}/lib/perl5/x86_64-linux-thread-multi/perllocal.pod
@@ -94,15 +96,19 @@ exit 0;
 
 %files
 /etc/profile.d/dbod-core.sh
+%{CORE_ROOT}
 %config %{CORE_ROOT}/lib/perl5/auto/share/dist/DBOD
-%{CORE_ROOT}/lib/perl5/DBOD/
-%{CORE_ROOT}/lib/perl5/DBOD.pm
-%{CORE_ROOT}/lib/perl5/x86_64-linux-thread-multi/auto/DBOD/.packlist
-%{CORE_ROOT}/lib/perl5/DBOD.pm
+
+%doc %{CORE_ROOT}/man
 %attr (-, dbod, dbod) /var/log/dbod
-%{CORE_ROOT}/bin
 
 %changelog
+* Wed Jan 7 2018 Ignacio Coterillo <icoteril@cern.ch> 0.78.2
+- Add missing dependencies: LWP-https, autobox and Module-Loder
+- Add Conflicts directive
+* Thu Dec 14 2017 Ignacio Coterillo <icoteril@cern.ch> 0.78.1
+- Add cerndb-perl-netapp requirement
+- Add cerndb-infra-storage requirement
 * Tue Dec 12 2017 Ignacio Coterillo <icoteril@cern.ch> 0.78.0
 - Fix RAC52 Volume suffix issue
 - Remove dbod-core-deps as dependency
