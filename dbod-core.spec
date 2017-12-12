@@ -2,7 +2,7 @@
 # Database On Demand (DBOD) core library SPEC file
 #
 
-%define version 0.77
+%define version 0.78
 
 # Trying to avoid Koji post-generation issues
 %define __arch_install_post %{nil} # /usr/lib/rpm/check-buildroot
@@ -22,11 +22,32 @@ Distribution: DBOD
 Vendor: CERN
 Packager: Ignacio Coterillo Coz <icoteril@cern.ch>
 
-Requires: cerndb-sw-dbod-core-deps
-
 # Build requirements
 BuildRequires: perl-Module-Install
 BuildRequires: perl-File-ShareDir
+BuildRequires: perl-App-cpanminus
+BuildRequires: gcc
+
+Requires: perl-Log-Log4perl
+Requires: perl-Log-Log4perl
+Requires: perl-Log-Dispatch-FileRotate
+Requires: perl-YAML-Syck
+Requires: perl-File-ShareDir
+Requires: perl-Moose
+Requires: perl-MooseX-Getopt
+Requires: perl-Config-General
+Requires: perl-DBD-MySQL
+Requires: perl-DBD-Pg
+Requires: perl-REST-Client
+Requires: perl-Template-Toolkit
+Requires: perl-IPC-Run
+Requires: perl-Net-OpenSSH
+Requires: perl-LDAP
+Requires: perl-JSON
+Requires: perl-Try-Tiny
+Requires: perl-Readonly
+Requires: perl-SOAP-Lite
+Requires: perl-autodie
 
 AutoReqProv: no
 
@@ -38,6 +59,12 @@ DB On Demand core framework
 exit 0
 
 %build
+cpanm -l $RPM_BUILD_ROOT/%{CORE_ROOT} Pod::Select
+cpanm -l $RPM_BUILD_ROOT/%{CORE_ROOT} MooseX::Getopt::Usage
+cpanm -l $RPM_BUILD_ROOT/%{CORE_ROOT} MooseX::Log::Log4perl
+cpanm -l $RPM_BUILD_ROOT/%{CORE_ROOT} MooseX::Role::DBIx::Connector
+cpanm -l $RPM_BUILD_ROOT/%{CORE_ROOT} MooseX::AbstractFactory
+
 perl Makefile.PL INSTALL_BASE=$RPM_BUILD_ROOT/%{CORE_ROOT}/
 make
 exit 0
@@ -76,6 +103,9 @@ exit 0;
 %{CORE_ROOT}/bin
 
 %changelog
+* Tue Dec 12 2017 Ignacio Coterillo <icoteril@cern.ch> 0.78.0
+- Fix RAC52 Volume suffix issue
+- Remove dbod-core-deps as dependency
 * Thu Nov 30 2017 Ignacio Coterillo <icoteril@cern.ch> 0.77.0
 - Fix NetApp SDK path
 - Fix MANIFEST
