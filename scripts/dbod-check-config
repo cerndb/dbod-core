@@ -145,16 +145,25 @@ sub body {
         if ($config_type eq "mysql") { $old_config_file = "my.cnf"; }
         elsif ($config_type eq "pg") { $old_config_file = "postgresql.conf"; }
         elsif ($config_type eq "influxdb") { $old_config_file = "influxdb.conf"; }
+
+        $old_config_file = $job->metadata->{datadir} . '/' . $old_config_file;
         
-        my $infractions = check_config($job->{file}, 
-            $job->metadata->{datadir} . '/' . $old_config_file, 
-            $vetoed_parameters);
+        my $infractions = check_config($job->{file}, $old_config_file, $vetoed_parameters);
         
         if ($infractions) {
             my %response = ('infractions' => $infractions);
             $job->log->error("Infractions found: " . encode_json \%response);
             print encode_json \%response;
             return $ERROR;
+        }
+
+        if ($job->update) {
+            $job->log->debug('Copying file');
+            use File::Copy;
+            if (copy($job->file, $old_config_file)) {
+                $job->log->error("File copy failed");
+                return $ERROR;
+            }
         }
     }
 
