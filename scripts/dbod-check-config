@@ -1,0 +1,91 @@
+#!/usr/bin/env perl
+# Copyright (C) 2018, CERN
+# This software is distributed under the terms of the GNU General Public
+# Licence version 3 (GPL Version 3), copied verbatim in the file "LICENSE".
+# In applying this license, CERN does not waive the privileges and immunities
+# granted to it by virtue of its status as Intergovernmental Organization
+# or submit itself to any jurisdiction.
+
+# Extension of the base DBOD::Job class to add extra required parameters
+
+package DBOD::CheckConfig;
+
+use Moose;
+use DBOD;
+use DBOD::Templates;
+use DBOD::Network::Api;
+use Data::Dumper;
+
+extends 'DBOD::Job';
+with 'MooseX::Getopt::Usage',
+     'MooseX::Getopt::Usage::Role::Man';
+ 
+use strict;
+
+use DBOD::Job;
+use Data::Dumper;
+
+use DBOD qw ($ERROR $OK $db_type);
+use DBOD::Instance;
+
+$ENV{PERL_LWP_SSL_VERIFY_HOSTNAME}= 0 ;
+
+has 'file' => (
+    is => 'ro', 
+    isa => 'Str',
+    required => $TRUE,
+    documentation => qq{Path to config file} );
+
+has 'update' => (
+    is => 'ro', 
+    isa => 'Bool',
+    default => $FALSE,
+    documentation => qq{Update file} );
+
+# Main package
+package main;
+
+use strict;
+use warnings;
+
+use Log::Log4perl;
+use Data::Dumper;
+use DBOD;
+use DBOD::Runtime;
+
+my $job = DBOD::CheckConfig->new_with_options();
+
+sub validate {
+    my $job = shift;
+    
+    my $config_type = lc $job->metadata->{db_type};
+    $job->log->debug('Validating file, type: '. $config_type);
+
+    $job->log->debug(Dumper $job->config->{$config_type}->{vetoed_parameters});
+    
+}
+
+sub body {
+
+    $job->log->debug('Pinging ' . $job->entity() . '/' . 
+        $job->metadata->{db_type});
+    
+    my $instance = DBOD::Instance::Factory->create(
+        $db_type->{$job->metadata->{db_type}},
+        instance => $job->entity(),
+        metadata => $job->metadata(),
+        config => $job->config());
+    
+    return validate($job);
+
+    if ($job->is_local()) {
+        $job->log->debug('Job running locally in database host');
+    } else {
+        $job->log->debug('Job running from remote host');
+    }
+    return $OK; 
+}
+
+$job->run(\&body);
+
+exit 0;
