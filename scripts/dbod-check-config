@@ -55,21 +55,80 @@ use DBOD::Runtime;
 
 my $job = DBOD::CheckConfig->new_with_options();
 
+sub config_parser {
+
+    # Parses a key=value configuration file and stores its contents as a hash{key:value}.
+    # Expects a path to the file
+    # Valid for MySQL, PostgreSQL (my.cnf, posgresql.conf)
+
+    my $filename = shift;
+    my (%hash);
+    LoggerActions::Log("GeneralDBOD::config_parser: Loading configuration file: $filename");
+
+    # Opens, read and closes file
+    open FILE, "<$filename" or die "Can't open file $filename!";
+    my @lines = <FILE>;
+    close FILE;
+
+    foreach (@lines) {
+        next if /^#/ or /^(\s)*$/ or /^\s+#/;
+        chomp;
+        s/(\s)+#(.)+//; # Removes in-line comments like this one
+        if (/.*=.*/) {
+            my ($k,$v) = split(/\s*=\s*/, $_);
+            $hash{$k} = $v;
+        }
+        else{
+            $hash{$_} = 'on'; # For MySQL boolean parameters which can be enabled just by name
+        }
+    }
+    return \%hash;
+}
+
+sub check_config {
+
+    # Compares the configuration parameters from the user submited file and the currently
+    # installed one.
+    # If a parameter is listed in the @vetoed_parameters array and the user tries to modify it,
+    # an error is returned (a boolean true value).
+
+    my ($new_ref, $old_ref, $vetoed_parameters) = @_;
+    my %new_config = %{$new_ref};
+    my %old_config = %{$old_ref};
+
+    # This converts the list list of vetoed parameters to hash, facilitating the use of
+    # esxists in the conditional tests (easy way of checking for every key if they are
+    # present in the list)
+
+    my %vetoed_keys = map {$_ => 1} @{$vetoed_parameters};
+    my $error = undef;
+
+    foreach my $key (keys (%new_config)) {
+        LoggerActions::Log("GeneralDBOD::check_config: Comparing key: $key, new: "
+            . $new_config{$key} . " old: " . $old_config{$key});
+        # If the key exists in %vetoed_keys and the user attemps to set a new value different from
+        # the one in the current configuration file, an error is raised
+        if ((exists $vetoed_keys{$key}) && ($new_config{$key} ne $old_config{$key})) {
+            LoggerActions::Log("GeneralDBOD::check_config: ERROR: Atempting to set forbidden parameter $key");
+            $error = 1;
+        }
+    }
+    return $error;
+}
+
 sub validate {
+
     my $job = shift;
     
     my $config_type = lc $job->metadata->{db_type};
-    $job->log->debug('Validating file, type: '. $config_type);
+    my $vetoed_parameters = $job->config->{$config_type}->{vetoed_parameters};
 
-    $job->log->debug(Dumper $job->config->{$config_type}->{vetoed_parameters});
-    
+	check_config($job->{file}, $job->metadata->{datadir}, $vetoed_parameters);
+
 }
 
 sub body {
 
-    $job->log->debug('Pinging ' . $job->entity() . '/' . 
-        $job->metadata->{db_type});
-    
     my $instance = DBOD::Instance::Factory->create(
         $db_type->{$job->metadata->{db_type}},
         instance => $job->entity(),
@@ -80,8 +139,10 @@ sub body {
 
     if ($job->is_local()) {
         $job->log->debug('Job running locally in database host');
+		validate($job);
     } else {
-        $job->log->debug('Job running from remote host');
+        $job->log->debug('This job needs to be run locally');
+		return $ERROR;
     }
     return $OK; 
 }
