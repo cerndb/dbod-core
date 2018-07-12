@@ -63,7 +63,7 @@ sub config_parser {
 
     my $filename = shift;
     my (%hash);
-    LoggerActions::Log("GeneralDBOD::config_parser: Loading configuration file: $filename");
+    $job->log->debug("Loading configuration file: $filename");
 
     # Opens, read and closes file
     open FILE, "<$filename" or die "Can't open file $filename!";
@@ -92,9 +92,12 @@ sub check_config {
     # If a parameter is listed in the @vetoed_parameters array and the user tries to modify it,
     # an error is returned (a boolean true value).
 
-    my ($new_ref, $old_ref, $vetoed_parameters) = @_;
-    my %new_config = %{$new_ref};
-    my %old_config = %{$old_ref};
+    my ($new_conf, $old_conf, $vetoed_parameters) = @_;
+
+	config_parser(
+
+    my %new_config = %{config_parser($new_conf)};
+    my %old_config = %{config_parser($old_conf)};
 
     # This converts the list list of vetoed parameters to hash, facilitating the use of
     # esxists in the conditional tests (easy way of checking for every key if they are
@@ -104,12 +107,12 @@ sub check_config {
     my $error = undef;
 
     foreach my $key (keys (%new_config)) {
-        LoggerActions::Log("GeneralDBOD::check_config: Comparing key: $key, new: "
+        $job->log>debug("GeneralDBOD::check_config: Comparing key: $key, new: "
             . $new_config{$key} . " old: " . $old_config{$key});
         # If the key exists in %vetoed_keys and the user attemps to set a new value different from
         # the one in the current configuration file, an error is raised
         if ((exists $vetoed_keys{$key}) && ($new_config{$key} ne $old_config{$key})) {
-            LoggerActions::Log("GeneralDBOD::check_config: ERROR: Atempting to set forbidden parameter $key");
+            $job->log->debug("GeneralDBOD::check_config: ERROR: Atempting to set forbidden parameter $key");
             $error = 1;
         }
     }
