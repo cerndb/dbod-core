@@ -47,6 +47,8 @@ package main;
 
 use strict;
 use warnings;
+        
+use JSON;
 
 use Log::Log4perl;
 use Data::Dumper;
@@ -92,12 +94,13 @@ sub check_config {
     # If a parameter is listed in the @vetoed_parameters array and the user tries to modify it,
     # an error is returned (a boolean true value).
 
+	$job->log->debug(Dumper \@_);
     my ($new_conf, $old_conf, $vetoed_parameters) = @_;
 
-	config_parser(
-
     my %new_config = %{config_parser($new_conf)};
+	$job->log->debug(Dumper \%new_config);
     my %old_config = %{config_parser($old_conf)};
+	$job->log->debug(Dumper \%old_config);
 
     # This converts the list list of vetoed parameters to hash, facilitating the use of
     # esxists in the conditional tests (easy way of checking for every key if they are
@@ -106,28 +109,21 @@ sub check_config {
     my %vetoed_keys = map {$_ => 1} @{$vetoed_parameters};
     my $error = undef;
 
+    my @infractions = ();
+
     foreach my $key (keys (%new_config)) {
-        $job->log>debug("GeneralDBOD::check_config: Comparing key: $key, new: "
+        $job->log->debug("GeneralDBOD::check_config: Comparing key: $key, new: "
             . $new_config{$key} . " old: " . $old_config{$key});
         # If the key exists in %vetoed_keys and the user attemps to set a new value different from
         # the one in the current configuration file, an error is raised
         if ((exists $vetoed_keys{$key}) && ($new_config{$key} ne $old_config{$key})) {
             $job->log->debug("GeneralDBOD::check_config: ERROR: Atempting to set forbidden parameter $key");
-            $error = 1;
+            push @infractions, $key;
         }
     }
-    return $error;
-}
 
-sub validate {
-
-    my $job = shift;
-    
-    my $config_type = lc $job->metadata->{db_type};
-    my $vetoed_parameters = $job->config->{$config_type}->{vetoed_parameters};
-
-	check_config($job->{file}, $job->metadata->{datadir}, $vetoed_parameters);
-
+    if ($#infractions == -1) {return undef}
+    else {return \@infractions};
 }
 
 sub body {
@@ -138,18 +134,32 @@ sub body {
         metadata => $job->metadata(),
         config => $job->config());
     
-    return validate($job);
-
     if ($job->is_local()) {
         $job->log->debug('Job running locally in database host');
-		validate($job);
     } else {
         $job->log->debug('This job needs to be run locally');
-		return $ERROR;
+       
+        my $config_type = lc $job->metadata->{db_type};
+        my $vetoed_parameters = $job->config->{$config_type}->{vetoed_parameters};
+        my $old_config_file;
+        if ($config_type eq "mysql") { $old_config_file = "my.cnf"; }
+        elsif ($config_type eq "pg") { $old_config_file = "postgresql.conf"; }
+        elsif ($config_type eq "influxdb") { $old_config_file = "influxdb.conf"; }
+        
+        my $infractions = check_config($job->{file}, 
+            $job->metadata->{datadir} . '/' . $old_config_file, 
+            $vetoed_parameters);
+        
+        if ($infractions) {
+            my %response = ('infractions' => $infractions);
+            $job->log->error("Infractions found: " . encode_json \%response);
+            print encode_json \%response;
+            return $ERROR;
+        }
     }
-    return $OK; 
+
+    return $OK;
 }
 
 $job->run(\&body);
 
-exit 0;
