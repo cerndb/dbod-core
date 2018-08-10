@@ -21,6 +21,7 @@ use DBOD;
 use DBOD::Runtime;
 use DBOD::Storage::NetApp::ZAPI;
 
+use URI;
 use LWP::UserAgent;
 use REST::Client;
 use JSON;
@@ -73,51 +74,89 @@ sub _connect_db {
 
 sub ping {
     my $self = shift;
-    $self->log->debug("Starting ping on InfluxDB instance");
 
     my $browser = LWP::UserAgent->new();
 
     my @hosts = @{$self->metadata->{hosts}};
     my $host = $hosts[0];
     my $port = $self->metadata->{port};
-    my $service_uri = "http://" . $host . ":" . $port;
+    my $service_uri = "https://" . $host . ":" . $port;
 
     # Write test point with current timestamp
-    my $write_uri = $service_uri . "/write?db=_internal";
+    $self->log->debug("Timestamp Write");
+    my $write_uri = $service_uri . "/write?db=dbmon";
     my $timestamp = time;
     my $testpoint = "dbod_ping status=0 " . $timestamp;
     my $write_request = HTTP::Request->new( 'POST', $write_uri );
+    $write_request->authorization_basic(
+        $self->config->{influx}->{db_user},
+        $self->config->{influx}->{db_password},
+        );
     $write_request->content($testpoint);
+    
     my $write_response = $browser->request($write_request);
-
     #Successful writes will return a 204 HTTP Status Code
-    if ($write_response->code != 204){
-        $self->log->debug($write_response->content);
+    if ($write_response->code != 204) {
+        $self->log->error("Error contacting instance");
+        $self->log->error(Dumper $write_response);
         return $ERROR;
     }
 
     #Now query the just inserted point
-    my $query_uri = URI->new($service_uri . "/query");
-    my $query = "SELECT status FROM dbod_ping WHERE time = " . $timestamp;
-    $query_uri->query_form(db => "_internal", q => $query);
-    my $query_response = $browser->get($query_uri);
+    $self->log->debug("Timestamp Query");
+    my $full_uri = URI->new($service_uri . '/query');
+    $full_uri->query_form({
+            "db" => "dbmon",
+            "q"  => "SELECT status FROM dbod_ping WHERE time = " . $timestamp
+        });
+    $self->log->debug(Dumper $full_uri);
+    my $query = HTTP::Request->new( 'GET', "$full_uri");
+    $query->authorization_basic(
+        $self->config->{influx}->{db_user},
+        $self->config->{influx}->{db_password},
+        );
+    
+    my $query_response = $browser->request($query);
 
     # The query is executed successfully returns code 200
     if ($query_response->code != 200) {
-        $self->log->debug($query_response->content);
+        $self->log->error($query_response->content);
         return $ERROR;
     }
 
     #Check now the content returns the expected point
     my $results = decode_json $query_response->content;
     my $rows = $results->{'results'}[0]; #return the hash reference
-    if (scalar(keys %{$rows}) == 0) { #count the number of keys, if empty then through error
-        $self->log->debug($query_response->content);
+    # count the number of keys, if empty then through error
+    $self->log->debug(Dumper $full_uri);
+    if (scalar(keys %{$rows}) == 0) { 
+        $self->log->error($query_response->content);
+        return $ERROR;
+    }
+
+    # Delete point
+    $self->log->debug("Timestamp Delete");
+    $full_uri = URI->new($service_uri . '/query');
+    $full_uri->query_form({
+            "db" => "dbmon",
+            "q"  => "DELETE FROM dbod_ping WHERE time = " . $timestamp
+        });
+    $self->log->debug(Dumper $full_uri);
+    $query = HTTP::Request->new( 'GET', "$full_uri");
+    $query->authorization_basic(
+        $self->config->{influx}->{db_user},
+        $self->config->{influx}->{db_password},
+        );
+    
+    $query_response = $browser->request($query);
+
+    # The query is executed successfully returns code 200
+    if ($query_response->code != 200) {
+        $self->log->error($query_response->content);
         return $ERROR;
     }
 
     # if the rest of the checks have passed then return ok
-    $self->log->debug("Ping completed sucessfully");
     return $OK;
 }
 
