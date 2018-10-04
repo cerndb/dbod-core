@@ -41,7 +41,7 @@ build_rpm:
     - make rpm
   artifacts:
     paths:
-      - RPMS/noarch/${PKGNAME}-*.rpm
+      - RPMS/x86_64/${PKGNAME}-*.rpm
     expire_in: 1 hour
 
 .koji_deps_template: &koji_deps
