@@ -58,16 +58,15 @@ kbuild:
   <<: *koji_deps
   stage: kbuild
   only:
-    - tags
+    - master
   script:
     - koji --config=.koji build --wait $KOJI_TARGET SRPMS/${PKGNAME}*src.rpm
 
 tag_qa:
   <<: *koji_deps
   stage: deploy_qa
-  when: manual
   only:
-    - tags
+    - master
   script:
     - export P_V_R_D=$(rpm -q --specfile ${PKGNAME}.spec -D "dist ${DIST}" --qf "%{n}-%{v}-%{r}" 2>/dev/null)
     - koji --config=.koji tag-build ${KOJI_TARGET}-qa ${P_V_R_D}
@@ -79,7 +78,7 @@ tag_stable:
   stage: deploy_stable
   when: manual
   only:
-    - tags
+    - master
   script:
     - export P_V_R_D=$(rpm -q --specfile ${PKGNAME}.spec -D "dist ${DIST}" --qf "%{n}-%{v}-%{r}" 2>/dev/null)
     - koji --config=.koji tag-build ${KOJI_TARGET}-stable ${P_V_R_D}
