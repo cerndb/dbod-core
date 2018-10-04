@@ -1,0 +1,88 @@
+---
+image: gitlab-registry.cern.ch/db/cc7-base-koji
+
+variables:
+  KOJI_TARGET: 'db7'
+  DIST: '.el7.cern'
+  PKGNAME: cerndb-sw-dbod-core
+  # KRB_USER, KRB_PASSWORD defined as Gitlab-CI variables
+
+stages:
+  - sources
+  - srpm
+  - rpm
+  - kscratch
+  - kbuild
+  - deploy_qa
+  - deploy_stable
+
+sources:
+  stage: sources
+  script:
+    - make sources
+  artifacts:
+    paths:
+      - ${PKGNAME}-*.tar.gz
+    expire_in: 1 hour
+
+build_srpm:
+  stage: srpm
+  script:
+    - make srpm
+  artifacts:
+    paths:
+      - SRPMS/${PKGNAME}-*.src.rpm
+    expire_in: 1 hour
+
+build_rpm:
+  stage: rpm
+  script:
+    - yum -y install perl-Module-Install
+    - make rpm
+  artifacts:
+    paths:
+      - RPMS/noarch/${PKGNAME}-*.rpm
+    expire_in: 1 hour
+
+.koji_deps_template: &koji_deps
+  before_script:
+    - echo $KRB_PWD | kinit $KRB_USER@CERN.CH
+
+kscratch:
+  <<: *koji_deps
+  stage: kscratch
+  script:
+    - koji --config=.koji build --wait --scratch $KOJI_TARGET SRPMS/${PKGNAME}*src.rpm
+
+kbuild:
+  <<: *koji_deps
+  stage: kbuild
+  only:
+    - tags
+  script:
+    - koji --config=.koji build --wait $KOJI_TARGET SRPMS/${PKGNAME}*src.rpm
+
+tag_qa:
+  <<: *koji_deps
+  stage: deploy_qa
+  when: manual
+  only:
+    - tags
+  script:
+    - export P_V_R_D=$(rpm -q --specfile ${PKGNAME}.spec -D "dist ${DIST}" --qf "%{n}-%{v}-%{r}" 2>/dev/null)
+    - koji --config=.koji tag-build ${KOJI_TARGET}-qa ${P_V_R_D}
+  allow_failure: false
+  dependencies: []
+
+tag_stable:
+  <<: *koji_deps
+  stage: deploy_stable
+  when: manual
+  only:
+    - tags
+  script:
+    - export P_V_R_D=$(rpm -q --specfile ${PKGNAME}.spec -D "dist ${DIST}" --qf "%{n}-%{v}-%{r}" 2>/dev/null)
+    - koji --config=.koji tag-build ${KOJI_TARGET}-stable ${P_V_R_D}
+  allow_failure: false
+  dependencies:
+    - tag_qa
