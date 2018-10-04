@@ -37,7 +37,7 @@ build_srpm:
 build_rpm:
   stage: rpm
   script:
-    - yum -y install perl-Module-Install
+    - yum -y install perl-Module-Install perl-File-ShareDir
     - make rpm
   artifacts:
     paths:
