@@ -126,10 +126,10 @@ sub is_running {
         my $datadir = $self->datadir();
         my @search = grep {/$datadir/x} @buf;
         if (scalar @search) {
-            $self->log->debug( "Instance is running" );
+            $self->log->info( "Instance is running" );
             return $TRUE;
         } else {
-            $self->log->debug( "Instance not running" );
+            $self->log->info( "Instance not running" );
             return $FALSE;
         }
     } else {
@@ -154,7 +154,7 @@ sub ping {
             $self->log->debug("Database seems UP but not responsive");
             return $ERROR;
         }
-        $self->log->debug("Database is UP and responsive");
+        $self->log->info("Database is UP and responsive");
         return $OK;
     } catch {
         $self->log->error("Problem connecting to database. DB object:");
@@ -172,7 +172,7 @@ sub start {
     my $entity = 'dod_' . $self->instance;
 
 	if ($self->is_running()) {
-        $self->log->debug("Nothing to do");
+        $self->log->info("Nothing to do");
         return $OK;
 	}
 	else{
@@ -195,7 +195,7 @@ sub start {
                     $self->_parse_err_file($log_search_string, $log_error_file));
             return $ERROR;
         } else {
-            $self->log->debug("MySQL instance is up");
+            $self->log->info("MySQL instance is up");
             $self->log->debug("mysqld output:\n\n" .
                     $self->_parse_err_file($log_search_string, $log_error_file));
             return $OK;
@@ -210,19 +210,19 @@ sub stop {
 	if ($self->is_running()) {
         my ($cmd, $error);
 		#Put the instance down
-		$self->log->debug("Shutting down");
+		$self->log->info("Shutting down");
         $cmd = '/etc/init.d/mysql_'. $entity . ' stop';
 		$error = DBOD::Runtime::run_cmd( cmd => $cmd);
 		if ($error) {
             $self->log->error("Problem shutting down MySQL instance. Please check.");
             return $ERROR; #not ok
 		} else  {
-            $self->log->debug("Shutdown completed");
+            $self->log->info("Shutdown completed");
             return $OK;
 		}
 	}
     else{
-        $self->log->error("Nothing to do.");
+        $self->log->info("Nothing to do.");
         return $OK;
     }
 }
@@ -243,6 +243,7 @@ sub _get_ZAPI_server_and_volume {
 
 sub snapshot {
     my $self = shift;
+    $self->log->info("Snapshot operation starting");
 
     if (! $self->is_running()) {
         $self->log->error("Snapshotting requires a running instance");
@@ -312,6 +313,9 @@ sub snapshot {
     if ($rc != $OK) {
         $self->log->error("Error unlocking tables! Please contact an admin");
         return $ERROR;
+    }
+    if ($errorflag = $OK) {
+        $self->log->info("Snapshot operation successful");
     }
     return $errorflag;
 }

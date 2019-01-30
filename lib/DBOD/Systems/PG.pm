@@ -79,7 +79,7 @@ sub ping() {
             $self->log->debug("Database seems UP but not responsive");
             return $ERROR;
         }
-        $self->log->debug("Database is UP and responsive");
+        $self->log->info("Database is UP and responsive");
         return $OK;
     } catch {
         $self->log->error("Problem connecting to database. DB object:");
@@ -99,7 +99,7 @@ sub start {
 		my $cmd = "/etc/init.d/pgsql_$entity start";
 		my $rc = DBOD::Runtime::run_cmd(cmd => $cmd);
 		if ($rc == $OK) {
-			$self->log->debug("PostgreSQL instance is up");
+			$self->log->info("PostgreSQL instance is up");
 			return $OK;
 		} else {
 			$self->log->error("Problem starting instance. Please check log.");
@@ -108,7 +108,7 @@ sub start {
 		}
 	}
 	else{
-		$self->log->debug("Nothing to do");
+		$self->log->info("Nothing to do");
 		return $OK;
 	}
 }
@@ -121,7 +121,7 @@ sub stop {
 		my $cmd = "/etc/init.d/pgsql_$entity stop";
 		my $rc = DBOD::Runtime::run_cmd(cmd => $cmd);
 		if ($rc == $OK) {
-			$self->log->debug("PostgreSQL shutdown completed");
+			$self->log->info("PostgreSQL shutdown completed");
 			return $OK;
 		} else  {
 			$self->log->error("Problem shutting down instance. Please check log.");
@@ -130,7 +130,7 @@ sub stop {
 		}
 	}
 	else {
-		$self->log->debug("Nothing to do.");
+		$self->log->info("Nothing to do.");
 		return $OK;
 	}
 }
@@ -152,7 +152,7 @@ sub is_running {
 
 #TODO: Move server_zapi and volume name check to ZAPI call?
 sub snapshot {
-
+    $self->log->info("Snapshot operation starting");
     my $self = shift;
     if (! $self->is_running()) {
         $self->log->error("Snapshotting requires a running instance");
@@ -206,7 +206,7 @@ sub snapshot {
         $self->log->error("Please check: snapshot was not properly taken.");
         return $ERROR;
     } else {
-        $self->log->debug("Snapshot operation successful");
+        $self->log->info("Snapshot operation successful");
         return $OK;
     }
 
@@ -231,7 +231,7 @@ sub restore {
     my ($snapshot, $pit) = @_;
     return $ERROR unless (defined $snapshot);
 
-    $self->log->debug('Restoring database to ' . $snapshot );
+    $self->log->info('Restoring database to ' . $snapshot );
     $self->log->debug('Using ' . $pit) if (defined $pit);
 
     # Get ZAPI server controller object
@@ -264,7 +264,7 @@ sub restore {
         $self->log->error('Affected volume: ' . $volume);
         return $ERROR;
     }
-    $self->log->debug('Successfully restored snapshot ' . $snapshot);
+    $self->log->info('Successfully restored snapshot ' . $snapshot);
     $self->log->debug('Affected volume: ' . $volume);
 
     # Re-start the database with disabled networking to perform

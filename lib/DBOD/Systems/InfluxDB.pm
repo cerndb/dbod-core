@@ -59,10 +59,10 @@ sub is_running {
     $self->log->debug("CMD OUTPUT: " . $output);
 
     if ($error) {
-        $self->log->debug("Instance is DOWN");
+        $self->log->info("Instance is DOWN");
         return $FALSE;
     } else {
-        $self->log->debug("Instance is UP");
+        $self->log->info("Instance is UP");
         return $TRUE;
     }
 }
@@ -155,17 +155,17 @@ sub ping {
         $self->log->error($query_response->content);
         return $ERROR;
     }
-
+    $self->log->info("Database is UP and responsive");
     # if the rest of the checks have passed then return ok
     return $OK;
 }
 
 sub start {
     my ($self, %args) = @_;
-    $self->log->debug("Starting up InfluxDB instance");
+    $self->log->info("Starting up InfluxDB instance");
 
     if ($self->is_running()) {
-        $self->log->debug("Nothing to do");
+        $self->log->info("Nothing to do");
         return $OK;
     }
     else{
@@ -175,7 +175,7 @@ sub start {
             $self->log->error("Problem starting InfluxDB instance. Please check.");
             return $ERROR;
         } else {
-            $self->log->debug("InfluxDB instance started correctly");
+            $self->log->info("InfluxDB instance started correctly");
             return $OK;
         }
     }
@@ -185,7 +185,7 @@ sub start {
 sub stop {
 
     my ($self) = @_;
-    $self->log->debug("Stopping InfluxDB instance");
+    $self->log->info("Stopping InfluxDB instance");
 
     if ($self->is_running()) {
         my ($cmd, $error);
@@ -197,12 +197,12 @@ sub stop {
             $self->log->error("Problem shutting down InfluxDB instance. Please check.");
             return $ERROR; #not ok
         } else  {
-            $self->log->debug("Shutdown completed");
+            $self->log->info("Shutdown completed");
             return $OK;
         }
     }
     else{
-        $self->log->error("Nothing to do.");
+        $self->log->info("Nothing to do.");
         return $OK;
     }
 }
@@ -210,6 +210,7 @@ sub stop {
 # This function is being implemented by Jon
 sub snapshot {
     my $self = shift;
+    $self->log->info("Snapshot operation starting");
 
     if (! $self->is_running()) {
         $self->log->error("Snapshotting requires a running instance");
@@ -253,13 +254,14 @@ sub snapshot {
         $self->log->error("Please check: snapshot was not properly taken.");
         return $ERROR;
     } else {
-        $self->log->debug("Snapshot operation successful");
+        $self->log->info("Snapshot operation successful");
         return $OK;
     }
 }
 
 
 sub upgrade {
+    $self->log->info("Upgrade operation starting");
     my $self = shift;
     my ($upgrade_version) = @_;
 
@@ -316,7 +318,7 @@ sub upgrade {
         $self->log->error("Problem appliying the upgrade script. Please check.");
         return $ERROR;
     }
-    $self->log->debug("Applied upgrade script");
+    $self->log->info("Applied upgrade script");
 
     $result = $self->start();
     if ($result != $OK) {
