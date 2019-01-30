@@ -12,7 +12,7 @@
 Summary: DB On Demand Core library
 Name: cerndb-sw-dbod-core
 Version: %{version}
-Release: 3%{?dist}
+Release: 4%{?dist}
 License: GPL
 Group: Applications
 ExclusiveArch: x86_64
@@ -103,6 +103,8 @@ exit 0;
 %attr (-, dbod, dbod) /var/log/dbod
 
 %changelog
+* Wed Jan 30 2019 Charles Delort <cdelort@cern.ch> 0.78.4
+- Improve logging
 * Thu Oct 4 2018 Ignacio Coterillo <icoteril@cern.ch> 0.78.3
 - Fix remote InfluxDB ping
 * Wed Jan 7 2018 Ignacio Coterillo <icoteril@cern.ch> 0.78.2
