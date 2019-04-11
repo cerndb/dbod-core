@@ -261,8 +261,8 @@ sub snapshot {
 
 
 sub upgrade {
-    $self->log->info("Upgrade operation starting");
     my $self = shift;
+    $self->log->info("Upgrade operation starting");
     my ($upgrade_version) = @_;
 
     my $version = $self->metadata->{version};
