@@ -36,9 +36,9 @@ sub _host_ip {
 
 sub create_server {
     my ($self, $ipaddr, ,$username, $password, $vserver, $version) = @_;
-    $self->log->info("IP: <$ipaddr> username: $username password: XXXXXX");
-    $self->log->info("Parameters vserver: <$vserver>") if defined $vserver;
-    $self->log->info("Parameters version: <$version>") if defined $version;
+    $self->log->debug("IP: <$ipaddr> username: $username password: XXXXXX");
+    $self->log->debug("Parameters vserver: <$vserver>") if defined $vserver;
+    $self->log->debug("Parameters version: <$version>") if defined $version;
 
     if (! defined $version) {
         $version="21"; # default C-mode
@@ -280,7 +280,7 @@ sub get_server_and_volname {
 
 sub create_server_from_mount_point {
     my($self, $controller,$mount_point,$admin) = @_;
-    $self->log->info("Parameters controller: <$controller>, mount_point: <$mount_point>, admin: <$admin>");
+    $self->log->debug("Parameters controller: <$controller>, mount_point: <$mount_point>, admin: <$admin>");
     my $arref = $self->get_auth_details($controller, $mount_point, $admin);
     my($controller_mgmt,$ipcluster,$user_storage,$password_nas,$server_version,$server);
 
@@ -306,7 +306,7 @@ sub create_server_from_mount_point {
 #it returns an array with [user, password, server_version, ipcluster] credentials
 sub get_auth_details {
     my($self, $controller, $mount_point, $admin) = @_;
-    $self->log->info("Parameters controller: <$controller>, mount_point: <$mount_point>, admin: <$admin>");
+    $self->log->debug("Parameters controller: <$controller>, mount_point: <$mount_point>, admin: <$admin>");
     my($controller_mgmt, $ipcluster,
         $user_storage, $password_nas, $server_version);
     if ($controller =~ m{^[\D]+\-([\d\w]+)}x) {
@@ -338,9 +338,9 @@ sub get_auth_details {
 
 sub snap_clone {
     my($self,$server_zapi,$volume_name,$snapshot,$junction)=@_;
-    $self->log->info("Parameters server_zapi: not displayed, volume_name: <$volume_name>");
-    $self->log->info("Parameters snapshot: <$snapshot>") if defined $snapshot;
-    $self->log->info("Parameters junction-path: <$junction>") if defined $junction;
+    $self->log->debug("Parameters server_zapi: not displayed, volume_name: <$volume_name>");
+    $self->log->debug("Parameters snapshot: <$snapshot>") if defined $snapshot;
+    $self->log->debug("Parameters junction-path: <$junction>") if defined $junction;
 
 
     my $suffix;
@@ -419,7 +419,7 @@ sub snap_restore {
 
 sub snap_list {
     my($self, $server_zapi, $volume_name)=@_;
-    $self->log->info("Parameters server_zapi: not displayed, volume_name: <$volume_name>");
+    $self->log->debug("Parameters server_zapi: not displayed, volume_name: <$volume_name>");
 
     my $output = $server_zapi->invoke("snapshot-list-info", "volume", $volume_name);
     my @arr_snaps=();
@@ -431,8 +431,8 @@ sub snap_list {
     my $snapshotlist = $output->child_get("snapshots");
     if (!defined($snapshotlist) || ($snapshotlist eq "")) {
         # no snapshots to report
-        $self->log->info("No snapshots on volume $volume_name");
-        $self->log->info("Returning: " . Dumper \@arr_snaps);
+        $self->log->debug("No snapshots on volume $volume_name");
+        $self->log->debug("Returning: " . Dumper \@arr_snaps);
         return \@arr_snaps;
     }
 
@@ -458,7 +458,7 @@ sub snap_prepare {
     if (! defined $max_snapshots) {
         $max_snapshots = 254;
     }
-    $self->log->info("volume_name: <$volume_name>, num: <$max_snapshots>");
+    $self->log->debug("volume_name: <$volume_name>, num: <$max_snapshots>");
 
     my $rc;
     $self->log->debug("Getting snapshots for <$volume_name>");

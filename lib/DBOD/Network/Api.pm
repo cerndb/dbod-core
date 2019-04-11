@@ -83,7 +83,7 @@ sub _api_get_entity_metadata {
     if ($result{'code'} eq '200') {
         $result{'response'} = decode_json $client->responseContent();
     } else {
-        ERROR 'Failed to contact API server';
+        WARN 'Failed to contact API server';
         $result{'response'} = ''; 
     }
     return \%result;
@@ -99,7 +99,7 @@ sub _api_get_host_metadata {
     if ($result{'code'} eq '200') {
         $result{'response'} = decode_json $client->responseContent();
     } else {
-        ERROR 'Failed to contact API server';
+        WARN 'Failed to contact API server';
         $result{'response'} = ''; 
     }
     return \%result;

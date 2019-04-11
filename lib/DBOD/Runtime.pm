@@ -153,7 +153,7 @@ sub get_instance_version {
 
 sub read_file {
     my $file = shift;
-    INFO "Reading file: <$file>";
+    DEBUG "Reading file: <$file>";
     try {
         open my $F, '<', $file;
         my (@text) = <$F>;
