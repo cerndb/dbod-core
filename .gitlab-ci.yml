@@ -5,6 +5,7 @@ variables:
   KOJI_TARGET: 'db7'
   DIST: '.el7.cern'
   PKGNAME: cerndb-sw-dbod-core
+  SPECFILE: dbod-core
   # KRB_USER, KRB_PASSWORD defined as Gitlab-CI variables
 
 stages:
@@ -68,7 +69,7 @@ tag_qa:
   only:
     - master
   script:
-    - export P_V_R_D=$(rpm -q --specfile ${PKGNAME}.spec -D "dist ${DIST}" --qf "%{n}-%{v}-%{r}" 2>/dev/null)
+    - export P_V_R_D=$(rpm -q --specfile ${SPECFILE}.spec -D "dist ${DIST}" --qf "%{n}-%{v}-%{r}" 2>/dev/null)
     - koji --config=.koji tag-build ${KOJI_TARGET}-qa ${P_V_R_D}
   allow_failure: false
   dependencies: []
@@ -80,7 +81,7 @@ tag_stable:
   only:
     - master
   script:
-    - export P_V_R_D=$(rpm -q --specfile ${PKGNAME}.spec -D "dist ${DIST}" --qf "%{n}-%{v}-%{r}" 2>/dev/null)
+    - export P_V_R_D=$(rpm -q --specfile ${SPECFILE}.spec -D "dist ${DIST}" --qf "%{n}-%{v}-%{r}" 2>/dev/null)
     - koji --config=.koji tag-build ${KOJI_TARGET}-stable ${P_V_R_D}
   allow_failure: false
   dependencies:
