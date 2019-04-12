@@ -12,7 +12,7 @@
 Summary: DB On Demand Core library
 Name: cerndb-sw-dbod-core
 Version: %{version}
-Release: 8%{?dist}
+Release: 9%{?dist}
 License: GPL
 Group: Applications
 ExclusiveArch: x86_64

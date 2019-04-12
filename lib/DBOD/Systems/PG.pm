@@ -152,8 +152,8 @@ sub is_running {
 
 #TODO: Move server_zapi and volume name check to ZAPI call?
 sub snapshot {
-    $self->log->info("Snapshot operation starting");
     my $self = shift;
+    $self->log->info("Snapshot operation starting");
     if (! $self->is_running()) {
         $self->log->error("Snapshotting requires a running instance");
         return $ERROR;
