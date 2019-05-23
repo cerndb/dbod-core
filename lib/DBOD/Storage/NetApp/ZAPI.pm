@@ -31,6 +31,11 @@ use Socket;
 
 sub _host_ip {
     my $servername = shift;
+    if (defined inet_aton($servername)){ 
+    } else {   
+        #dbnasda21011 not ok, dbnasda21011-priv ok
+        $servername="$servername-priv";
+    }
     return inet_ntoa(inet_aton($servername));
 }
 
@@ -326,7 +331,12 @@ sub get_auth_details {
     }
     #$password_nas = $self->config->{filers}->{password};
     $self->log->debug("Controller Suffix: " . uc(substr($controller, 5,1)));
-    $password_nas = $self->config->{filers}->{password} . uc(substr($controller, 5,1)) ;
+    if ( 'D' eq uc(substr($controller, 5,1)) ) {
+        #different for drac compared to all the others
+        $password_nas = $self->config->{filers}->{password} . uc(substr($controller, 5,2)) ;
+    } else {
+        $password_nas = $self->config->{filers}->{password} . uc(substr($controller, 5,1)) ;
+    }
     unless (defined $password_nas) {
         $self->log->error("No password to connect to NAS defined!");
         return 0; #not ok
