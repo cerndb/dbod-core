@@ -314,7 +314,7 @@ sub snapshot {
         $self->log->error("Error unlocking tables! Please contact an admin");
         return $ERROR;
     }
-    if ($errorflag = $OK) {
+    if ($errorflag == $OK) {
         $self->log->info("Snapshot operation successful");
     }
     return $errorflag;
