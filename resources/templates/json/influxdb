@@ -44,7 +44,12 @@ port: Port where the database server will listen
         "max-concurrent-queries" : "0",
         "query-timeout": "30m",
         "cache-max-memory-size": "524288000",
-        "cache-snapshot-memory-size": "26214400",
-        "port": "[% port %]" 
+        "cache-snapshot-memory-size": "26214400", 
+        [% IF type == "PROD" -%]
+        "eos_archive": "true",
+        [% ELSE -%]
+        "eos_archive": "false",
+        [% END -%]
+        "port": "[% port %]"
     }
 }

@@ -50,14 +50,12 @@ crs_port:
     ],
     "attributes": {
         "innodb_buffer_pool_size": "[% buffer %]",
-        [% IF crs_ref -%]
-        "port": "[% port %]", 
-        "crs_ref": "[% crs_ref %]", 
-        "crs_port": "[% crs_port %]", 
-        "crs_socket": "[% crs_socket %]" 
+        [% IF type == "PROD" -%]
+        "eos_archive": "true",
         [% ELSE -%]
-        "port": "[% port %]" 
+        "eos_archive": "false",
         [% END -%]
+        "port": "[% port %]"
     }
 
 }
