@@ -215,8 +215,8 @@ sub body {
         if ($volume_type eq "InfluxDB"){
             $volume_type = "PG";
         }
-        # Use dummy server to force volume creation in RAC51 Storage
-        my $target_server = 'itrac51666';
+        # Use dummy server to force volume creation in RAC52 Storage
+        my $target_server = 'itrac52666';
         my $cmd = "/ORA/dbs01/syscontrol/projects/dod/bin/DFM_create_dod_volumes_Cmode.pl -name $input->{dbname} -size $input->{size} -server ${target_server}  -type ${volume_type} -debug";
 
         $job->log->debug( "Executing: $cmd" );
@@ -228,22 +228,8 @@ sub body {
             return;
         }
 
-        # Fetch volumes mounting details. Will wait until details are available
-        $job->log->debug("Fetching volumes server information");
-        my $datavol = DBOD::Runtime::mywait(\&RunTime_Zapi::GetDODMountpoint, ("dod$input->{dbname}03", $target_server));
-        my $logvol = DBOD::Runtime::mywait(\&RunTime_Zapi::GetDODMountpoint, ("dod$input->{dbname}02", $target_server));
-        my ($serverdata, $data_mounting_path) = split ':', $datavol;
-        my ($serverlogs, $logs_mounting_path) = split ':', $logvol;
-
-        # Fix server name to use GPN access instead of Private Network Interface
-        # Removing "-priv" suffix for RAC51 servers
-        if (($input->{hosts}->[0] =~ /^db/) ||
-            ($input->{hosts}->[0] =~ /rac52/)) {
-            $serverdata =~ s/-priv$//;
-            $serverlogs =~ s/-priv$//;
-        }
-        $input->{'serverlogs'} =  $serverlogs;
-        $input->{'serverdata'} =  $serverdata;
+        $input->{'serverlogs'} =  "dbnass-dbod";
+        $input->{'serverdata'} =  "dbnass-dbod";
     } else {
         $input->{'serverlogs'} =  'NASLOGSERVER';
         $input->{'serverdata'} =  'NASDATASERVER';
