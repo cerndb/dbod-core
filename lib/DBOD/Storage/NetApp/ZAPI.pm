@@ -314,11 +314,8 @@ sub get_auth_details {
     $self->log->debug("Parameters controller: <$controller>, mount_point: <$mount_point>, admin: <$admin>");
     my($controller_mgmt, $ipcluster,
         $user_storage, $password_nas, $server_version);
-    if ($controller =~ m{^[\D]+\-([\d\w]+)}x) {
-        $controller = $1;
-    } elsif ($controller =~ m{([\d\w]+)\-[\D]+}x) {
-        $controller = $1;
-    }
+    # remove -priv but keep dbnass-dbod
+    $controller =~ s/-priv//;
     $self->log->debug("Controller match: <$controller>");
     $self->log->debug('We are working with a C-mode volume <' . $mount_point . '>');
     if ($admin) {
