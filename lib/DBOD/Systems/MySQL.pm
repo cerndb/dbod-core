@@ -60,7 +60,9 @@ sub _connect_db {
     my $dsn;
     my $db_attrs;
     $self->log->info('Creating DB connection with instance');
-    $dsn = 'DBI:mysql:host=' . $self->ip_alias . ';port=' . $self->metadata->{port};
+    # Use the socket to avoid issues with ssl
+    $dsn = 'DBI:mysql:mysql_socket=/var/lib/mysql/mysql.sock.' . $self->instance . '.' . $self->metadata->{port};
+
     $db_attrs = {
         AutoCommit => 1,
     };
