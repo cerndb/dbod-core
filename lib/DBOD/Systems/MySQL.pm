@@ -292,14 +292,10 @@ sub snapshot {
     }
 
     # Create snapshot label (Missing version at the end)
-    my $log_num;
-    if (int($log_sequence) > 0) {
-        $log_num = int($log_sequence) + 1;
-    }
-    my $timetag = strftime "%d%m%Y_%H%M%S", gmtime;
+    my $timetag = strftime "%d%m%Y_%H%M%S", localtime;
     my $version = $self->metadata->{version};
     $version =~ tr/\.//d;
-    my $snapname = "snapscript_" . $timetag . "_" . $log_num . "_" . $version;
+    my $snapname = "snapscript_" . $timetag . "_" . $log_sequence . "_" . $version;
 
     # Create snapshot
     $rc = $zapi->snap_create($server_zapi, $volume, $snapname);
