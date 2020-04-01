@@ -297,7 +297,7 @@ sub snapshot {
     my $timetag = strftime "%d%m%Y_%H%M%S", localtime;
     my $version = $self->metadata->{version};
     $version =~ tr/\.//d;
-    my $snapname = "snapscript_" . $timetag . "_" . $log_sequence . "_" . $version;
+    my $snapname = "snapscript_" . $timetag . "_" . int($log_sequence) . "_" . $version;
 
     # Create snapshot
     $rc = $zapi->snap_create($server_zapi, $volume, $snapname);
