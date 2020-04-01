@@ -113,7 +113,9 @@ sub _binary_log{
     # Unpacking result
     my @buf = @{$rows};
     my @row = @{$buf[0]}[0];
+    my @row1 = @{$buf[0]}[1];
     $self->log->debug('Current binary log file: ' . $row[0]);
+    $self->log->debug('Current binary log file position: ' . $row1[0]);
     return $row[0];
 }
 
